@@ -1,19 +1,18 @@
 package one.rewind.io.test;
 
 import net.lightbody.bmp.BrowserMobProxyServer;
-import org.junit.Test;
 import one.rewind.io.requester.Task;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverRequester;
-import one.rewind.io.requester.chrome.action.ChromeAction;
-import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
-import one.rewind.io.requester.proxy.ProxyAuthenticator;
 import one.rewind.io.requester.proxy.ProxyWrapper;
 import one.rewind.io.requester.proxy.ProxyWrapperImpl;
+import org.junit.Test;
 
-import java.net.*;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 
 import static one.rewind.io.requester.chrome.ChromeDriverRequester.buildBMProxy;
 
@@ -25,7 +24,7 @@ public class ChromeDriverRequesterTest {
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
 		for(int i=0; i<4; i++) {
-			requester.addChromeDriverAgent(new ChromeDriverAgent(null));
+			requester.addChromeDriverAgent(new ChromeDriverAgent());
 		}
 
 		requester.layout();

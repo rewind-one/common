@@ -1,5 +1,6 @@
 package one.rewind.io.test;
 
+import net.lightbody.bmp.BrowserMobProxyServer;
 import one.rewind.io.SshManager;
 import one.rewind.io.requester.Task;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
@@ -7,26 +8,11 @@ import one.rewind.io.requester.chrome.ChromeDriverRequester;
 import one.rewind.io.requester.proxy.ProxyWrapper;
 import one.rewind.io.requester.proxy.ProxyWrapperImpl;
 import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeDriverService;
-import org.openqa.selenium.remote.DesiredCapabilities;
-import org.openqa.selenium.remote.RemoteWebDriver;
-import one.rewind.io.SshManager;
-import one.rewind.io.requester.Task;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverRequester;
-import one.rewind.io.requester.proxy.ProxyWrapper;
-import one.rewind.io.requester.proxy.ProxyWrapperImpl;
-import one.rewind.util.FileUtil;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.UnknownHostException;
+
+import static one.rewind.io.requester.chrome.ChromeDriverRequester.buildBMProxy;
 
 public class RemoteDriverTest {
 
@@ -91,6 +77,16 @@ public class RemoteDriverTest {
 		requester.close();
 
 		delAllDockerContainers();
+	}
+
+	@Test
+	public void testBuildProxyServer() throws InterruptedException, UnknownHostException {
+
+		ProxyWrapper proxy = new ProxyWrapperImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
+		BrowserMobProxyServer ps = buildBMProxy(proxy);
+		System.err.println(ps.getClientBindAddress());
+		System.err.println(ps.getPort());
+		Thread.sleep(100000);
 	}
 
 }
