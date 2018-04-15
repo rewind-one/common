@@ -4,7 +4,7 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
-import one.rewind.db.OrmLiteDaoManager;
+import one.rewind.db.DaoManager;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.json.JSON;
 import one.rewind.txt.ChineseChar;
@@ -426,7 +426,7 @@ public class Task implements Comparable<Task>{
 	 */
 	public boolean insert() throws Exception {
 
-		Dao<Task, String> dao = OrmLiteDaoManager.getDao(Task.class);
+		Dao<Task, String> dao = DaoManager.getDao(Task.class);
 
 		if (dao.create(this) == 1) {
 			return true;
@@ -442,7 +442,7 @@ public class Task implements Comparable<Task>{
 	 * @throws Exception
 	 */
 	public static Task getTask(String id) throws Exception {
-		Dao<Task, String> dao = OrmLiteDaoManager.getDao(Task.class);
+		Dao<Task, String> dao = DaoManager.getDao(Task.class);
 		return dao.queryForId(id);
 	}
 

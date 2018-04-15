@@ -4,8 +4,7 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.stmt.QueryBuilder;
-import one.rewind.db.OrmLiteDaoManager;
-import one.rewind.io.requester.account.Account;
+import one.rewind.db.DaoManager;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import org.apache.commons.codec.binary.Base64;
@@ -15,25 +14,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.net.InetSocketAddress;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 public abstract class Proxy implements JSONable<Proxy> {
 
 	private static final Logger logger = LogManager.getLogger(Proxy.class.getName());
-
-	public static Map<String, Dao> daoMap = new HashMap<>();
-
-	// 外部继承时 若需数据库支持 需要手动调用
-	public static void register(Class<? extends Account> clazz) {
-		try {
-			daoMap.put(clazz.getSimpleName(), OrmLiteDaoManager.getDao(clazz));
-		} catch (Exception e) {
-			logger.error("Error register {}, ", clazz.getSimpleName(), e);
-		}
-	}
 
 	@DatabaseField(dataType = DataType.INTEGER, canBeNull = false, generatedId = true)
 	public transient int id;
@@ -160,7 +146,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	 */
 	public boolean insert() throws Exception{
 
-		Dao dao = daoMap.get(this.getClass().getSimpleName());
+		Dao dao = DaoManager.getDao(this.getClass());
 
 		List<Proxy> existProxys = dao.queryBuilder()
 				.where()
@@ -191,7 +177,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 
 		update_time = new Date();
 
-		Dao dao = daoMap.get(this.getClass().getSimpleName());
+		Dao dao = DaoManager.getDao(this.getClass());
 
 		if (dao.update(this) == 1) {
 			return true;
@@ -208,7 +194,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	 */
 	public static Proxy getProxyById(String id) throws Exception{
 
-		Dao<Proxy, String> dao = OrmLiteDaoManager.getDao(Proxy.class);
+		Dao<Proxy, String> dao = DaoManager.getDao(Proxy.class);
 		return dao.queryForId(id);
 	}
 
@@ -220,7 +206,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	 */
 	public static Proxy getValidProxy(String group) throws Exception {
 
-		Dao<Proxy, String> dao = OrmLiteDaoManager.getDao(Proxy.class);
+		Dao<Proxy, String> dao = DaoManager.getDao(Proxy.class);
 
 		QueryBuilder<Proxy, String> queryBuilder = dao.queryBuilder();
 		Proxy ac = queryBuilder.limit(1L).orderBy("use_cnt", true)
@@ -248,19 +234,19 @@ public abstract class Proxy implements JSONable<Proxy> {
 	}
 
 	public java.net.Proxy toProxy() {
-		InetSocketAddress addr = new InetSocketAddress(host, port);
-		return new java.net.Proxy(java.net.Proxy.Type.HTTP, addr);
+		InetSocketAddress address = new InetSocketAddress(host, port);
+		return new java.net.Proxy(java.net.Proxy.Type.HTTP, address);
 	}
 
 	public HttpHost toHttpHost() {
-		return new HttpHost(host, port, getProtocal());
+		return new HttpHost(host, port, getProtocol());
 	}
 
 	public InetSocketAddress getInetSocketAddress() {
 		return new InetSocketAddress(host, port);
 	}
 
-	public String getProtocal() {
+	public String getProtocol() {
 		return https ? "https" : "http";
 	}
 

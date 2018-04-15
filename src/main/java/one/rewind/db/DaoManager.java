@@ -1,7 +1,6 @@
 package one.rewind.db;
 
 import com.j256.ormlite.dao.Dao;
-import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.DataSourceConnectionSource;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.support.DatabaseConnection;
@@ -17,9 +16,9 @@ import java.util.Map;
  * @author karajan@tfelab.org
  * 2016年3月26日 下午4:17:05
  */
-public class OrmLiteDaoManager {
+public class DaoManager {
 	
-	public final static Logger logger = LogManager.getLogger(OrmLiteDaoManager.class.getName());
+	public final static Logger logger = LogManager.getLogger(DaoManager.class.getName());
 	
 	private static Map<Class<?>, Dao<?, String>> classDaoMap = new HashMap<Class<?>, Dao<?, String>>();
 	
@@ -54,7 +53,7 @@ public class OrmLiteDaoManager {
 				PooledDataSource.getDataSource(dbName).getJdbcUrl()
 			);
 			
-			Dao<T, String> dao = DaoManager.createDao(source, clazz);
+			Dao<T, String> dao = com.j256.ormlite.dao.DaoManager.createDao(source, clazz);
 			classDaoMap.put(clazz, dao);
 			return dao;
 			

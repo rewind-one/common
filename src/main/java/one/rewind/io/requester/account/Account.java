@@ -3,23 +3,17 @@ package one.rewind.io.requester.account;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import one.rewind.db.OrmLiteDaoManager;
+import one.rewind.db.DaoManager;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.reflections.Reflections;
-import one.rewind.db.OrmLiteDaoManager;
-import one.rewind.json.JSON;
-import one.rewind.json.JSONable;
-import one.rewind.txt.StringUtil;
 
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public abstract class Account implements JSONable<Account> {
 
@@ -30,17 +24,6 @@ public abstract class Account implements JSONable<Account> {
 		Occupied,
 		Frozen,
 		Broken,
-	}
-
-	public static Map<String, Dao> daoMap = new HashMap<>();
-
-	// 外部继承时 若需数据库支持 需要手动调用
-	public static void register(Class<? extends Account> clazz) {
-		try {
-			daoMap.put(clazz.getSimpleName(), OrmLiteDaoManager.getDao(clazz));
-		} catch (Exception e) {
-			logger.error("Error register {}, ", clazz.getSimpleName(), e);
-		}
 	}
 
 	// UUID
@@ -143,9 +126,9 @@ public abstract class Account implements JSONable<Account> {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean insert(){
+	public boolean insert() throws Exception {
 
-		Dao dao = daoMap.get(this.getClass().getSimpleName());
+		Dao dao = DaoManager.getDao(this.getClass());
 
 		try {
 			dao.create(this);

@@ -54,10 +54,10 @@ public class IpDetector {
 
 	/**
 	 * 使用代理获取外网IP
-	 * @param pw
+	 * @param proxy
 	 * @return
 	 */
-	public static String getIp(ProxyWrapper pw) {
+	public static String getIp(Proxy proxy) {
 		
 		String ipStr = null;
 		
@@ -70,18 +70,21 @@ public class IpDetector {
 			try {
 				
 				t = new Task(url);
-				if(pw != null) {
-					t.setProxyWrapper(pw);
+				if(proxy != null) {
+					t.setProxy(proxy);
 				}
 				
 				BasicRequester.getInstance().submit(t, 10000);
 				
 				if(t.getResponse().getText() != null){
+
 					ipStr = parse(t.getResponse().getText() );
 					return ipStr;
+
 				} else {
-					if(pw != null) {
-						logger.info("{} can not reach {}", pw.getHost() + ":" + pw.getPort(), url);
+
+					if(proxy != null) {
+						logger.info("{} can not reach {}", proxy.getHost() + ":" + proxy.getPort(), url);
 					} else {
 						logger.info("Can not reach {}", url);
 					}

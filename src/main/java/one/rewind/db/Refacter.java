@@ -99,7 +99,7 @@ public class Refacter {
 					PooledDataSource.getDataSource(dbName).getJdbcUrl()
 				);
 				
-				Dao<?, String> dao = OrmLiteDaoManager.getDao(clazz);
+				Dao<?, String> dao = DaoManager.getDao(clazz);
 				if(!dao.isTableExists()){
 					TableUtils.createTable(source, clazz);
 					logger.trace("Created {}.", clazz.getName());
@@ -149,7 +149,7 @@ public class Refacter {
 		for (Class<?> clazz : classes) {
 			try {
 
-				Dao dao = OrmLiteDaoManager.getDao(clazz);
+				Dao dao = DaoManager.getDao(clazz);
 				Field field = clazz.getField("dao");
 				field.set(null, dao);
 

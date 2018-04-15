@@ -297,32 +297,20 @@ public class ProxyValidator {
 	
 	/**
 	 * 
-	 * @param pw
+	 * @param proxy
 	 * @param url
 	 * @return
 	 */
-	public boolean isAlive(ProxyWrapper pw, String url) {
+	public boolean isAlive(Proxy proxy, String url) {
 		
-		Task task = this.validate(pw, Type.TestAlive, url);
+		Task task = this.validate(proxy, Type.TestAlive, url);
 		
 		if(task.status.contains(Status.OK)) {
-			logger.info("Proxy:{} Alive", pw.getInfo());
+			logger.info("Proxy:{} Alive", proxy.getInfo());
 			return true;
 		} else {
 			return false;
 		}
-	}
-
-	/**
-	 *
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		ProxyWrapper pw = new ProxyWrapperImpl("10.0.0.18", 60103, "tfelab", "TfeLAB2@15");
-		Task task = ProxyValidator.getInstance().validate(pw, Type.TestAlive, null);
-		System.err.println(task.status);
-		System.err.println(task.duration);
-		System.err.println(task.speed);
 	}
 
 }

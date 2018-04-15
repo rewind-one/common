@@ -6,9 +6,8 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 import one.rewind.util.FileUtil;
 import one.rewind.db.DBName;
-import one.rewind.db.OrmLiteDaoManager;
+import one.rewind.db.DaoManager;
 import one.rewind.db.Refacter;
-import one.rewind.util.FileUtil;
 
 import java.util.UUID;
 
@@ -31,7 +30,7 @@ public class BinaryModel {
 			
 			String id = UUID.randomUUID().toString();
 			
-			Dao<BinaryModel, String> dao = OrmLiteDaoManager.getDao(BinaryModel.class);
+			Dao<BinaryModel, String> dao = DaoManager.getDao(BinaryModel.class);
 			BinaryModel bm = new BinaryModel();
 			bm.id = id;
 			bm.c = FileUtil.readBytesFromFile("D:\\test.jpg");
