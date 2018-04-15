@@ -10,14 +10,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
-import one.rewind.io.requester.proxy.ProxyWrapper;
-import one.rewind.util.Configs;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.Task;
 import one.rewind.io.requester.exception.ChromeDriverException;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -90,6 +88,9 @@ public class ChromeDriverRequester implements Runnable {
 
 	private volatile boolean done = false;
 
+	/**
+	 *
+	 */
 	private ChromeDriverRequester() {
 
 		executor.setThreadFactory(new ThreadFactoryBuilder()
@@ -103,15 +104,46 @@ public class ChromeDriverRequester implements Runnable {
 	 *
 	 * @param agent
 	 */
-	public void addChromeDriverAgent(ChromeDriverAgent agent) {
+	public void addAgent(ChromeDriverAgent agent) {
 
 		agents.add(agent);
+
 		agent.setIdleCallback(() -> {
+
 			idleAgentQueue.add(agent);
+
 		}).setNewCallback(() -> {
+
+			// TODO 此处应该增加登陆操作
 			idleAgentQueue.add(agent);
+
+		}).setTerminatedCallback(() -> {
+
+			agents.remove(agent);
+
+			URL newRemoteAddress = null;
+
+			// TODO 需要dockerMgr 终止旧容器 启动新容器
+			if(agent.remoteAddress != null) {
+
+				// 终止旧容器
+
+				// 启动新容器
+				//newRemoteAddress = ...;
+
+			}
+
+			ChromeDriverAgent new_agent = new ChromeDriverAgent(
+					newRemoteAddress,
+					agent.proxy,
+					agent.flags.toArray(new ChromeDriverAgent.Flag[agent.flags.size()])
+			);
+
+			addAgent(new_agent);
+
 		});
 	}
+
 
 	/**
 	 * 对本地ChromeDriverAgent进行重新布局
@@ -124,7 +156,6 @@ public class ChromeDriverRequester implements Runnable {
 			if(!agent.isRemote())
 				localAgentCount ++;
 		}
-
 
 		int gap = 600 / (localAgentCount/2);
 
@@ -142,6 +173,10 @@ public class ChromeDriverRequester implements Runnable {
 
 	}
 
+	/**
+	 *
+	 * @param task
+	 */
 	public void submit(Task task) {
 		queue.offer(task);
 	}
@@ -179,7 +214,10 @@ public class ChromeDriverRequester implements Runnable {
 									submit(t);
 								}
 
-							} catch (ChromeDriverException.IllegalStatusException e) {
+							}
+							// 此处处理账号异常 切换账户
+							// 处理代理异常 关掉开新的
+							catch (ChromeDriverException.IllegalStatusException e) {
 								logger.error("{} status illegal, ", agent.name, e);
 							}
 						}
@@ -200,6 +238,7 @@ public class ChromeDriverRequester implements Runnable {
 
 		executor.shutdown();
 		for(ChromeDriverAgent agent : agents) {
+			agent.setTerminatedCallback(null);
 			agent.stop();
 		}
 	}
@@ -210,7 +249,7 @@ public class ChromeDriverRequester implements Runnable {
 	 * @param proxy upstream proxy address
 	 * @return BrowserMobProxyServer
 	 */
-	public static BrowserMobProxyServer buildBMProxy(ProxyWrapper proxy) {
+	public static BrowserMobProxyServer buildBMProxy(one.rewind.io.requester.proxy.Proxy proxy) {
 
 		BrowserMobProxyServer bmProxy = new BrowserMobProxyServer();
 		bmProxy.setConnectTimeout(CONNECT_TIMEOUT, TimeUnit.MILLISECONDS);

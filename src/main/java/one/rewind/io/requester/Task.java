@@ -15,23 +15,12 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import one.rewind.db.DBName;
-import one.rewind.db.OrmLiteDaoManager;
 import one.rewind.io.requester.account.Account;
-import one.rewind.io.requester.chrome.action.ChromeAction;
-import one.rewind.io.requester.proxy.ProxyWrapper;
-import one.rewind.json.JSON;
-import one.rewind.txt.ChineseChar;
-import one.rewind.txt.NumberFormatUtil;
-import one.rewind.txt.StringUtil;
-import one.rewind.txt.URLUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.*;
-import java.util.concurrent.FutureTask;
-
-import static one.rewind.io.requester.BasicRequester.autoDecode;
 
 /**
  * HTTP 请求任务
@@ -103,7 +92,7 @@ public class Task implements Comparable<Task>{
 	// 账户信息
 
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
-	private ProxyWrapper proxy;
+	private one.rewind.io.requester.proxy.Proxy proxy;
 
 	// 执行动作列表
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
@@ -297,12 +286,12 @@ public class Task implements Comparable<Task>{
 		return domain;
 	}
 
-	public ProxyWrapper getProxyWrapper() {
+	public one.rewind.io.requester.proxy.Proxy getProxy() {
 		return proxy;
 	}
 
-	public void setProxyWrapper(ProxyWrapper pw) {
-		this.proxy = pw;
+	public void setProxy(one.rewind.io.requester.proxy.Proxy proxy) {
+		this.proxy = proxy;
 	}
 
 	public Account getAccount() {

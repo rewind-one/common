@@ -11,7 +11,6 @@ import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
-import one.rewind.io.requester.proxy.ProxyWrapper;
 import one.rewind.io.requester.util.DocumentSettleCondition;
 import one.rewind.json.JSON;
 import one.rewind.util.Configs;
@@ -93,12 +92,12 @@ public class ChromeDriverAgent {
 	public String name;
 
 	// 参数标签
-	private Set<Flag> flags;
+	Set<Flag> flags;
 
-	private URL remoteAddress;
+	URL remoteAddress;
 
 	// 代理地址
-	private ProxyWrapper proxy;
+	one.rewind.io.requester.proxy.Proxy proxy;
 
 	// 存储用于启动 ChromeDriver 的 capabilities
 	private DesiredCapabilities capabilities;
@@ -107,7 +106,7 @@ public class ChromeDriverAgent {
 	private RemoteWebDriver driver;
 
 	// 代理服务器
-	public BrowserMobProxyServer bmProxy;
+	private BrowserMobProxyServer bmProxy;
 
 	// 启动后的初始化脚本
 	private List<ChromeAction> autoScripts = new ArrayList<>();
@@ -118,7 +117,7 @@ public class ChromeDriverAgent {
 	// Executor
 	private ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, queue);
 
-	public volatile Status status;
+	volatile Status status;
 
 	// Agent状态信息
 	public enum Status {
@@ -309,15 +308,29 @@ public class ChromeDriverAgent {
 		}
 	}
 
+	/**
+	 *
+	 * @param flags
+	 */
 	public ChromeDriverAgent(Flag... flags) {
 		this(null, null, flags);
 	}
 
+	/**
+	 *
+	 * @param remoteAddress
+	 * @param flags
+	 */
 	public ChromeDriverAgent(URL remoteAddress, Flag... flags) {
 		this(remoteAddress, null, flags);
 	}
 
-	public ChromeDriverAgent(ProxyWrapper proxy, Flag... flags) {
+	/**
+	 *
+	 * @param proxy
+	 * @param flags
+	 */
+	public ChromeDriverAgent(one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
 		this(null, proxy, flags);
 	}
 
@@ -326,7 +339,7 @@ public class ChromeDriverAgent {
 	 * @param proxy 代理
 	 * @param flags 启动标签
 	 */
-	public ChromeDriverAgent(URL remoteAddress, ProxyWrapper proxy, Flag... flags) {
+	public ChromeDriverAgent(URL remoteAddress, one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
 
 		status = Status.STARTING;
 
@@ -371,7 +384,7 @@ public class ChromeDriverAgent {
 	}
 
 	/**
-	 *
+	 * 停止
 	 */
 	public void stop() {
 
@@ -741,13 +754,16 @@ public class ChromeDriverAgent {
 			logger.info("Task done.");
 
 		}
+		// 超时终止
 		catch (InterruptedException e) {
 
 			logger.error("Task interrupted. ", e);
 			task.setException(e.getCause());
 			task.setDuration();
+			task.setRetry();
 
 		}
+		// 运行时异常
 		catch (ExecutionException ex) {
 
 			logger.error("Task failed.");
@@ -804,14 +820,17 @@ public class ChromeDriverAgent {
 			}
 			// 帐号被冻结
 			catch (AccountException.Frozen e) {
+				logger.error("Account Frozen, ", e);
 
 			}
 			// 帐号失效
 			catch (AccountException.Failed e) {
+				logger.error("Account failed, ", e);
 
 			}
 			// 代理失效
 			catch (ProxyException.Failed e) {
+				logger.error("Proxy failed, ", e);
 
 			}
 			// 其他异常 TODO 待验证
@@ -849,7 +868,6 @@ public class ChromeDriverAgent {
 		}
 		return this;
 	}
-
 
 	/**
 	 *

@@ -3,7 +3,6 @@ package one.rewind.json;
 import com.google.gson.*;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.chrome.action.ChromeAction;
-import one.rewind.io.requester.proxy.ProxyWrapper;
 
 import java.lang.reflect.Type;
 import java.text.DateFormat;

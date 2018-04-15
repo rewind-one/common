@@ -1,7 +1,6 @@
 package one.rewind.io.test;
 
 import org.junit.Test;
-import one.rewind.io.requester.proxy.ProxyWrapper;
 import one.rewind.io.requester.proxy.ProxyWrapperImpl;
 
 public class ProxyValidatorTest {

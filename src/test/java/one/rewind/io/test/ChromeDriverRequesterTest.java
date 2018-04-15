@@ -6,7 +6,6 @@ import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverRequester;
-import one.rewind.io.requester.proxy.ProxyWrapper;
 import one.rewind.io.requester.proxy.ProxyWrapperImpl;
 import org.junit.Test;
 
@@ -24,7 +23,7 @@ public class ChromeDriverRequesterTest {
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
 		for(int i=0; i<4; i++) {
-			requester.addChromeDriverAgent(new ChromeDriverAgent());
+			requester.addAgent(new ChromeDriverAgent());
 		}
 
 		requester.layout();
@@ -46,16 +45,16 @@ public class ChromeDriverRequesterTest {
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
 		ProxyWrapper proxy = new ProxyWrapperImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
-		requester.addChromeDriverAgent(new ChromeDriverAgent(proxy));
+		requester.addAgent(new ChromeDriverAgent(proxy));
 
 		proxy = new ProxyWrapperImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
-		requester.addChromeDriverAgent(new ChromeDriverAgent(proxy));
+		requester.addAgent(new ChromeDriverAgent(proxy));
 
 		proxy = new ProxyWrapperImpl("118.190.133.34", 59998, "tfelab", "TfeLAB2@15");
-		requester.addChromeDriverAgent(new ChromeDriverAgent(proxy));
+		requester.addAgent(new ChromeDriverAgent(proxy));
 
 		proxy = new ProxyWrapperImpl("118.190.44.184", 59998, "tfelab", "TfeLAB2@15");
-		requester.addChromeDriverAgent(new ChromeDriverAgent(proxy));
+		requester.addAgent(new ChromeDriverAgent(proxy));
 
 		requester.layout();
 

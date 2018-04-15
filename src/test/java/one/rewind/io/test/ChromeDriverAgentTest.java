@@ -9,24 +9,11 @@ import one.rewind.io.requester.chrome.ChromeDriverRequester;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
-import one.rewind.io.requester.proxy.ProxyWrapper;
 import one.rewind.io.requester.proxy.ProxyWrapperImpl;
 import org.junit.Test;
-import one.rewind.io.requester.Task;
-import one.rewind.io.requester.account.Account;
-import one.rewind.io.requester.account.AccountImpl;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverRequester;
-import one.rewind.io.requester.chrome.action.ChromeAction;
-import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
-import one.rewind.io.requester.exception.ChromeDriverException;
-import one.rewind.io.requester.proxy.ProxyWrapper;
-import one.rewind.io.requester.proxy.ProxyWrapperImpl;
 
-import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by karajan on 2017/6/3.

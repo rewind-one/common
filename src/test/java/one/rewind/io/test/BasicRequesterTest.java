@@ -2,13 +2,8 @@ package one.rewind.io.test;
 
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.Task;
-import one.rewind.io.requester.proxy.ProxyWrapper;
 import one.rewind.io.requester.proxy.ProxyWrapperImpl;
 import org.junit.Test;
-import one.rewind.io.requester.BasicRequester;
-import one.rewind.io.requester.Task;
-import one.rewind.io.requester.proxy.ProxyWrapper;
-import one.rewind.io.requester.proxy.ProxyWrapperImpl;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;

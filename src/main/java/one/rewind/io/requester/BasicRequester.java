@@ -8,13 +8,8 @@ import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.mozilla.universalchardet.UniversalDetector;
-import one.rewind.util.Configs;
-import one.rewind.io.requester.cookie.CookiesHolderManager;
 import one.rewind.io.requester.proxy.ProxyAuthenticator;
-import one.rewind.io.requester.proxy.ProxyWrapper;
 import one.rewind.io.requester.util.CertAutoInstaller;
-import one.rewind.txt.ChineseChar;
-import one.rewind.txt.URLUtil;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLException;
@@ -271,18 +266,18 @@ public class BasicRequester {
 		
 		HttpURLConnection conn;
 
-		public ConnectionBuilder(String url, ProxyWrapper pw)  throws MalformedURLException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException {
+		public ConnectionBuilder(String url, one.rewind.io.requester.proxy.Proxy proxy)  throws MalformedURLException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException {
 
-			if (pw != null) {
+			if (proxy != null) {
 
-				Authenticator.setDefault(new ProxyAuthenticator(pw.getUsername(), pw.getPassword()));
+				Authenticator.setDefault(new ProxyAuthenticator(proxy.getUsername(), proxy.getPassword()));
 
-				conn = (HttpURLConnection) new URL(url).openConnection(pw.toProxy());
+				conn = (HttpURLConnection) new URL(url).openConnection(proxy.toProxy());
 
-				if (pw.needAuth()) {
+				if (proxy.needAuth()) {
 					conn.setRequestProperty("Proxy-Switch-Ip","yes");
 					String headerKey = "Proxy-Authorization";
-					conn.addRequestProperty(headerKey, pw.getAuthenticationHeader());
+					conn.addRequestProperty(headerKey, proxy.getAuthenticationHeader());
 				}
 
 			} else {
@@ -304,7 +299,7 @@ public class BasicRequester {
 		/**
 		 * 
 		 * @param url
-		 * @param pw
+		 * @param proxy
 		 * @throws MalformedURLException
 		 * @throws IOException
 		 * @throws CertificateException 
@@ -312,18 +307,18 @@ public class BasicRequester {
 		 * @throws NoSuchAlgorithmException 
 		 * @throws KeyManagementException 
 		 */
-		public ConnectionBuilder(String url, ProxyWrapper pw, String method) throws MalformedURLException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException {
+		public ConnectionBuilder(String url, one.rewind.io.requester.proxy.Proxy proxy, String method) throws MalformedURLException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException {
 
-			if (pw != null) {
+			if (proxy != null) {
 
-				Authenticator.setDefault(new ProxyAuthenticator(pw.getUsername(), pw.getPassword()));
+				Authenticator.setDefault(new ProxyAuthenticator(proxy.getUsername(), proxy.getPassword()));
 
-				conn = (HttpURLConnection) new URL(url).openConnection(pw.toProxy());
+				conn = (HttpURLConnection) new URL(url).openConnection(proxy.toProxy());
 
-				if (pw.needAuth()) {
+				if (proxy.needAuth()) {
 					conn.setRequestProperty("Proxy-Switch-Ip","yes");
 					String headerKey = "Proxy-Authorization";
-					conn.addRequestProperty(headerKey, pw.getAuthenticationHeader());
+					conn.addRequestProperty(headerKey, proxy.getAuthenticationHeader());
 				}
 
 			} else {
@@ -472,13 +467,13 @@ public class BasicRequester {
 			
 			if(retry_count > 2) return;
 			
-			logger.info(task.getUrl() + (task.getProxyWrapper() == null? "" : " via " + task.getProxyWrapper().getInfo()));
+			logger.info(task.getUrl() + (task.getProxy() == null? "" : " via " + task.getProxy().getInfo()));
 			
 			try {
 
 				String cookies = null;
 				CookiesHolderManager.CookiesHolder cookiesHolder = null;
-				String host = task.getProxyWrapper() == null ? "" : task.getProxyWrapper().getHost();
+				String host = task.getProxy() == null ? "" : task.getProxy().getHost();
 				if(task.getCookies() != null) {
 					cookies = task.getCookies();
 				} else {
@@ -493,7 +488,7 @@ public class BasicRequester {
 				}
 
 				ConnectionBuilder connBuilder =
-						new ConnectionBuilder(task.getUrl(), task.getProxyWrapper(), task.getRequestMethod());
+						new ConnectionBuilder(task.getUrl(), task.getProxy(), task.getRequestMethod());
 
 				connBuilder.withHeader(headers);
 				connBuilder.withPostData(task.getPost_data());
@@ -518,7 +513,7 @@ public class BasicRequester {
 						
 						CertAutoInstaller.installCert(task.getDomain(), URLUtil.getPort(task.getUrl()));
 						// 重新获取
-						connBuilder = new ConnectionBuilder(task.getUrl(), task.getProxyWrapper(), task.getRequestMethod());
+						connBuilder = new ConnectionBuilder(task.getUrl(), task.getProxy(), task.getRequestMethod());
 						connBuilder.withHeader(headers);
 						connBuilder.withPostData(task.getPost_data());
 						conn = connBuilder.build();

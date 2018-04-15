@@ -5,7 +5,6 @@ import one.rewind.io.SshManager;
 import one.rewind.io.requester.Task;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverRequester;
-import one.rewind.io.requester.proxy.ProxyWrapper;
 import one.rewind.io.requester.proxy.ProxyWrapperImpl;
 import org.junit.Test;
 
@@ -61,7 +60,7 @@ public class RemoteDriverTest {
 			final URL remoteAddress = new URL("http://10.0.0.62:" + (31000 + i) + "/wd/hub");
 
 			new Thread(() -> {
-				requester.addChromeDriverAgent(new ChromeDriverAgent(remoteAddress, proxy));
+				requester.addAgent(new ChromeDriverAgent(remoteAddress, proxy));
 			}).start();
 
 		}
