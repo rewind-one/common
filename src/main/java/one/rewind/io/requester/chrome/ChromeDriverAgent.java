@@ -37,14 +37,18 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.security.Security;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
+
+import static one.rewind.io.requester.chrome.ChromeDriverRequester.REQUESTER_LOCAL_IP;
 
 /**
  * Chrome请求器
@@ -92,12 +96,12 @@ public class ChromeDriverAgent {
 	public String name;
 
 	// 参数标签
-	Set<Flag> flags;
+	public Set<Flag> flags;
 
-	URL remoteAddress;
+	public URL remoteAddress;
 
 	// 代理地址
-	one.rewind.io.requester.proxy.Proxy proxy;
+	public one.rewind.io.requester.proxy.Proxy proxy;
 
 	// 存储用于启动 ChromeDriver 的 capabilities
 	private DesiredCapabilities capabilities;
@@ -106,7 +110,9 @@ public class ChromeDriverAgent {
 	private RemoteWebDriver driver;
 
 	// 代理服务器
-	private BrowserMobProxyServer bmProxy;
+	public BrowserMobProxyServer bmProxy;
+
+	public int bmProxy_port = 0;
 
 	// 启动后的初始化脚本
 	private List<ChromeAction> autoScripts = new ArrayList<>();
@@ -117,7 +123,9 @@ public class ChromeDriverAgent {
 	// Executor
 	private ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, queue);
 
-	volatile Status status;
+	volatile Status status = Status.STARTING;
+
+	volatile boolean starting = false;
 
 	volatile boolean stopping = false;
 
@@ -132,15 +140,19 @@ public class ChromeDriverAgent {
 		FAILED // 失败状态
 	}
 
-	private Runnable idleCallback;
+	private List<Runnable> newCallbacks = new ArrayList<>();
 
-	private Runnable terminatedCallback;
+	private List<Runnable> idleCallbacks = new ArrayList<>();
 
-	private Runnable accountFailedCallback;
+	private List<Runnable> terminatedCallbacks = new ArrayList<>();
 
-	private Runnable accountFrozenCallback;
+	private List<Runnable> accountFailedCallbacks = new ArrayList<>();
 
-	private Runnable proxyFailedCallback;
+	private List<Runnable> accountFrozenCallbacks = new ArrayList<>();
+
+	private List<Runnable> proxyFailedCallbacks = new ArrayList<>();
+
+	private List<Runnable> proxyTimeoutCallbacks = new ArrayList<>();
 
 	/**
 	 * 启动标签类
@@ -255,6 +267,34 @@ public class ChromeDriverAgent {
 	}
 
 	/**
+	 *
+	 */
+	public class ChangeProxy implements Callable<Void> {
+
+		one.rewind.io.requester.proxy.Proxy proxy = null;
+
+		public ChangeProxy(one.rewind.io.requester.proxy.Proxy proxy) {
+			this.proxy = proxy;
+		}
+
+		public Void call() throws ProxyException.Failed {
+
+			if(proxy == null || !proxy.validate()) {
+				throw new ProxyException.Failed();
+			}
+
+			// 关闭 ProxyServer
+			if(bmProxy != null && !bmProxy.isStopped()) {
+				bmProxy.stop();
+			}
+
+			bmProxy = ChromeDriverRequester.buildBMProxy(bmProxy_port, proxy);
+
+			return null;
+		}
+	}
+
+	/**
 	 * 任务封装
 	 * @author karajan@tfelab.org
 	 * 2017年3月22日 上午10:04:11
@@ -304,6 +344,8 @@ public class ChromeDriverAgent {
 				if(task.shootScreen()) {
 					task.getResponse().setScreenshot(driver.getScreenshotAs(OutputType.BYTES));
 				}
+
+				task.validate();
 			}
 
 			task.setDuration();
@@ -352,6 +394,16 @@ public class ChromeDriverAgent {
 		this.remoteAddress = remoteAddress;
 		this.proxy = proxy;
 		this.flags = new HashSet<Flag>(Arrays.asList(flags));
+	}
+
+	/**
+	 *
+	 */
+	public ChromeDriverAgent start() {
+
+		if(starting) return this;
+
+		starting = true;
 
 		Future<Boolean> initFuture = executor.submit(new Init());
 
@@ -362,10 +414,13 @@ public class ChromeDriverAgent {
 			status = Status.NEW;
 
 			if(initSuccess) {
-				logger.info("Init done.");
+				logger.info("INIT done.");
 			} else {
 				logger.error("INIT done, Auto scripts exec failed.");
 			}
+
+			// 执行状态回调函数
+			runCallbacks(newCallbacks);
 
 		} catch (InterruptedException e) {
 
@@ -387,6 +442,9 @@ public class ChromeDriverAgent {
 			logger.error("INIT failed. ", e);
 			stop();
 		}
+
+		return this;
+
 	}
 
 	/**
@@ -428,8 +486,7 @@ public class ChromeDriverAgent {
 			logger.error("Stop failed. ", e);
 		}
 
-		if(terminatedCallback != null)
-			executor.submit(terminatedCallback);
+		runCallbacks(terminatedCallbacks);
 
 		executor.shutdown();
 	}
@@ -439,7 +496,7 @@ public class ChromeDriverAgent {
 	 * 执行时间点：任意
 	 * @return
 	 */
-	private DesiredCapabilities buildCapabilities() {
+	private DesiredCapabilities buildCapabilities() throws UnknownHostException {
 
 		DesiredCapabilities capabilities = DesiredCapabilities.chrome();
 
@@ -473,7 +530,10 @@ public class ChromeDriverAgent {
 			Proxy seleniumProxy;
 
 			bmProxy = ChromeDriverRequester.buildBMProxy(proxy);
-			seleniumProxy = ClientUtil.createSeleniumProxy(bmProxy);
+			bmProxy_port = bmProxy.getPort();
+
+			// 重载 本地代理服务器网络地址
+			seleniumProxy = ClientUtil.createSeleniumProxy(bmProxy, InetAddress.getByName(REQUESTER_LOCAL_IP));
 
 			capabilities.setCapability("proxy", seleniumProxy);
 		}
@@ -684,6 +744,7 @@ public class ChromeDriverAgent {
 			driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
 		}
 
+		// TODO 增加规则
 		if(driver.getPageSource().matches("Bad Gateway|Gateway Timeout"))
 		{
 			throw new SocketException("Connection to upstream server failed.");
@@ -697,7 +758,8 @@ public class ChromeDriverAgent {
 	 */
 	public void waitPageLoad(String url) {
 
-		// TODO 酌情
+		// TODO 追踪所报异常，throw proxy timeout exception
+		// 需要进行测试
 		DocumentSettleCondition<WebElement> settleCondition = new DocumentSettleCondition<WebElement>(
 			ExpectedConditions.visibilityOfElementLocated(By.cssSelector("body")));
 
@@ -832,34 +894,25 @@ public class ChromeDriverAgent {
 			catch (AccountException.Frozen e) {
 				logger.error("Account Frozen, ", e);
 
-				// TODO
-				if(accountFrozenCallback != null) {
-					accountFrozenCallback.run();
-				} else {
-					status = Status.FAILED;
-				}
+				runCallbacks(accountFrozenCallbacks);
+				return;
+
 			}
 			// 帐号失效
 			catch (AccountException.Failed e) {
 				logger.error("Account failed, ", e);
 
-				// TODO
-				if(accountFailedCallback != null) {
-					accountFailedCallback.run();
-				} else {
-					status = Status.FAILED;
-				}
+				runCallbacks(accountFailedCallbacks);
+				return;
+
 			}
 			// 代理失效
 			catch (ProxyException.Failed e) {
+
 				logger.error("Proxy failed, ", e);
 
-				// TODO
-				if(proxyFailedCallback != null) {
-					proxyFailedCallback.run();
-				} else {
-					status = Status.FAILED;
-				}
+				runCallbacks(proxyFailedCallbacks);
+				return;
 
 			}
 			// 其他异常 TODO 待验证
@@ -877,23 +930,46 @@ public class ChromeDriverAgent {
 			status = Status.IDLE;
 			taskFuture.cancel(true);
 			logger.error("Task timeout. ", e);
+
 		}
 
 		// Set idle callback
 		// TODO 为什么要Check queue.size
-		if(status == Status.IDLE && queue.size() == 0 && idleCallback != null) {
-			executor.submit(idleCallback);
+		if(status == Status.IDLE && queue.size() == 0) {
+
+			runCallbacks(idleCallbacks);
 		}
 	}
 
 	/**
 	 *
-	 * @param callback
+	 * @param proxy
 	 */
-	public ChromeDriverAgent setNewCallback(Runnable callback) {
-		if(status == Status.NEW && callback != null) {
+	public void changeProxy(one.rewind.io.requester.proxy.Proxy proxy) {
+		executor.submit(new ChangeProxy(proxy));
+	}
+
+	/**
+	 *
+	 * @param callbacks
+	 */
+	private void runCallbacks(List<Runnable> callbacks) {
+
+		if(callbacks == null) return;
+		for(Runnable callback : callbacks) {
 			executor.submit(callback);
 		}
+	}
+
+	/**
+	 *
+	 * @param callback
+	 */
+	public ChromeDriverAgent addNewCallback(Runnable callback) throws ChromeDriverException.IllegalStatusException {
+
+		if(status != Status.STARTING) throw new ChromeDriverException.IllegalStatusException();
+
+		newCallbacks.add(callback);
 		return this;
 	}
 
@@ -901,8 +977,9 @@ public class ChromeDriverAgent {
 	 *
 	 * @param callback
 	 */
-	public ChromeDriverAgent setIdleCallback(Runnable callback) {
-		this.idleCallback = callback;
+	public ChromeDriverAgent addIdleCallback(Runnable callback) {
+
+		idleCallbacks.add(callback);
 		return this;
 	}
 
@@ -910,18 +987,32 @@ public class ChromeDriverAgent {
 	 *
 	 * @param callback
 	 */
-	public ChromeDriverAgent setTerminatedCallback(Runnable callback) {
-		this.terminatedCallback = callback;
+	public ChromeDriverAgent addTerminatedCallback(Runnable callback) {
+
+		terminatedCallbacks.add(callback);
 		return this;
 	}
 
-	public ChromeDriverAgent setAccountFailedCallback(Runnable callback) {
-		this.accountFailedCallback = callback;
+	public ChromeDriverAgent clearTerminatedCallbacks() {
+
+		this.terminatedCallbacks.clear();
 		return this;
 	}
 
-	public ChromeDriverAgent setAccountFrozenCallback(Runnable callback) {
-		this.accountFrozenCallback = callback;
+	/**
+	 *
+	 * @param callback
+	 * @return
+	 */
+	public ChromeDriverAgent addAccountFailedCallback(Runnable callback) {
+
+		accountFailedCallbacks.add(callback);
+		return this;
+	}
+
+	public ChromeDriverAgent addAccountFrozenCallback(Runnable callback) {
+
+		accountFrozenCallbacks.add(callback);
 		return this;
 	}
 
@@ -930,8 +1021,15 @@ public class ChromeDriverAgent {
 	 * @param callback
 	 * @return
 	 */
-	public ChromeDriverAgent setProxyFailedCallback(Runnable callback) {
-		this.proxyFailedCallback = callback;
+	public ChromeDriverAgent addProxyFailedCallback(Runnable callback) {
+
+		proxyFailedCallbacks.add(callback);
+		return this;
+	}
+
+	public ChromeDriverAgent addProxyTimeoutCallback(Runnable callback) {
+
+		proxyTimeoutCallbacks.add(callback);
 		return this;
 	}
 }

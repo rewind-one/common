@@ -5,20 +5,16 @@ import com.typesafe.config.Config;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.auth.AuthType;
-import one.rewind.io.requester.exception.AccountException;
-import one.rewind.io.requester.exception.ProxyException;
+import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.Task;
+import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
-import one.rewind.io.requester.BasicRequester;
-import one.rewind.io.requester.Task;
-import one.rewind.io.requester.exception.ChromeDriverException;
 
-import java.net.InetAddress;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -106,23 +102,20 @@ public class ChromeDriverRequester implements Runnable {
 	 *
 	 * @param agent
 	 */
-	public void addAgent(ChromeDriverAgent agent) {
+	public void addAgent(ChromeDriverAgent agent) throws ChromeDriverException.IllegalStatusException {
 
 		agents.add(agent);
 
-		agent.setIdleCallback(() -> {
+		agent.addIdleCallback(() -> {
 
 			idleAgentQueue.add(agent);
 
-		}).setNewCallback(() -> {
+		}).addNewCallback(() -> {
 
 			// TODO 此处应该增加登陆操作
 			idleAgentQueue.add(agent);
 
-		}).setTerminatedCallback(() -> {
-
-			// TODO 存在问题 当账号异常或代理异常抛出 就不需要再进行循环调用了
-			// 可以在相关回调中 手动将此callback设为null
+		}).addTerminatedCallback(() -> {
 
 			agents.remove(agent);
 
@@ -144,7 +137,11 @@ public class ChromeDriverRequester implements Runnable {
 					agent.flags.toArray(new ChromeDriverAgent.Flag[agent.flags.size()])
 			);
 
-			addAgent(new_agent);
+			try {
+				addAgent(new_agent);
+			} catch (ChromeDriverException.IllegalStatusException e) {
+				logger.error("Can't add callbacks for new agent, ", e);
+			}
 
 		});
 	}
@@ -243,7 +240,7 @@ public class ChromeDriverRequester implements Runnable {
 
 		executor.shutdown();
 		for(ChromeDriverAgent agent : agents) {
-			agent.setTerminatedCallback(null);
+			agent.clearTerminatedCallbacks();
 			agent.stop();
 		}
 	}
@@ -254,7 +251,7 @@ public class ChromeDriverRequester implements Runnable {
 	 * @param proxy upstream proxy address
 	 * @return BrowserMobProxyServer
 	 */
-	public static BrowserMobProxyServer buildBMProxy(one.rewind.io.requester.proxy.Proxy proxy) {
+	public static BrowserMobProxyServer buildBMProxy(int localPort, one.rewind.io.requester.proxy.Proxy proxy) {
 
 		BrowserMobProxyServer bmProxy = new BrowserMobProxyServer();
 		bmProxy.setConnectTimeout(CONNECT_TIMEOUT, TimeUnit.MILLISECONDS);
@@ -271,14 +268,18 @@ public class ChromeDriverRequester implements Runnable {
 		bmProxy.setTrustAllServers(true);
 		bmProxy.setMitmManager(ImpersonatingMitmManager.builder().trustAllServers(true).build());
 
-		// TODO
-		try {
-			InetAddress address = InetAddress.getByName(REQUESTER_LOCAL_IP);
-			bmProxy.start(0, address);
-		} catch (UnknownHostException e) {
-			bmProxy.start(0); // Use any free port
-		}
+		bmProxy.start(localPort);
+//		try {
+//			InetAddress address = InetAddress.getByName(REQUESTER_LOCAL_IP);
+//			bmProxy.start(localPort, address);
+//		} catch (UnknownHostException e) {
+//			bmProxy.start(localPort); // Use any free port
+//		}
 
 		return bmProxy;
+	}
+
+	public static BrowserMobProxyServer buildBMProxy(one.rewind.io.requester.proxy.Proxy proxy) {
+		return buildBMProxy(0, proxy);
 	}
 }

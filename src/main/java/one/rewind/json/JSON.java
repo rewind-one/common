@@ -3,6 +3,7 @@ package one.rewind.json;
 import com.google.gson.*;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.chrome.action.ChromeAction;
+import one.rewind.io.requester.proxy.Proxy;
 
 import java.lang.reflect.Type;
 import java.text.DateFormat;
@@ -21,7 +22,7 @@ public class JSON {
 			.registerTypeAdapter(Exception.class, new ExceptionDeserializer())
 			.registerTypeAdapter(ChromeAction.class, new InterfaceAdapter<ChromeAction>())
 			.registerTypeAdapter(Account.class, new InterfaceAdapter<Account>())
-			.registerTypeAdapter(ProxyWrapper.class, new InterfaceAdapter<ProxyWrapper>());
+			.registerTypeAdapter(Proxy.class, new InterfaceAdapter<Proxy>());
 
 	public static Gson gson;
 

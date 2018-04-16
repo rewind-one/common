@@ -12,14 +12,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.sql.SQLException;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 public abstract class Account implements JSONable<Account> {
 
 	private static final Logger logger = LogManager.getLogger(Account.class.getName());
 
-	public static enum Status {
+	public enum Status {
 		Free,
 		Occupied,
 		Frozen,

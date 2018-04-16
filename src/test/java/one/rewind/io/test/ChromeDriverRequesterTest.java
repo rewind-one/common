@@ -6,6 +6,7 @@ import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverRequester;
+import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import org.junit.Test;
@@ -19,14 +20,15 @@ import static one.rewind.io.requester.chrome.ChromeDriverRequester.buildBMProxy;
 public class ChromeDriverRequesterTest {
 
 	@Test
-	public void basicTest() throws MalformedURLException, URISyntaxException, InterruptedException {
+	public void basicTest() throws MalformedURLException, URISyntaxException, InterruptedException, ChromeDriverException.IllegalStatusException {
 
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
 		for(int i=0; i<4; i++) {
 			ChromeDriverAgent agent = new ChromeDriverAgent();
-			agent.setProxyFailedCallback(() -> {
 
+			agent.addProxyFailedCallback(() -> {
+				agent.changeProxy(null);
 			});
 
 			requester.addAgent(new ChromeDriverAgent());
@@ -46,7 +48,7 @@ public class ChromeDriverRequesterTest {
 	}
 
 	@Test
-	public void proxyTest() throws MalformedURLException, URISyntaxException, InterruptedException {
+	public void proxyTest() throws MalformedURLException, URISyntaxException, InterruptedException, ChromeDriverException.IllegalStatusException {
 
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 

@@ -2,7 +2,8 @@ package one.rewind.io.test;
 
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.Task;
-import one.rewind.io.requester.proxy.ProxyWrapperImpl;
+import one.rewind.io.requester.proxy.Proxy;
+import one.rewind.io.requester.proxy.ProxyImpl;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -23,8 +24,8 @@ public class BasicRequesterTest {
 		String ref = "http://www.cninfo.com.cn/cninfo-new/disclosure/szse/showFulltext/600036";
 		Task t = new Task(url, null, cookies, ref);
 		t.setPreProc();
-		ProxyWrapper pw = new ProxyWrapperImpl("127.0.0.1", 3128, null, null);
-		t.setProxyWrapper(pw);
+		Proxy proxy = new ProxyImpl("127.0.0.1", 3128, null, null);
+		t.setProxy(proxy);
 
 		BasicRequester.getInstance().submit(t, 30000);
 

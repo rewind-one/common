@@ -6,6 +6,8 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 import one.rewind.db.DaoManager;
 import one.rewind.io.requester.chrome.action.ChromeAction;
+import one.rewind.io.requester.exception.AccountException;
+import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.json.JSON;
 import one.rewind.txt.ChineseChar;
 import one.rewind.txt.NumberFormatUtil;
@@ -370,8 +372,19 @@ public class Task implements Comparable<Task>{
 		this.e = e;
 	}
 
-	public Task postProc() throws Exception {
-		return null;
+	public List<? extends Task> postProc() throws Exception {
+		return new ArrayList<>();
+	}
+
+	/**
+	 *
+	 * @return
+	 * @throws ProxyException.Failed
+	 * @throws AccountException.Failed
+	 * @throws AccountException.Frozen
+	 */
+	public Task validate() throws ProxyException.Failed, AccountException.Failed, AccountException.Frozen {
+		return this;
 	}
 
 	public String toJSON() {

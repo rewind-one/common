@@ -9,7 +9,8 @@ import one.rewind.io.requester.chrome.ChromeDriverRequester;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
-import one.rewind.io.requester.proxy.ProxyWrapperImpl;
+import one.rewind.io.requester.proxy.Proxy;
+import one.rewind.io.requester.proxy.ProxyImpl;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -25,15 +26,17 @@ public class ChromeDriverAgentTest {
 
 		Task t = new Task("https://www.google.com/");
 
-		ProxyWrapper proxy = new ProxyWrapperImpl("scisaga.net", 60103, null, null);
+		Proxy proxy = new ProxyImpl("scisaga.net", 60103, null, null);
 
 		ChromeDriverAgent agent = new ChromeDriverAgent(proxy, ChromeDriverAgent.Flag.MITM);
+
+		agent.start();
 
 /*		agent.setIdleCallback(()->{
 			System.err.println("IDLE");
 		});*/
 
-		agent.setTerminatedCallback(()->{
+		agent.addTerminatedCallback(()->{
 			System.err.println("TERMINATED");
 		});
 
@@ -59,7 +62,9 @@ public class ChromeDriverAgentTest {
 
 		for(int i=0; i<1; i++) {
 
-			ChromeDriverAgent agent = new ChromeDriverAgent(null);
+			ChromeDriverAgent agent = new ChromeDriverAgent();
+			agent.start();
+
 			Task task = new Task("http://www.zbj.com");
 			ChromeAction action = new LoginWithGeetestAction(account);
 			task.addAction(action);

@@ -3,7 +3,6 @@ package one.rewind.io.requester.proxy;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.stmt.QueryBuilder;
 import one.rewind.db.DaoManager;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
@@ -66,7 +65,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
 	public Date update_time = new Date();
 
-	enum Status {
+	public enum Status {
 		NORMAL,
 		INVALID
 	}
@@ -96,7 +95,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	 *
 	 * @throws Exception
 	 */
-	public void validate() throws Exception {
+	public boolean validate() {
 
 		ProxyValidator.Task task = ProxyValidator.getInstance().validate(this, ProxyValidator.Type.TestAlive, null);
 		logger.info(getInfo() + " ---> " + task.status);
@@ -104,9 +103,11 @@ public abstract class Proxy implements JSONable<Proxy> {
 		if(task.status.contains(ProxyValidator.Status.OK) ){
 			logger.warn("Proxy:{} {} good.", id, getInfo());
 			this.status = Status.NORMAL;
+			return true;
 		} else {
 			logger.warn("Proxy:{} {} invalid.", getInfo());
 			this.status = Status.INVALID;
+			return false;
 		}
 
 	}
@@ -115,7 +116,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	 * 验证是否匿名，是否支持HTTPS，是否能翻墙等特性
 	 * @throws Exception
 	 */
-	public void validateAll() throws Exception {
+	public void validateAll() {
 
 		ProxyValidator.Task task = ProxyValidator.getInstance().validate(this, ProxyValidator.Type.TestAll, null);
 		logger.info(getInfo() + " ---> " + task.status);
@@ -184,45 +185,6 @@ public abstract class Proxy implements JSONable<Proxy> {
 		}
 
 		return false;
-	}
-
-	/**
-	 * 根据ID获取Proxy
-	 * @param id
-	 * @return
-	 * @throws Exception
-	 */
-	public static Proxy getProxyById(String id) throws Exception{
-
-		Dao<Proxy, String> dao = DaoManager.getDao(Proxy.class);
-		return dao.queryForId(id);
-	}
-
-
-	/**
-	 * 根据分组名获取Proxy
-	 * @return
-	 * @throws Exception
-	 */
-	public static Proxy getValidProxy(String group) throws Exception {
-
-		Dao<Proxy, String> dao = DaoManager.getDao(Proxy.class);
-
-		QueryBuilder<Proxy, String> queryBuilder = dao.queryBuilder();
-		Proxy ac = queryBuilder.limit(1L).orderBy("use_cnt", true)
-				.where().eq("group", group)
-				.and().eq("enable", true)
-				.and().eq("status", Status.NORMAL)
-				.queryForFirst();
-
-		if (ac == null) {
-			throw new Exception("Proxy not available.");
-		} else {
-			ac.use_cnt ++;
-			ac.status = Status.INVALID;
-			ac.update(); // 并发错误
-			return ac;
-		}
 	}
 
 	public String getId() {
