@@ -119,6 +119,8 @@ public class ChromeDriverAgent {
 
 	volatile Status status;
 
+	volatile boolean stopping = false;
+
 	// Agent状态信息
 	public enum Status {
 		STARTING, // 启动中
@@ -130,11 +132,15 @@ public class ChromeDriverAgent {
 		FAILED // 失败状态
 	}
 
-	private Runnable newCallback;
-
 	private Runnable idleCallback;
 
 	private Runnable terminatedCallback;
+
+	private Runnable accountFailedCallback;
+
+	private Runnable accountFrozenCallback;
+
+	private Runnable proxyFailedCallback;
 
 	/**
 	 * 启动标签类
@@ -241,7 +247,7 @@ public class ChromeDriverAgent {
 					instances.remove(this);
 				}
 
-				logger.info("[{}] stopped.", name);
+				logger.info("[{}] stopping.", name);
 			}
 
 			return null;
@@ -387,6 +393,10 @@ public class ChromeDriverAgent {
 	 * 停止
 	 */
 	public void stop() {
+
+		if(stopping) return;
+
+		stopping = true;
 
 		status = Status.STOPPING;
 
@@ -822,15 +832,34 @@ public class ChromeDriverAgent {
 			catch (AccountException.Frozen e) {
 				logger.error("Account Frozen, ", e);
 
+				// TODO
+				if(accountFrozenCallback != null) {
+					accountFrozenCallback.run();
+				} else {
+					status = Status.FAILED;
+				}
 			}
 			// 帐号失效
 			catch (AccountException.Failed e) {
 				logger.error("Account failed, ", e);
 
+				// TODO
+				if(accountFailedCallback != null) {
+					accountFailedCallback.run();
+				} else {
+					status = Status.FAILED;
+				}
 			}
 			// 代理失效
 			catch (ProxyException.Failed e) {
 				logger.error("Proxy failed, ", e);
+
+				// TODO
+				if(proxyFailedCallback != null) {
+					proxyFailedCallback.run();
+				} else {
+					status = Status.FAILED;
+				}
 
 			}
 			// 其他异常 TODO 待验证
@@ -862,7 +891,6 @@ public class ChromeDriverAgent {
 	 * @param callback
 	 */
 	public ChromeDriverAgent setNewCallback(Runnable callback) {
-		this.newCallback = callback;
 		if(status == Status.NEW && callback != null) {
 			executor.submit(callback);
 		}
@@ -884,6 +912,26 @@ public class ChromeDriverAgent {
 	 */
 	public ChromeDriverAgent setTerminatedCallback(Runnable callback) {
 		this.terminatedCallback = callback;
+		return this;
+	}
+
+	public ChromeDriverAgent setAccountFailedCallback(Runnable callback) {
+		this.accountFailedCallback = callback;
+		return this;
+	}
+
+	public ChromeDriverAgent setAccountFrozenCallback(Runnable callback) {
+		this.accountFrozenCallback = callback;
+		return this;
+	}
+
+	/**
+	 * 只需要设置agent的状态，不需要调用agent.stop()
+	 * @param callback
+	 * @return
+	 */
+	public ChromeDriverAgent setProxyFailedCallback(Runnable callback) {
+		this.proxyFailedCallback = callback;
 		return this;
 	}
 }

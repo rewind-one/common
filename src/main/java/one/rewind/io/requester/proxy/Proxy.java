@@ -49,7 +49,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	public String password;
 
 	@DatabaseField(dataType = DataType.INTEGER, canBeNull = false)
-	public int request_per_second_limit = 1;
+	public int request_per_second_limit = 0; //不限制
 
 	@DatabaseField(dataType = DataType.LONG, canBeNull = false)
 	public long use_cnt = 0;

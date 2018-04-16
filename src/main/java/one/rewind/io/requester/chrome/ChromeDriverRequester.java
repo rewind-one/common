@@ -5,6 +5,8 @@ import com.typesafe.config.Config;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.auth.AuthType;
+import one.rewind.io.requester.exception.AccountException;
+import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -118,6 +120,9 @@ public class ChromeDriverRequester implements Runnable {
 			idleAgentQueue.add(agent);
 
 		}).setTerminatedCallback(() -> {
+
+			// TODO 存在问题 当账号异常或代理异常抛出 就不需要再进行循环调用了
+			// 可以在相关回调中 手动将此callback设为null
 
 			agents.remove(agent);
 

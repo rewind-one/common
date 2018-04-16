@@ -6,7 +6,8 @@ import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverRequester;
-import one.rewind.io.requester.proxy.ProxyWrapperImpl;
+import one.rewind.io.requester.proxy.Proxy;
+import one.rewind.io.requester.proxy.ProxyImpl;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -23,6 +24,11 @@ public class ChromeDriverRequesterTest {
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
 		for(int i=0; i<4; i++) {
+			ChromeDriverAgent agent = new ChromeDriverAgent();
+			agent.setProxyFailedCallback(() -> {
+
+			});
+
 			requester.addAgent(new ChromeDriverAgent());
 		}
 
@@ -44,16 +50,16 @@ public class ChromeDriverRequesterTest {
 
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
-		ProxyWrapper proxy = new ProxyWrapperImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
+		Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
 		requester.addAgent(new ChromeDriverAgent(proxy));
 
-		proxy = new ProxyWrapperImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
+		proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
 		requester.addAgent(new ChromeDriverAgent(proxy));
 
-		proxy = new ProxyWrapperImpl("118.190.133.34", 59998, "tfelab", "TfeLAB2@15");
+		proxy = new ProxyImpl("118.190.133.34", 59998, "tfelab", "TfeLAB2@15");
 		requester.addAgent(new ChromeDriverAgent(proxy));
 
-		proxy = new ProxyWrapperImpl("118.190.44.184", 59998, "tfelab", "TfeLAB2@15");
+		proxy = new ProxyImpl("118.190.44.184", 59998, "tfelab", "TfeLAB2@15");
 		requester.addAgent(new ChromeDriverAgent(proxy));
 
 		requester.layout();
@@ -74,7 +80,7 @@ public class ChromeDriverRequesterTest {
 	@Test
 	public void testBuildProxyServer() throws InterruptedException, UnknownHostException {
 
-		ProxyWrapper proxy = new ProxyWrapperImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
+		Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
 		BrowserMobProxyServer ps = buildBMProxy(proxy);
 		System.err.println(ps.getClientBindAddress());
 		System.err.println(ps.getPort());
