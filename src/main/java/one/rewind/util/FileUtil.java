@@ -114,4 +114,32 @@ public class FileUtil {
 		}
 		return false;
 	}
+
+	public static boolean appendLineToFile(String line, String fileName) {
+
+		// 文件夹不存在创建文件夹
+		String folder_path = fileName.replaceAll("/[^/]+?$", "");
+
+		if(folder_path.length() > 0) {
+
+			File directory = new File(folder_path);
+			if (!directory.exists()) {
+				directory.mkdir();
+			}
+		}
+
+		try {
+
+			BufferedWriter output = new BufferedWriter(new FileWriter(fileName, true));
+			output.write(line);
+			output.newLine();
+			output.close();
+			return true;
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return false;
+	}
 }

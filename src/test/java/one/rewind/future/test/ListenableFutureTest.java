@@ -3,7 +3,6 @@ package one.rewind.future.test;
 import com.google.common.util.concurrent.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
 
 import java.util.Random;
 import java.util.concurrent.*;
@@ -50,7 +49,7 @@ public class ListenableFutureTest {
 
 		try {
 
-			initFuture.get(3000L, TimeUnit.MILLISECONDS);
+			initFuture.get(2000L, TimeUnit.MILLISECONDS);
 		}
 		catch (InterruptedException e) {
 			logger.error(e);
@@ -98,9 +97,9 @@ public class ListenableFutureTest {
 		public Void call() throws Exception {
 
 			logger.info("{} try to sleep: {} @ {}", Thread.currentThread().getName(), seed, System.currentTimeMillis());
-			if(seed < 2000) {
+/*			if(seed < 2000) {
 				throw new Exception("Test");
-			}
+			}*/
 
 			Thread.sleep(seed);
 			logger.info("{} sleep done.", Thread.currentThread().getName());
