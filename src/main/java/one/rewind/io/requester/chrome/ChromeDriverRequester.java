@@ -81,8 +81,10 @@ public class ChromeDriverRequester implements Runnable {
 			10,
 			20,
 			0, TimeUnit.MICROSECONDS,
-			new LinkedBlockingQueue<>(20));
-	//new SynchronousQueue<>()
+			//new ArrayBlockingQueue<>(20)
+			new SynchronousQueue<>()
+	);
+
 
 	private volatile boolean done = false;
 
@@ -94,7 +96,7 @@ public class ChromeDriverRequester implements Runnable {
 		executor.setThreadFactory(new ThreadFactoryBuilder()
 				.setNameFormat("ChromeDriverRequester-Worker-%d").build());
 
-		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		//executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
 	}
 
