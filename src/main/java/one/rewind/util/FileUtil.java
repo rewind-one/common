@@ -91,13 +91,16 @@ public class FileUtil {
 		try {
 
 			// 文件夹不存在创建文件夹
-			String folder_path = fileName.replaceAll("/[^/]+?$", "");
+			if(fileName.contains("/")) {
 
-			if(folder_path.length() > 0) {
+				String folder_path = fileName.replaceAll("/[^/]+?$", "");
 
-				File directory = new File(folder_path);
-				if (!directory.exists()) {
-					directory.mkdir();
+				if (folder_path.length() > 0) {
+
+					File directory = new File(folder_path);
+					if (!directory.exists()) {
+						directory.mkdir();
+					}
 				}
 			}
 
@@ -115,16 +118,25 @@ public class FileUtil {
 		return false;
 	}
 
+	/**
+	 * 向文件末尾追加行
+	 * @param line
+	 * @param fileName
+	 * @return
+	 */
 	public static boolean appendLineToFile(String line, String fileName) {
 
 		// 文件夹不存在创建文件夹
-		String folder_path = fileName.replaceAll("/[^/]+?$", "");
+		if(fileName.contains("/")) {
 
-		if(folder_path.length() > 0) {
+			String folder_path = fileName.replaceAll("/[^/]+?$", "");
 
-			File directory = new File(folder_path);
-			if (!directory.exists()) {
-				directory.mkdir();
+			if (folder_path.length() > 0) {
+
+				File directory = new File(folder_path);
+				if (!directory.exists()) {
+					directory.mkdir();
+				}
 			}
 		}
 
