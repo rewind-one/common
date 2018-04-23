@@ -532,8 +532,9 @@ public class ChromeDriverAgent {
 			bmProxy = ChromeDriverRequester.buildBMProxy(proxy);
 			bmProxy_port = bmProxy.getPort();
 
-			// 重载 本地代理服务器网络地址
+			// 重载 本地代理服务器网络地址 InetAddress.getLocalHost()
 			seleniumProxy = ClientUtil.createSeleniumProxy(bmProxy, InetAddress.getByName(REQUESTER_LOCAL_IP));
+
 
 			capabilities.setCapability("proxy", seleniumProxy);
 		}
@@ -957,7 +958,7 @@ public class ChromeDriverAgent {
 
 		if(callbacks == null) return;
 		for(Runnable callback : callbacks) {
-			executor.submit(callback);
+			callback.run();
 		}
 	}
 
@@ -969,7 +970,7 @@ public class ChromeDriverAgent {
 
 		if(status != Status.STARTING) throw new ChromeDriverException.IllegalStatusException();
 
-		newCallbacks.add(callback);
+		newCallbacks.add(0, callback);
 		return this;
 	}
 
