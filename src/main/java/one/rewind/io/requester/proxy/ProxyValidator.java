@@ -133,7 +133,7 @@ public class ProxyValidator {
 				}
 			}
 			catch (Exception e){
-				logger.error("Error reach {}, {}", BAIDU, e.toString());
+				logger.error("Error reach {}", BAIDU, e);
 				return;
 			}
 			

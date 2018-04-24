@@ -1,5 +1,5 @@
 group 'one.rewind'
-version '1.0.10-SNAPSHOT'
+version '1.0.12-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -77,6 +77,7 @@ dependencies {
 
     // BrowserMob Proxy MITM 代理
     compile 'net.lightbody.bmp:browsermob-core:2.1.5'
+    compile 'io.netty:netty-all:4.1.22.Final' // 强制更新netty
 
     // Appium java-client 自动化库
     compile group: 'io.appium', name: 'java-client', version: '5.0.4'
