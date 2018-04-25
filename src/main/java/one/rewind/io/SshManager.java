@@ -89,7 +89,7 @@ public class SshManager {
 
 		public Connection conn;
 		
-		public Host(String ip, int port, String user, String passwd) throws IOException {
+		public Host(String ip, int port, String user, String passwd) {
 			
 			this.ip = ip;
 			this.port = port;
@@ -97,7 +97,7 @@ public class SshManager {
 			this.passwd = passwd;
 		}
 
-		public Host(String ip, int port, String user, File pemFile) throws IOException {
+		public Host(String ip, int port, String user, File pemFile) {
 
 			this.ip = ip;
 			this.port = port;
