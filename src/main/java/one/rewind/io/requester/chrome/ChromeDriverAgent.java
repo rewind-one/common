@@ -562,6 +562,9 @@ public class ChromeDriverAgent {
 		options.addArguments("--disable-gpu-program-cache");
 		options.addArguments("--disk-cache-dir=/dev/null");
 		options.addArguments("--disk-cache-size=1");
+		options.addArguments("--timeout=28000"); // 	Issues a stop after the specified number of milliseconds. This cancels all navigation and causes the DOMContentLoaded event to fire.
+		options.addArguments("--ipc-connection-timeout=28"); // Overrides the timeout, in seconds, that a child process waits for a connection from the browser before killing itself. ↪
+
 		/*options.addArguments("--log-level=3");
 		options.addArguments("--silent");*/
 
@@ -760,15 +763,20 @@ public class ChromeDriverAgent {
 	public void waitPageLoad(String url) {
 
 		// TODO 追踪所报异常，throw proxy timeout exception
+		// org.openqa.selenium.TimeOutExpection
 		// 需要进行测试
 		DocumentSettleCondition<WebElement> settleCondition = new DocumentSettleCondition<WebElement>(
 			ExpectedConditions.visibilityOfElementLocated(By.cssSelector("body")));
 
-		new FluentWait<WebDriver>(driver)
-			.withTimeout(30, TimeUnit.SECONDS)
-			.pollingEvery(settleCondition.getSettleTime(), TimeUnit.MILLISECONDS)
-			.ignoring(WebDriverException.class)
-			.until(settleCondition);
+		try {
+			new FluentWait<WebDriver>(driver)
+					.withTimeout(30, TimeUnit.SECONDS)
+					.pollingEvery(settleCondition.getSettleTime(), TimeUnit.MILLISECONDS)
+					.ignoring(WebDriverException.class, TimeoutException.class)
+					.until(settleCondition);
+		} catch (Exception e) {
+			logger.error("Wait page load error, ", e);
+		}
 
 		String readyState = driver.executeScript("return document.readyState").toString();
 		logger.info(readyState);
