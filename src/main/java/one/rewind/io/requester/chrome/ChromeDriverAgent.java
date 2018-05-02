@@ -309,7 +309,6 @@ public class ChromeDriverAgent {
 		Wrapper(Task task) {
 			this.task = task;
 			this.task.setStartTime();
-			this.task.setException(null);
 		}
 
 		/**
@@ -832,14 +831,18 @@ public class ChromeDriverAgent {
 
 			taskFuture.get(timeout, TimeUnit.MILLISECONDS);
 			status = Status.IDLE;
-			logger.info("Task done.");
 
+			for(Runnable runnable : task.doneCallBacks) {
+				ChromeDriverRequester.getInstance().post_executor.submit(runnable);
+			}
+
+			logger.info("Task done.");
 		}
 		// 超时终止
 		catch (InterruptedException e) {
 
 			logger.error("Task interrupted. ", e);
-			task.setException(e.getCause());
+			task.addExceptions(e.getCause());
 			task.setDuration();
 			task.setRetry();
 
@@ -849,7 +852,7 @@ public class ChromeDriverAgent {
 
 			logger.error("Task failed.");
 
-			task.setException(ex.getCause());
+			task.addExceptions(ex.getCause());
 			task.setDuration();
 
 			// 重试机制
@@ -901,6 +904,7 @@ public class ChromeDriverAgent {
 			}
 			// 帐号被冻结
 			catch (AccountException.Frozen e) {
+
 				logger.error("Account Frozen, ", e);
 
 				runCallbacks(accountFrozenCallbacks);
@@ -909,6 +913,7 @@ public class ChromeDriverAgent {
 			}
 			// 帐号失效
 			catch (AccountException.Failed e) {
+
 				logger.error("Account failed, ", e);
 
 				runCallbacks(accountFailedCallbacks);

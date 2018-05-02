@@ -3,8 +3,8 @@ package one.rewind.io.requester;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.table.DatabaseTable;
 import one.rewind.db.DaoManager;
+import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ProxyException;
@@ -16,8 +16,6 @@ import one.rewind.txt.URLUtil;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import one.rewind.db.DBName;
-import one.rewind.io.requester.account.Account;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -29,8 +27,6 @@ import java.util.*;
  * @author karajan
  *
  */
-@DatabaseTable(tableName = "tasks")
-@DBName(value = "crawler")
 public class Task implements Comparable<Task>{
 
 	public enum Priority {
@@ -119,8 +115,7 @@ public class Task implements Comparable<Task>{
 	@DatabaseField(dataType = DataType.INTEGER)
 	private int retryCount = 0;
 
-	// 运行时异常
-	private transient Throwable e;
+	public transient List<Runnable> doneCallBacks = new LinkedList<>();
 
 	// 异常记录
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
@@ -145,7 +140,6 @@ public class Task implements Comparable<Task>{
 		this.response = new Response();
 		this.id = StringUtil.MD5(url + System.nanoTime());
 		this.request_method = RequestMethod.GET;
-
 	}
 	
 	/**
@@ -364,18 +358,6 @@ public class Task implements Comparable<Task>{
 		return this.retry;
 	}
 
-	public Throwable getException() {
-		return e;
-	}
-
-	public void setException(Throwable e) {
-		this.e = e;
-	}
-
-	public List<? extends Task> postProc() throws Exception {
-		return new ArrayList<>();
-	}
-
 	/**
 	 *
 	 * @return
@@ -396,7 +378,7 @@ public class Task implements Comparable<Task>{
 	}
 
 	public void addRetryCount() {
-		this.retryCount ++;
+
 	}
 
 	public String getRequester_class() {
@@ -439,24 +421,13 @@ public class Task implements Comparable<Task>{
 	 */
 	public boolean insert() throws Exception {
 
-		Dao<Task, String> dao = DaoManager.getDao(Task.class);
+		Dao dao = DaoManager.getDao(this.getClass());
 
 		if (dao.create(this) == 1) {
 			return true;
 		}
 
 		return false;
-	}
-
-	/**
-	 *
-	 * @param id
-	 * @return
-	 * @throws Exception
-	 */
-	public static Task getTask(String id) throws Exception {
-		Dao<Task, String> dao = DaoManager.getDao(Task.class);
-		return dao.queryForId(id);
 	}
 
 	public void setPriority(Priority priority) {
@@ -483,6 +454,10 @@ public class Task implements Comparable<Task>{
 		}
 	}
 
+	public void addDoneCallback(Runnable doneCallBack) {
+		if(this.doneCallBacks == null) this.doneCallBacks = new LinkedList<>();
+		this.doneCallBacks.add(doneCallBack);
+	}
 
 	/**
 	 * 返回对象

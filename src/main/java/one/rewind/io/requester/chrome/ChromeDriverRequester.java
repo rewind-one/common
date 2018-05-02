@@ -85,6 +85,12 @@ public class ChromeDriverRequester implements Runnable {
 			new SynchronousQueue<>()
 	);
 
+	ThreadPoolExecutor post_executor = new ThreadPoolExecutor(
+			10,
+			20,
+			0, TimeUnit.MICROSECONDS,
+			new LinkedBlockingQueue<>()
+	);
 
 	private volatile boolean done = false;
 
@@ -212,15 +218,28 @@ public class ChromeDriverRequester implements Runnable {
 							logger.info("Assign {}", agent.name);
 
 							try {
+
+								t.addDoneCallback(() -> {
+
+									if(t.needRetry()) {
+										if( t.getRetryCount() < 3 ) {
+
+											t.addRetryCount();
+											submit(t);
+
+										} else {
+
+											try {
+												t.insert();
+											} catch (Exception e) {
+												logger.error(e);
+											}
+										}
+									}
+								});
+
 								agent.submit(t);
-
-								if(t.needRetry()) {
-									submit(t);
-								}
-
 							}
-							// 此处处理账号异常 切换账户
-							// 处理代理异常 关掉开新的
 							catch (ChromeDriverException.IllegalStatusException e) {
 								logger.error("{} status illegal, ", agent.name, e);
 							}

@@ -29,8 +29,8 @@ public class BasicRequesterTest {
 
 		BasicRequester.getInstance().submit(t, 30000);
 
-		if(t.getException() != null){
-			t.getException().printStackTrace();
+		for(Throwable e : t.getExceptions()) {
+			e.printStackTrace();
 		}
 
 		System.err.println(t.getDuration() + "\t" + t.getResponse().getText());
@@ -67,8 +67,8 @@ public class BasicRequesterTest {
 
 						BasicRequester.getInstance().submit(t, 30000);
 
-						if(t.getException() != null){
-							t.getException().printStackTrace();
+						for(Throwable e : t.getExceptions()) {
+							e.printStackTrace();
 						}
 
 						System.err.println(t.getDuration() + "\t" + t.getResponse().getText());
@@ -115,8 +115,8 @@ public class BasicRequesterTest {
 
 		BasicRequester.getInstance().submit(t, 30000);
 
-		if(t.getException() != null){
-			t.getException().printStackTrace();
+		for(Throwable e : t.getExceptions()) {
+			e.printStackTrace();
 		}
 
 		System.err.println(t.getDuration() + "\n" + t.getResponse().getText());

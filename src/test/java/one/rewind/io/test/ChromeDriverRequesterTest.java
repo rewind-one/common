@@ -42,6 +42,9 @@ public class ChromeDriverRequesterTest {
 		for(int i=0; i<100; i++) {
 
 			Task task = new Task("http://www.baidu.com/s?word=" + (1950 + i));
+			task.addDoneCallback(() -> {
+				System.err.println(task.getUrl() + " -- " + task.getResponse().getSrc().length);
+			});
 			requester.submit(task);
 		}
 

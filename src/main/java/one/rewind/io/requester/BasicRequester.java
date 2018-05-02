@@ -520,12 +520,12 @@ public class BasicRequester {
 						inStream = new BufferedInputStream(conn.getInputStream());
 						
 					} catch (Exception e1){
-						task.setException(e1);
+						task.addExceptions(e1);
 					}
 				}
 				catch (IOException e) {
 					logger.error("Error Code: {}", code);
-					task.setException(e);
+					task.addExceptions(e);
 					inStream = new BufferedInputStream(conn.getErrorStream());
 				}
 
@@ -613,7 +613,7 @@ public class BasicRequester {
 				}
 			}
 			catch (Exception e){
-				task.setException(e);
+				task.addExceptions(e);
 			}
 			finally {
 				
@@ -653,14 +653,14 @@ public class BasicRequester {
 			        try {
 			        	bOutStream.close();
 			        } catch (IOException e) {
-						task.setException(e);
+						task.addExceptions(e);
 			        }
 			    }
 			    if (inStream != null) {
 			        try {
 			        	inStream.close();
 			        } catch (IOException e) {
-						task.setException(e);
+						task.addExceptions(e);
 			        }
 			    }
 			    try {
@@ -668,7 +668,7 @@ public class BasicRequester {
 				    	conn.disconnect();
 				    }
 			    } catch (Exception e) {
-					task.setException(e);
+					task.addExceptions(e);
 			    }
 			    
 			    task.setDuration();
