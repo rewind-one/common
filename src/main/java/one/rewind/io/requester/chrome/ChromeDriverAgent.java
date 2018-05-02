@@ -764,15 +764,16 @@ public class ChromeDriverAgent {
 		// TODO 追踪所报异常，throw proxy timeout exception
 		// org.openqa.selenium.TimeOutExpection
 		// 需要进行测试
-		DocumentSettleCondition<WebElement> settleCondition = new DocumentSettleCondition<WebElement>(
-			ExpectedConditions.visibilityOfElementLocated(By.cssSelector("body")));
+		DocumentSettleCondition<WebElement> settleCondition = new DocumentSettleCondition<>(
+			ExpectedConditions.visibilityOf(driver.findElement(By.cssSelector("body"))));
 
 		try {
 			new FluentWait<WebDriver>(driver)
-					.withTimeout(30, TimeUnit.SECONDS)
+					.withTimeout(10, TimeUnit.SECONDS)
 					.pollingEvery(settleCondition.getSettleTime(), TimeUnit.MILLISECONDS)
 					.ignoring(WebDriverException.class, TimeoutException.class)
 					.until(settleCondition);
+
 		} catch (Exception e) {
 			logger.error("Wait page load error, ", e);
 		}

@@ -1,14 +1,6 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.json.JSON;
-import one.rewind.txt.StringUtil;
-import one.rewind.util.FileUtil;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Actions;
 import one.rewind.io.requester.account.Account;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.json.JSON;
 import one.rewind.opencv.OpenCVUtil;
 import one.rewind.simulator.mouse.Action;
@@ -16,9 +8,12 @@ import one.rewind.simulator.mouse.MouseEventModeler;
 import one.rewind.simulator.mouse.MouseEventSimulator;
 import one.rewind.txt.StringUtil;
 import one.rewind.util.FileUtil;
+import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
@@ -56,7 +51,7 @@ public class LoginWithGeetestAction extends LoginAction {
 		String img_2_path = "tmp/geetest/geetest-2-" + ts + ".png";
 
 		// 等待图片加载
-		Thread.sleep(1000);
+		Thread.sleep(5000);
 		// 拖拽前截图
 		FileUtil.writeBytesToFile(agent.shoot(geetestWindowCssPath), img_1_path);
 
@@ -87,8 +82,9 @@ public class LoginWithGeetestAction extends LoginAction {
 		// TODO
 		int x_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().x
 				+ 15 + new Random().nextInt(20);
+
 		int y_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().y
-				+ 105 + 10 + new Random().nextInt(20);
+				+ this.agent.getDriver().manage().window().getPosition().y + 105 + 10 + new Random().nextInt(20);
 
 		Robot bot = new Robot();
 		bot.mouseMove(x_init, y_init);

@@ -56,11 +56,11 @@ public class ChromeDriverAgentTest {
 	}
 
 	@Test
-	public void loginTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException {
+	public void loginTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		Account account = new AccountImpl("zbj.com", "15284812411", "123456");
 
-		for(int i=0; i<1; i++) {
+		for(int i=0; i<10; i++) {
 
 			ChromeDriverAgent agent = new ChromeDriverAgent();
 			agent.start();
@@ -69,6 +69,8 @@ public class ChromeDriverAgentTest {
 			ChromeAction action = new LoginWithGeetestAction(account);
 			task.addAction(action);
 			agent.submit(task);
+
+			Thread.sleep(10000);
 
 			agent.stop();
 		}
