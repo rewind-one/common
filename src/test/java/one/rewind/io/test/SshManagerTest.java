@@ -1,7 +1,7 @@
 package one.rewind.io.test;
 
 import org.junit.Test;
-import one.rewind.io.SshManager;
+import one.rewind.io.ssh.SshManager;
 
 /**
  * 测试在远程主机执行命令/上传文件

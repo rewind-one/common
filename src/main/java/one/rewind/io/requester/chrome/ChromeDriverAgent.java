@@ -12,6 +12,7 @@ import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.util.DocumentSettleCondition;
+import one.rewind.io.ssh.RemoteShell;
 import one.rewind.json.JSON;
 import one.rewind.util.Configs;
 import one.rewind.util.EnvUtil;
@@ -99,6 +100,8 @@ public class ChromeDriverAgent {
 	public Set<Flag> flags;
 
 	public URL remoteAddress;
+
+	public RemoteShell remoteShell;
 
 	// 代理地址
 	public one.rewind.io.requester.proxy.Proxy proxy;
@@ -360,7 +363,7 @@ public class ChromeDriverAgent {
 	 * @param flags
 	 */
 	public ChromeDriverAgent(Flag... flags) {
-		this(null, null, flags);
+		this(null, null, null, flags);
 	}
 
 	/**
@@ -368,8 +371,8 @@ public class ChromeDriverAgent {
 	 * @param remoteAddress
 	 * @param flags
 	 */
-	public ChromeDriverAgent(URL remoteAddress, Flag... flags) {
-		this(remoteAddress, null, flags);
+	public ChromeDriverAgent(URL remoteAddress, RemoteShell remoteShell, Flag... flags) {
+		this(remoteAddress, remoteShell, null, flags);
 	}
 
 	/**
@@ -378,7 +381,7 @@ public class ChromeDriverAgent {
 	 * @param flags
 	 */
 	public ChromeDriverAgent(one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
-		this(null, proxy, flags);
+		this(null, null, proxy, flags);
 	}
 
 	/**
@@ -386,7 +389,7 @@ public class ChromeDriverAgent {
 	 * @param proxy 代理
 	 * @param flags 启动标签
 	 */
-	public ChromeDriverAgent(URL remoteAddress, one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
+	public ChromeDriverAgent(URL remoteAddress, RemoteShell remoteShell, one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
 
 		status = Status.STARTING;
 

@@ -1,6 +1,7 @@
 package one.rewind.io.requester.chrome.action;
 
 import one.rewind.io.requester.account.Account;
+import one.rewind.io.requester.chrome.RemoteMouseEventSimulator;
 import one.rewind.json.JSON;
 import one.rewind.opencv.OpenCVUtil;
 import one.rewind.simulator.mouse.Action;
@@ -94,8 +95,13 @@ public class LoginWithGeetestAction extends LoginAction {
 		// Build Actions
 		List<Action> actions = MouseEventModeler.getInstance().getActions(x_init, y_init,offset + sys_error_x);
 
-		// 初始化 MouseEventSimulator
-		MouseEventSimulator simulator = new MouseEventSimulator(actions);
+		// 初始化 RemoteMouseEventSimulator
+		MouseEventSimulator simulator;
+		if(this.agent.remoteShell != null) {
+			simulator = new RemoteMouseEventSimulator(actions, this.agent.remoteShell);
+		} else {
+			simulator = new MouseEventSimulator(actions);
+		}
 
 		// 执行事件
 		simulator.procActions();

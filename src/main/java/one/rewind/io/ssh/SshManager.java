@@ -1,4 +1,4 @@
-package one.rewind.io;
+package one.rewind.io.ssh;
 
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.SCPClient;
@@ -79,7 +79,7 @@ public class SshManager {
 	/**
 	 *
 	 */
-	public static class Host {
+	public static class Host implements RemoteShell {
 		
 		public String ip;
 		public int port;
@@ -88,7 +88,14 @@ public class SshManager {
 		private File pemFile;
 
 		public Connection conn;
-		
+
+		/**
+		 *
+		 * @param ip
+		 * @param port
+		 * @param user
+		 * @param passwd
+		 */
 		public Host(String ip, int port, String user, String passwd) {
 			
 			this.ip = ip;
@@ -97,6 +104,13 @@ public class SshManager {
 			this.passwd = passwd;
 		}
 
+		/**
+		 *
+		 * @param ip
+		 * @param port
+		 * @param user
+		 * @param pemFile
+		 */
 		public Host(String ip, int port, String user, File pemFile) {
 
 			this.ip = ip;
@@ -105,34 +119,53 @@ public class SshManager {
 			this.pemFile = pemFile;
 		}
 
+		/**
+		 *
+		 * @return
+		 */
 		public String getKey() {
 			return this.ip + ":" + this.port;
 		}
 
-		public void connect() throws IOException{
+		/**
+		 *
+		 * @throws IOException
+		 */
+		public void connect() {
 
-			conn = new Connection(ip, port);
-			conn.connect();
+			try {
 
-			boolean isAuthenticated = false;
-			if(pemFile != null) {
-				isAuthenticated = conn.authenticateWithPublicKey(user, pemFile, null);
-			} else {
-				isAuthenticated = conn.authenticateWithPassword(user, passwd);
-			}
+				conn = new Connection(ip, port);
+				conn.connect();
 
-			if (isAuthenticated == false) {
-				throw new IOException("Authentication failed.");
+				boolean isAuthenticated = false;
+				if (pemFile != null) {
+					isAuthenticated = conn.authenticateWithPublicKey(user, pemFile, null);
+				} else {
+					isAuthenticated = conn.authenticateWithPassword(user, passwd);
+				}
+
+				if (isAuthenticated == false) {
+					throw new IOException("Authentication failed.");
+				}
+			} catch (Exception e) {
+				logger.error(e);
 			}
 		}
 
+		public void close() {
+			conn.close();
+		}
+
 		/**
-		 *
+		 * 连接断了应该重试
+		 * 重试有最大次数
+		 * 异常的管理
 		 * @param cmd
 		 * @return
 		 * @throws Exception
 		 */
-		public String exec(String cmd) throws Exception {
+		public String exec(String cmd) {
 
 			String output = "";
 
@@ -152,15 +185,20 @@ public class SshManager {
 				in.close();
 				sess.close();
 
-				return output;
-
 			} catch (Exception e) {
 				logger.error("Error open session. ", e);
 				connect();
-				throw e;
 			}
+
+			return output;
 		}
 
+		/**
+		 *
+		 * @param localFilePath
+		 * @param remoteDirectoryPath
+		 * @throws Exception
+		 */
 		public void upload(String localFilePath, String remoteDirectoryPath) throws Exception {
 
 			String output = "";
@@ -176,6 +214,12 @@ public class SshManager {
 			}
 		}
 
+		/**
+		 *
+		 * @param remoteFilePath
+		 * @param localDirectoryPath
+		 * @throws Exception
+		 */
 		public void download(String remoteFilePath, String localDirectoryPath) throws Exception {
 
 			String output = "";
@@ -189,35 +233,6 @@ public class SshManager {
 				logger.error("Error open SCPClient. ", e);
 				connect();
 			}
-		}
-
-	}
-
-	public static void main(String[] args) throws Exception {
-
-		String[] hosts = {
-				"47.106.71.20"
-		};
-
-		for(String hs : hosts) {
-
-			Host host = new Host(hs, 22, "root", "SDYK315pr");
-			host.connect();
-
-			/*String output = host.exec("jps | grep OldCrawler | awk '{print $1}' | xargs kill -9");
-			System.err.println(output);*/
-
-			host.upload("squid.sh", "/root");
-
-			String output = host.exec("chmod +x squid.sh");
-			System.err.println(output);
-
-			// 先更新，再执行
-			host.exec("apt update");
-			output = host.exec("./squid.sh");
-			System.err.println(output);
-
-
 		}
 	}
 }

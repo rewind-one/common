@@ -6,7 +6,6 @@ import org.apache.logging.log4j.Logger;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 基于Tracker序列化记录，模拟苏杭表操作
@@ -16,26 +15,22 @@ public class MouseEventSimulator {
 	private static final Logger logger = LogManager.getLogger(MouseEventTracker.class.getName());
 
 	//
-	List<Action> actions;
-
-	// 用于模拟鼠标操作
-	Robot bot;
+	public List<Action> actions;
 
 	/**
 	 *
 	 * @throws AWTException
 	 */
-	public MouseEventSimulator(List<Action> actions) throws AWTException {
+	public MouseEventSimulator(List<Action> actions) {
 
 		this.actions = actions;
-		bot = new Robot();
 	}
 
 	/**
 	 *
 	 * @param offset
 	 */
-	public void simulate(int offset) {
+	/*public void simulate(int offset) {
 
 		offset = offset + ThreadLocalRandom.current().nextInt(-4, 4 + 1);
 		long ts = 0;
@@ -80,39 +75,49 @@ public class MouseEventSimulator {
 			ts = action.time;
 
 		}
-	}
+	}*/
 
 	/**
 	 * 执行事件
 	 */
 	public void procActions() {
 
-		long ts = 0;
+		Robot bot = null;
 
-		for(Action action : this.actions) {
+		try {
 
-			// 按下鼠标左键
-			if(action.type.equals(Action.Type.Press)) {
-				bot.mousePress(InputEvent.BUTTON1_MASK);
-			}
-			// 释放鼠标左键
-			else if(action.type.equals(Action.Type.Release)) {
-				bot.mouseRelease(InputEvent.BUTTON1_MASK);
-			}
-			// 移动鼠标
-			else if(action.type.equals(Action.Type.Move)) {
-				bot.mouseMove(action.x, action.y);
-			}
-			// 拖拽
-			else {
-				bot.mouseMove(action.x, action.y);
+			bot = new Robot();
+
+			long ts = 0;
+
+			for(Action action : this.actions) {
+
+				// 按下鼠标左键
+				if(action.type.equals(Action.Type.Press)) {
+					bot.mousePress(InputEvent.BUTTON1_MASK);
+				}
+				// 释放鼠标左键
+				else if(action.type.equals(Action.Type.Release)) {
+					bot.mouseRelease(InputEvent.BUTTON1_MASK);
+				}
+				// 移动鼠标
+				else if(action.type.equals(Action.Type.Move)) {
+					bot.mouseMove(action.x, action.y);
+				}
+				// 拖拽
+				else {
+					bot.mouseMove(action.x, action.y);
+				}
+
+				bot.delay((int) (action.time - ts));
+				ts = action.time;
+				//System.err.println(action.toJSON());
 			}
 
-			bot.delay((int) (action.time - ts));
-			ts = action.time;
-			//System.err.println(action.toJSON());
+			logger.info("Final position --> x:{}, y:{}.", actions.get(actions.size()-1).x, actions.get(actions.size()-1).y);
+
+		} catch (AWTException e) {
+			logger.error(e);
 		}
-
-		logger.info("Final position --> x:{}, y:{}.", actions.get(actions.size()-1).x, actions.get(actions.size()-1).y);
 	}
 }
