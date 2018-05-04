@@ -394,6 +394,7 @@ public class ChromeDriverAgent {
 		status = Status.STARTING;
 
 		this.remoteAddress = remoteAddress;
+		this.remoteShell = remoteShell;
 		this.proxy = proxy;
 		this.flags = new HashSet<Flag>(Arrays.asList(flags));
 	}
@@ -771,6 +772,7 @@ public class ChromeDriverAgent {
 			ExpectedConditions.visibilityOf(driver.findElement(By.cssSelector("body"))));
 
 		try {
+
 			new FluentWait<WebDriver>(driver)
 					.withTimeout(10, TimeUnit.SECONDS)
 					.pollingEvery(settleCondition.getSettleTime(), TimeUnit.MILLISECONDS)
@@ -778,7 +780,7 @@ public class ChromeDriverAgent {
 					.until(settleCondition);
 
 		} catch (Exception e) {
-			logger.error("Wait page load error, ", e);
+			logger.error("Wait page load error, {}", e.getMessage());
 		}
 
 		String readyState = driver.executeScript("return document.readyState").toString();

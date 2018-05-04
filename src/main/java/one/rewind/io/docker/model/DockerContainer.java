@@ -59,7 +59,7 @@ public abstract class DockerContainer implements RemoteShell {
 	public String exec(String cmd) {
 		String output = "";
 		if(host != null) {
-			output = host.exec("docker exec " + name + " " + cmd);
+			output = host.exec("docker exec " + name + " /bin/sh -c \"" + cmd + "\"");
 		}
 		return output;
 	}

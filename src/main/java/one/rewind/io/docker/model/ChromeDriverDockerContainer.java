@@ -41,14 +41,16 @@ public class ChromeDriverDockerContainer extends DockerContainer{
 	public ChromeDriverDockerContainer() {}
 
 	/**
-	 * @param ip
+	 *
+	 * @param host
 	 * @param name
 	 * @param seleniumPort
 	 * @param vncPort
 	 */
-	public ChromeDriverDockerContainer(String ip, String name, int seleniumPort, int vncPort) {
+	public ChromeDriverDockerContainer(DockerHost host, String name, int seleniumPort, int vncPort) {
 
-		this.ip = ip;
+		this.host = host;
+		this.ip = host.ip;
 		this.name = name;
 		this.imageName = DEFAULT_IMAGE_NAME;
 		this.seleniumPort = seleniumPort;
@@ -56,14 +58,17 @@ public class ChromeDriverDockerContainer extends DockerContainer{
 	}
 
 	/**
-	 * @param ip
+	 *
+	 * @param host
 	 * @param name
+	 * @param imageName
 	 * @param seleniumPort
 	 * @param vncPort
 	 */
-	public ChromeDriverDockerContainer(String ip, String name, String imageName, int seleniumPort, int vncPort) {
+	public ChromeDriverDockerContainer(DockerHost host, String name, String imageName, int seleniumPort, int vncPort) {
 
-		this.ip = ip;
+		this.host = host;
+		this.ip = host.ip;
 		this.name = name;
 		this.imageName = imageName; // selenium/standalone-chrome-debug
 		this.seleniumPort = seleniumPort;
@@ -84,9 +89,9 @@ public class ChromeDriverDockerContainer extends DockerContainer{
 		if (host != null) {
 
 			String output = host.exec(cmd);
-
 			// TODO 根据output 判断是否执行成功
 			DockerHost.logger.info(output);
+
 			status = Status.IDLE;
 		} else {
 			throw new Exception("DockerHost is null");
@@ -109,7 +114,6 @@ public class ChromeDriverDockerContainer extends DockerContainer{
 	 * @throws MalformedURLException
 	 */
 	public URL getRemoteAddress() throws MalformedURLException {
-		System.err.println(seleniumPort);
 		return new URL("http://" + ip + ":" + seleniumPort + "/wd/hub");
 	}
 }

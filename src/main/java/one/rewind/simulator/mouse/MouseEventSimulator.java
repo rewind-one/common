@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class MouseEventSimulator {
 
-	private static final Logger logger = LogManager.getLogger(MouseEventTracker.class.getName());
+	public static final Logger logger = LogManager.getLogger(MouseEventTracker.class.getName());
 
 	//
 	public List<Action> actions;
@@ -87,6 +87,8 @@ public class MouseEventSimulator {
 		try {
 
 			bot = new Robot();
+
+			bot.mouseMove(actions.get(0).x, actions.get(0).y);
 
 			long ts = 0;
 

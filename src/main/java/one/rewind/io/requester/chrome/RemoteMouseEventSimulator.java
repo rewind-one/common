@@ -30,9 +30,11 @@ public class RemoteMouseEventSimulator extends MouseEventSimulator {
 	 */
 	public String buildShellCmd() {
 
-		String cmd = null;
+		String cmd = "";
 
-		cmd += "sleep " + (float) actions.get(0).time/1000 + "\n";
+		cmd += "xdotool mousemove " + actions.get(0).x + " " + actions.get(0).y  + "; ";
+
+		cmd += "sleep " + (float) actions.get(0).time/1000 + ";";
 
 		for(int i=0; i<actions.size(); i++) {
 
@@ -40,25 +42,25 @@ public class RemoteMouseEventSimulator extends MouseEventSimulator {
 
 			// 按下鼠标左键
 			if(action.type.equals(Action.Type.Press)) {
-				cmd += "xdotool mousedown 1\n";
+				cmd += "xdotool mousedown 1;";
 			}
 			// 释放鼠标左键
 			else if(action.type.equals(Action.Type.Release)) {
-				cmd += "xdotool mouseup 1\n";
+				cmd += "xdotool mouseup 1;";
 			}
 			// 移动鼠标
 			else if(action.type.equals(Action.Type.Move)) {
-				cmd += "xdotool mouseup 1\n";
+				cmd += "xdotool mouseup 1;";
 			}
 			// 拖拽
 			else {
-				cmd += "xdotool mousemove " + action.x + " " + action.y  + "\n";
+				cmd += "xdotool mousemove " + action.x + " " + action.y  + ";";
 			}
 
 			if(i < actions.size() - 1) {
 
 				float sleepTime = ((float) (actions.get(i+1).time - action.time)) / 1000;
-				cmd += "sleep " + (float) sleepTime/1000 + "\n";
+				cmd += "sleep " + (float) sleepTime/1000 + ";";
 			}
 		}
 
@@ -71,6 +73,8 @@ public class RemoteMouseEventSimulator extends MouseEventSimulator {
 	 */
 	public void procActions() {
 
-		remoteShell.exec(buildShellCmd());
+		String output = remoteShell.exec(buildShellCmd());
+
+		logger.info(output);
 	}
 }

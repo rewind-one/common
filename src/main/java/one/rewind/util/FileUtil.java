@@ -91,9 +91,10 @@ public class FileUtil {
 		try {
 
 			// 文件夹不存在创建文件夹
-			if(fileName.contains("/")) {
+			if(fileName.contains("/|\\")) {
 
-				String folder_path = fileName.replaceAll("/[^/]+?$", "");
+				String folder_path = fileName.replaceAll("/[^/]+?$", "")
+						.replaceAll("\\[^\\]+?$", "");
 
 				if (folder_path.length() > 0) {
 

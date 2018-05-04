@@ -11,13 +11,9 @@ import one.rewind.io.ssh.SshManager;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.redisson.api.RLock;
 
 import java.io.File;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
-
-import static one.rewind.db.RedissonAdapter.redisson;
 
 @DBName(value = "crawler")
 @DatabaseTable(tableName = "docker_hosts")
@@ -102,6 +98,18 @@ public class DockerHost {
 
 	/**
 	 *
+	 */
+	public void delAllDockerContainers() {
+
+		String cmd = "docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)\n";
+
+		String output = this.exec(cmd);
+
+		logger.info(output);
+	}
+
+	/**
+	 *
 	 * @return
 	 * @throws Exception
 	 */
@@ -136,7 +144,7 @@ public class DockerHost {
 	 *
 	 * @throws Exception
 	 */
-	public void createChromeDriverDockerContainer() throws Exception {
+	public ChromeDriverDockerContainer createChromeDriverDockerContainer() throws Exception {
 
 		ChromeDriverDockerContainer container = null;
 
@@ -146,15 +154,24 @@ public class DockerHost {
 		int vncPort = (ChromeDriverDockerContainer.VNC_BEGIN_PORT + currentContainerNum);
 		String containerName = "ChromeContainer-" + this.ip + "-" + currentContainerNum;
 
-		container = new ChromeDriverDockerContainer(this.ip, containerName, seleniumPort, vncPort);
+		container = new ChromeDriverDockerContainer(this, containerName, seleniumPort, vncPort);
 		container.create();
-		container.insert();
+
+		return container;
 	}
+
+	public int addContainerNum() throws Exception {
+
+		this.container_num ++;
+
+		return this.container_num;
+	}
+
 
 	/**
 	 * 统计container数量
 	 */
-	public int addContainerNum() throws Exception {
+	/*public int addContainerNum() throws Exception {
 
 		RLock lock = redisson.getLock("Docker-Host-Access-Lock-" + ip);
 
@@ -170,7 +187,12 @@ public class DockerHost {
 		lock.unlock();
 
 		return this.container_num;
+	}*/
 
+	public int minusContainerNum() throws Exception {
+		this.container_num --;
+
+		return this.container_num;
 	}
 
 	/**
@@ -178,7 +200,7 @@ public class DockerHost {
 	 * @return
 	 * @throws Exception
 	 */
-	public int minusContainerNum() throws Exception {
+	/*public int minusContainerNum() throws Exception {
 
 		RLock lock = redisson.getLock("Docker-Host-Access-Lock-" + ip);
 
@@ -190,18 +212,6 @@ public class DockerHost {
 
 		this.container_num --;
 		this.update();
-
-		lock.unlock();
-
-		return this.container_num;
-	}
-
-	/*public int getContainerNum() throws Exception {
-
-		lock.lock(10, TimeUnit.SECONDS);
-
-		Dao<DockerHost, String> dao = DaoManager.getDao(DockerHost.class);
-		dao.refresh(this);
 
 		lock.unlock();
 

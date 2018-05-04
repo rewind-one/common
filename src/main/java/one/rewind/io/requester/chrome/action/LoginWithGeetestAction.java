@@ -14,7 +14,6 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
-import java.awt.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
@@ -87,8 +86,8 @@ public class LoginWithGeetestAction extends LoginAction {
 		int y_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().y
 				+ this.agent.getDriver().manage().window().getPosition().y + 105 + 10 + new Random().nextInt(20);
 
-		Robot bot = new Robot();
-		bot.mouseMove(x_init, y_init);
+		/*Robot bot = new Robot();
+		bot.mouseMove(x_init, y_init);*/
 
 		logger.info("x_init:{}, y_init:{}, offset:{}", x_init, y_init, offset);
 
@@ -98,6 +97,7 @@ public class LoginWithGeetestAction extends LoginAction {
 		// 初始化 RemoteMouseEventSimulator
 		MouseEventSimulator simulator;
 		if(this.agent.remoteShell != null) {
+			logger.info(this.agent.remoteAddress);
 			simulator = new RemoteMouseEventSimulator(actions, this.agent.remoteShell);
 		} else {
 			simulator = new MouseEventSimulator(actions);

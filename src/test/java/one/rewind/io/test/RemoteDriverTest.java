@@ -1,119 +1,65 @@
 package one.rewind.io.test;
 
 import net.lightbody.bmp.BrowserMobProxyServer;
-import one.rewind.io.ssh.SshManager;
+import one.rewind.io.docker.model.ChromeDriverDockerContainer;
+import one.rewind.io.docker.model.DockerHost;
 import one.rewind.io.requester.Task;
+import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverRequester;
+import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import org.junit.Test;
 
 import java.net.*;
-import java.util.concurrent.CountDownLatch;
+import java.util.ArrayList;
+import java.util.List;
 
 import static one.rewind.io.requester.chrome.ChromeDriverRequester.buildBMProxy;
 
 public class RemoteDriverTest {
 
-	static int containerCount = 1;
-
 	@Test
-	public void createDockerContainers() throws Exception {
-
-		SshManager.Host host = new SshManager.Host("10.0.0.62", 22, "root", "sdyk315pr");
-		host.connect();
-
-		CountDownLatch done = new CountDownLatch(containerCount);
-
-		for(int i_=0; i_<containerCount; i_++){
-
-			final int i = i_;
-
-			new Thread(() -> {
-
-				String cmd = "docker run -d --name ChromeContainer-"+i+" -p "+(31000 + i)+":4444 -p "+(32000 + i)+":5900 -e SCREEN_WIDTH=\"1360\" -e SCREEN_HEIGHT=\"768\" -e SCREEN_DEPTH=\"24\" selenium/standalone-chrome-debug";
-
-				String output = null;
-				try {
-					output = host.exec(cmd);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				System.err.println(output);
-
-				done.countDown();
-
-			}).start();
+	public void batchTest() throws Exception {
+		for(int i=0; i<20; i++) {
+			remoteTest();
 		}
-
-		done.await();
-	}
-
-	@Test
-	public void delAllDockerContainers() throws Exception {
-
-		SshManager.Host host = new SshManager.Host("10.0.0.62", 22, "root", "sdyk315pr");
-		host.connect();
-
-		String cmd = "docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)\n";
-
-		String output = host.exec(cmd);
-
-		System.err.println(output);
-	}
-
-	@Test
-	public void simpleTest() throws Exception {
-
-		final Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
-		final URL remoteAddress = new URL("http://10.0.0.56:4444/wd/hub");
-		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, proxy);
-
-		Task task = new Task("http://ddns.oray.com/checkip");
-
-		agent.addNewCallback(()->{
-			try {
-				agent.submit(task);
-			} catch (ChromeDriverException.IllegalStatusException e) {
-				e.printStackTrace();
-			}
-		});
-
-		agent.start();
-
-		// System.err.println(ChromeDriverRequester.REQUESTER_LOCAL_IP + ":" + agent.bmProxy_port);
-
-		System.err.println(task.getResponse().getText());
-
-		Thread.sleep(1000000);
 	}
 
 
 	@Test
 	public void remoteTest() throws Exception {
 
-		delAllDockerContainers();
+		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
+		host.delAllDockerContainers();
 
-		createDockerContainers();
+		//
+		List<ChromeDriverDockerContainer> containers = new ArrayList<>();
+		for(int i=0; i<1; i++) {
+			containers.add(host.createChromeDriverDockerContainer());
+		}
 
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
-		for(int i=0; i<containerCount; i++) {
+		//
+		for(ChromeDriverDockerContainer container : containers) {
 
-			final Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
-			final URL remoteAddress = new URL("http://10.0.0.62:" + (31000 + i) + "/wd/hub");
+			final Proxy proxy = new ProxyImpl("10.0.0.51", 59998, "tfelab", "TfeLAB2@15");
+			final URL remoteAddress = container.getRemoteAddress();
 
 			new Thread(() -> {
 				try {
 
 					proxy.validate();
 
-					ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, proxy);
+					ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy);
 					//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
 
-					Task task = new Task("http://ddns.oray.com/checkip");
+					Task task = new Task("http://zbj.com");
+					AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
+					task.addAction(new LoginWithGeetestAction(account));
 
 					agent.addNewCallback(()->{
 						try {
@@ -138,20 +84,17 @@ public class RemoteDriverTest {
 
 		}
 
-
-		for(int i=0; i<100; i++) {
+		/*for(int i=0; i<100; i++) {
 
 			// Task task = new Task("https://www.google.com.sg/search?q=1" + (1050 + i));
 
-			Task task = new Task("https://www.baidu.com/s?word=ip");
+			Task task = new Task("https://zbj.com");
 			requester.submit(task);
-		}
+		}*/
 
-		Thread.sleep(3000000);
+		Thread.sleep(600000);
 
-		requester.close();
-
-		delAllDockerContainers();
+		//requester.close();
 	}
 
 	@Test

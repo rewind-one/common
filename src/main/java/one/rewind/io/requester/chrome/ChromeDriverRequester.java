@@ -8,6 +8,7 @@ import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.Task;
 import one.rewind.io.requester.exception.ChromeDriverException;
+import one.rewind.io.ssh.RemoteShell;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -128,6 +129,7 @@ public class ChromeDriverRequester implements Runnable {
 			agents.remove(agent);
 
 			URL newRemoteAddress = null;
+			RemoteShell newRemoteShell = null;
 
 			// TODO 需要dockerMgr 终止旧容器 启动新容器
 			if(agent.remoteAddress != null) {
@@ -141,6 +143,7 @@ public class ChromeDriverRequester implements Runnable {
 
 			ChromeDriverAgent new_agent = new ChromeDriverAgent(
 					newRemoteAddress,
+					newRemoteShell,
 					agent.proxy,
 					agent.flags.toArray(new ChromeDriverAgent.Flag[agent.flags.size()])
 			);
