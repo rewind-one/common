@@ -597,10 +597,10 @@ public class Task implements Comparable<Task>{
 			}
 		}
 
-		public void buildDom() {
+		public void buildDom() throws UnsupportedEncodingException {
 
-			if(text!=null && text.length() > 0) {
-				doc = Jsoup.parse(text);
+			if(src !=null && src.length > 0) {
+				doc = Jsoup.parse(BasicRequester.autoDecode(src, encoding));
 			}
 		}
 

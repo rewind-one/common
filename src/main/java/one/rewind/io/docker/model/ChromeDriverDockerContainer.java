@@ -2,9 +2,7 @@ package one.rewind.io.docker.model;
 
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.table.DatabaseTable;
 import com.typesafe.config.Config;
-import one.rewind.db.DBName;
 import one.rewind.util.Configs;
 
 import java.net.MalformedURLException;
@@ -13,8 +11,6 @@ import java.net.URL;
 /**
  * 容器
  */
-@DBName(value = "crawler")
-@DatabaseTable(tableName = "docker_containers")
 public class ChromeDriverDockerContainer extends DockerContainer{
 
 	public static int SELENIUM_BEGIN_PORT = 31000;
