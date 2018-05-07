@@ -24,9 +24,10 @@ public class ChromeDriverAgentTest {
 	@Test
 	public void test() throws Exception {
 
-		Task t = new Task("https://www.google.com/");
+		Task t = new Task("https://www.zbj.com/");
 
 		Proxy proxy = new ProxyImpl("scisaga.net", 60103, null, null);
+		//Proxy proxy = new ProxyImpl("tpda.cc", 60202, "sdyk", "sdyk");
 
 		ChromeDriverAgent agent = new ChromeDriverAgent(proxy, ChromeDriverAgent.Flag.MITM);
 

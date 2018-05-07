@@ -28,6 +28,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.*;
+import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -48,6 +49,8 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static one.rewind.io.requester.chrome.ChromeDriverRequester.REQUESTER_LOCAL_IP;
 
@@ -765,11 +768,41 @@ public class ChromeDriverAgent {
 	 */
 	public void waitPageLoad(String url) {
 
+		/*
+		 * 自定义ExpectedCondition 判断源码中是否出现body
+		 */
+		io.appium.java_client.functions.ExpectedCondition<String> ec = new io.appium.java_client.functions.ExpectedCondition<String>() {
+
+			String regx = "body";
+
+			@Override
+			public String apply(WebDriver driver) {
+
+				Pattern p = Pattern.compile(regx);
+				Matcher m = p.matcher(driver.getPageSource());
+
+				if(m.find()) {
+					logger.info("Found " + regx);
+					return m.group();
+				}
+
+				return null;
+			}
+
+			@Override
+			public String toString() {
+				return "presence of text by: " + regx;
+			}
+		};
+
 		// TODO 追踪所报异常，throw proxy timeout exception
 		// org.openqa.selenium.TimeOutExpection
 		// 需要进行测试
-		DocumentSettleCondition<WebElement> settleCondition = new DocumentSettleCondition<>(
-			ExpectedConditions.visibilityOf(driver.findElement(By.cssSelector("body"))));
+		/*DocumentSettleCondition<WebElement> settleCondition = new DocumentSettleCondition<>(
+			ExpectedConditions.visibilityOf(driver.findElement(By.cssSelector("body"))));*/
+		DocumentSettleCondition<String> settleCondition = new DocumentSettleCondition<>(
+				ec
+		);
 
 		try {
 
