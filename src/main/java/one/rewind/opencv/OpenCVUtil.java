@@ -29,12 +29,9 @@ public class OpenCVUtil {
 		Mat sMat2 = Imgcodecs.imread(geetest2_path);
 
 		Mat mat = imageContrast(sMat1, sMat2);
-
 		List<Coordinate> list_b = getList(mat);
 
 		Mat rMat = ChangeBlock(list_b, mat);
-
-		Imgcodecs.imwrite("tmp/geetest/step-3.png", rMat);
 
 		List<Coordinate> list_all = getList(rMat);
 

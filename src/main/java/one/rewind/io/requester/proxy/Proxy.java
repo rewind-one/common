@@ -54,7 +54,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	public long use_cnt = 0;
 
 	@DatabaseField(dataType = DataType.ENUM_STRING, width = 16, canBeNull = false)
-	public Status status = Status.NORMAL;
+	public Status status = Status.Free;
 
 	@DatabaseField(dataType = DataType.BOOLEAN, canBeNull = false, defaultValue = "true")
 	public boolean enable = true;
@@ -66,7 +66,8 @@ public abstract class Proxy implements JSONable<Proxy> {
 	public Date update_time = new Date();
 
 	public enum Status {
-		NORMAL,
+		Free,
+		Busy,
 		INVALID
 	}
 
@@ -102,7 +103,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 
 		if(task.status.contains(ProxyValidator.Status.OK) ){
 			logger.warn("Proxy:{} {} good.", id, getInfo());
-			this.status = Status.NORMAL;
+			this.status = Status.Free;
 			return true;
 		} else {
 			logger.warn("Proxy:{} {} invalid.", getInfo());
@@ -124,7 +125,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 		if(task.status.contains(ProxyValidator.Status.OK)
 				&& task.status.contains(ProxyValidator.Status.Anonymous)
 				){
-			this.status = Status.NORMAL;
+			this.status = Status.Free;
 			logger.warn("Proxy:{} {} good.", id, getInfo());
 		} else {
 			this.status = Status.INVALID;
@@ -243,7 +244,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	}
 
 	public boolean isValid() {
-		return status == Status.NORMAL;
+		return status == Status.Free;
 	}
 
 	public boolean success() throws Exception {

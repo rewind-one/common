@@ -112,4 +112,27 @@ public class RemoteDriverTest {
 		System.err.println(InetAddress.getLocalHost());
 	}
 
+	@Test
+	public void ContainerTest() throws Exception {
+
+		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
+		host.delAllDockerContainers();
+		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
+		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
+		final Proxy proxy = new ProxyImpl("10.0.0.51", 59998, "tfelab", "TfeLAB2@15");
+		final URL remoteAddress = container.getRemoteAddress();
+
+		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy);
+		requester.addAgent(agent);
+
+		agent.start();
+
+		while (true) {
+			Task task = new Task("http://zbj.com");
+			agent.submit(task);
+		}
+
+	}
+
+
 }

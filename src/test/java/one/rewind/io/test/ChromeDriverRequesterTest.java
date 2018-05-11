@@ -24,7 +24,7 @@ public class ChromeDriverRequesterTest {
 
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
-		for(int i=0; i<4; i++) {
+		for(int i=0; i<1; i++) {
 
 			ChromeDriverAgent agent = new ChromeDriverAgent();
 
@@ -94,4 +94,6 @@ public class ChromeDriverRequesterTest {
 		System.err.println(ps.getPort());
 		Thread.sleep(100000);
 	}
+
+
 }

@@ -8,6 +8,8 @@ import one.rewind.txt.DateFormatUtil;
 import one.rewind.txt.NumberFormatUtil;
 
 import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
@@ -90,5 +92,13 @@ public class FormatUtilTest {
 				e.printStackTrace();
 			}
 		}
+	}
+
+
+	@Test
+	public void formatTest() {
+		float i = (float) 10000;
+		NumberFormat nf = new DecimalFormat("#.000000");
+		System.err.println(nf.format(i));
 	}
 }

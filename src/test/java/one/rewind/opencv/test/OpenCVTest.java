@@ -9,7 +9,7 @@ public class OpenCVTest {
 	@Test
 	public void testGetOffest() {
 
-		String ts = "1523537181650-44e204ce76d84476b46fa3be7bf640c4";
+		String ts = "1525761151984-d0cad68bb1524b33939c7b4c4b63444c";
 
 		String img_1_path = "tmp/geetest/geetest-1-" + ts + ".png";
 		String img_2_path = "tmp/geetest/geetest-2-" + ts + ".png";
@@ -19,4 +19,7 @@ public class OpenCVTest {
 		System.err.println(offset);
 
 	}
+
+
+
 }

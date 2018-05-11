@@ -273,7 +273,7 @@ public class ChromeDriverAgent {
 	}
 
 	/**
-	 *
+	 * 更改代理IP
 	 */
 	public class ChangeProxy implements Callable<Void> {
 
@@ -281,6 +281,7 @@ public class ChromeDriverAgent {
 
 		public ChangeProxy(one.rewind.io.requester.proxy.Proxy proxy) {
 			this.proxy = proxy;
+			ChromeDriverAgent.this.proxy = proxy;
 		}
 
 		public Void call() throws ProxyException.Failed {
@@ -295,6 +296,8 @@ public class ChromeDriverAgent {
 			}
 
 			bmProxy = ChromeDriverRequester.buildBMProxy(bmProxy_port, proxy);
+
+			logger.info("Change to {}:{}", proxy.host, proxy.port);
 
 			return null;
 		}
@@ -566,6 +569,8 @@ public class ChromeDriverAgent {
 		options.addArguments("--dns-prefetch-disable");
 		options.addArguments("--disable-gpu-watchdog");
 		options.addArguments("--disable-gpu-program-cache");
+		options.addArguments("--disable-software-rasterizer");
+		options.addArguments("--disable-gpu"); // 关闭GPU加速
 		options.addArguments("--disk-cache-dir=/dev/null");
 		options.addArguments("--disk-cache-size=1");
 		options.addArguments("--timeout=28000"); // 	Issues a stop after the specified number of milliseconds. This cancels all navigation and causes the DOMContentLoaded event to fire.
@@ -911,7 +916,6 @@ public class ChromeDriverAgent {
 					NoAlertPresentException |
 					ElementNotSelectableException |
 					NoSuchFrameException |
-					NoSuchWindowException | // 特定的window handle 无法使用
 					NoSuchElementException e) {
 				logger.error("Task script error, ", e);
 				status = Status.IDLE;
@@ -920,6 +924,10 @@ public class ChromeDriverAgent {
 			catch (org.openqa.selenium.TimeoutException e) {
 				logger.error("WebDriver command timeout, ", e);
 				status = Status.IDLE;
+			}
+			catch (NoSuchWindowException e) {
+				logger.error("Window unreachable, ", e);
+				status = Status.FAILED;
 			}
 			// chromedriver连接问题 --> 关闭
 			catch (UnreachableBrowserException e) {
@@ -995,11 +1003,42 @@ public class ChromeDriverAgent {
 	}
 
 	/**
-	 *
+	 * 切换代理
 	 * @param proxy
 	 */
 	public void changeProxy(one.rewind.io.requester.proxy.Proxy proxy) {
-		executor.submit(new ChangeProxy(proxy));
+
+		Future<Void> changeProxyFuture = executor.submit(new ChangeProxy(proxy));
+
+		try {
+
+			changeProxyFuture.get(CLOSE_TIMEOUT, TimeUnit.MILLISECONDS);
+			status = Status.IDLE;
+		}
+		catch (InterruptedException e) {
+
+			status = Status.FAILED;
+			logger.error("Change proxy interrupted. ", e);
+
+		}
+		catch (ExecutionException e) {
+
+			status = Status.FAILED;
+			logger.error("Change proxy failed. ", e.getCause());
+
+		}
+		catch (TimeoutException e) {
+
+			changeProxyFuture.cancel(true);
+			status = Status.FAILED;
+			logger.error("Change proxy failed. ", e);
+		}
+
+		if(status == Status.FAILED) {
+			stop();
+		} else if (status == Status.IDLE) {
+			runCallbacks(idleCallbacks);
+		}
 	}
 
 	/**

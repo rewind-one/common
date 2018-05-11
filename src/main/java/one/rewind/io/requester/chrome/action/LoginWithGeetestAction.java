@@ -31,6 +31,7 @@ public class LoginWithGeetestAction extends LoginAction {
 
 	public String geetestResetTipCssPath = "#password-captcha-box > div.geetest_holder.geetest_wind.geetest_radar_error > div.geetest_btn > div.geetest_radar_btn > div.geetest_radar_tip > span.geetest_reset_tip_content";
 	public String geetestRefreshButtonCssPath = "a.geetest_refresh_1";
+	//#password-captcha-box > div.geetest_holder.geetest_wind.geetest_radar_error > div.geetest_btn > div.geetest_radar_btn > div.geetest_radar_tip > span.geetest_radar_error_code
 	public String geetestRefreshTooManyErrorCssPath = "span.geetest_radar_error_code";
 
 	transient int geetest_retry_count = 0;
@@ -79,32 +80,34 @@ public class LoginWithGeetestAction extends LoginAction {
 	 */
 	private void mouseManipulate(int offset, int sys_error_x) throws Exception {
 
-		// TODO
-		int x_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().x
-				+ 15 + new Random().nextInt(20);
+		if (offset != -1) {
+			// TODO
+			int x_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().x
+					+ 15 + new Random().nextInt(20);
 
-		int y_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().y
-				+ this.agent.getDriver().manage().window().getPosition().y + 105 + 10 + new Random().nextInt(20);
+			int y_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().y
+					+ this.agent.getDriver().manage().window().getPosition().y + 105 + 10 + new Random().nextInt(20);
 
 		/*Robot bot = new Robot();
 		bot.mouseMove(x_init, y_init);*/
 
-		logger.info("x_init:{}, y_init:{}, offset:{}", x_init, y_init, offset);
+			logger.info("x_init:{}, y_init:{}, offset:{}", x_init, y_init, offset);
 
-		// Build Actions
-		List<Action> actions = MouseEventModeler.getInstance().getActions(x_init, y_init,offset + sys_error_x);
+			// Build Actions
+			List<Action> actions = MouseEventModeler.getInstance().getActions(x_init, y_init, offset + sys_error_x);
 
-		// 初始化 RemoteMouseEventSimulator
-		MouseEventSimulator simulator;
-		if(this.agent.remoteShell != null) {
-			logger.info(this.agent.remoteAddress);
-			simulator = new RemoteMouseEventSimulator(actions, this.agent.remoteShell);
-		} else {
-			simulator = new MouseEventSimulator(actions);
+			// 初始化 RemoteMouseEventSimulator
+			MouseEventSimulator simulator;
+			if (this.agent.remoteShell != null) {
+				logger.info(this.agent.remoteAddress);
+				simulator = new RemoteMouseEventSimulator(actions, this.agent.remoteShell);
+			} else {
+				simulator = new MouseEventSimulator(actions);
+			}
+
+			// 执行事件
+			simulator.procActions();
 		}
-
-		// 执行事件
-		simulator.procActions();
 	}
 
 	/**
@@ -159,6 +162,7 @@ public class LoginWithGeetestAction extends LoginAction {
 		// Thread.sleep(3000);
 
 		// 此时验证DIV已经打开
+
 		mouseManipulate(getOffset(), 0);
 
 		geetest_retry_count++;
@@ -168,7 +172,7 @@ public class LoginWithGeetestAction extends LoginAction {
 			agent.getElementWait(geetestSuccessMsgCssPath);
 		} catch (org.openqa.selenium.TimeoutException e) {
 			// 重试
-			if(geetest_retry_count < 5) {
+			if(geetest_retry_count < 100) {
 				bypass();
 			} else {
 				throw new ByPassErrorException();

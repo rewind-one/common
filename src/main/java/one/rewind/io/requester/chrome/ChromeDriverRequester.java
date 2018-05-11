@@ -21,9 +21,9 @@ import java.util.concurrent.*;
 
 public class ChromeDriverRequester implements Runnable {
 
-	protected static ChromeDriverRequester instance;
+	public static ChromeDriverRequester instance;
 
-	private static final Logger logger = LogManager.getLogger(ChromeDriverRequester.class.getName());
+	public static final Logger logger = LogManager.getLogger(ChromeDriverRequester.class.getName());
 
 	// 连接超时时间
 	public static int CONNECT_TIMEOUT;
@@ -35,7 +35,7 @@ public class ChromeDriverRequester implements Runnable {
 
 	public static String REQUESTER_LOCAL_IP;
 
-	private static ExecutorService requester_executor;
+	public static ExecutorService requester_executor;
 
 	// 配置设定
 	static {
@@ -72,7 +72,7 @@ public class ChromeDriverRequester implements Runnable {
 
 	private Map<String, Set<ChromeDriverAgent>> account_agents_map;
 
-	private List<ChromeDriverAgent> agents = new LinkedList<>();
+	public List<ChromeDriverAgent> agents = new LinkedList<>();
 
 	public PriorityBlockingQueue<Task> queue = new PriorityBlockingQueue<>();
 
@@ -98,7 +98,7 @@ public class ChromeDriverRequester implements Runnable {
 	/**
 	 *
 	 */
-	private ChromeDriverRequester() {
+	public ChromeDriverRequester() {
 
 		executor.setThreadFactory(new ThreadFactoryBuilder()
 				.setNameFormat("ChromeDriverRequester-Worker-%d").build());
@@ -134,11 +134,8 @@ public class ChromeDriverRequester implements Runnable {
 			// TODO 需要dockerMgr 终止旧容器 启动新容器
 			if(agent.remoteAddress != null) {
 
-				// 终止旧容器
-
-				// 启动新容器
-				//newRemoteAddress = ...;
-
+				newRemoteAddress = agent.remoteAddress;
+				newRemoteShell = agent.remoteShell;
 			}
 
 			ChromeDriverAgent new_agent = new ChromeDriverAgent(
@@ -150,6 +147,7 @@ public class ChromeDriverRequester implements Runnable {
 
 			try {
 				addAgent(new_agent);
+				new_agent.start();
 			} catch (ChromeDriverException.IllegalStatusException e) {
 				logger.error("Can't add callbacks for new agent, ", e);
 			}

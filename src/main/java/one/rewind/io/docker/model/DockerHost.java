@@ -3,7 +3,9 @@ package one.rewind.io.docker.model;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
 import com.typesafe.config.Config;
+import one.rewind.db.DBName;
 import one.rewind.db.DaoManager;
 import one.rewind.io.ssh.SshManager;
 import one.rewind.util.Configs;
@@ -12,7 +14,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.Date;
-
 public class DockerHost {
 
 	public static final Logger logger = LogManager.getLogger(DockerHost.class.getName());
@@ -109,15 +110,9 @@ public class DockerHost {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean insert() throws Exception{
-
-		Dao<DockerHost, String> dao = DaoManager.getDao(DockerHost.class);
-
-		if (dao.create(this) == 1) {
-			return true;
-		}
-
-		return false;
+	public boolean insert() throws Exception {
+		Dao dao = DaoManager.getDao(this.getClass());
+		return dao.create(this) == 1;
 	}
 
 	/**
@@ -126,17 +121,12 @@ public class DockerHost {
 	 * @throws Exception
 	 */
 	public boolean update() throws Exception {
-
-		Dao<DockerHost, String> dao = DaoManager.getDao(DockerHost.class);
-
-		if (dao.update(this) == 1) {
-			return true;
-		}
-
-		return false;
+		Dao dao = DaoManager.getDao(this.getClass());
+		return dao.update(this) == 1;
 	}
 
 	/**
+	 *
 	 *
 	 * @throws Exception
 	 */

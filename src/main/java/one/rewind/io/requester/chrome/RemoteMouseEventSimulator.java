@@ -5,6 +5,8 @@ import one.rewind.simulator.mouse.Action;
 import one.rewind.simulator.mouse.MouseEventSimulator;
 
 import java.awt.*;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.List;
 
 /**
@@ -29,6 +31,8 @@ public class RemoteMouseEventSimulator extends MouseEventSimulator {
 	 * @return
 	 */
 	public String buildShellCmd() {
+
+		NumberFormat nf = new DecimalFormat("0.000");
 
 		String cmd = "";
 
@@ -60,7 +64,8 @@ public class RemoteMouseEventSimulator extends MouseEventSimulator {
 			if(i < actions.size() - 1) {
 
 				float sleepTime = ((float) (actions.get(i+1).time - action.time)) / 1000;
-				cmd += "sleep " + (float) sleepTime/1000 + ";";
+
+				cmd += "sleep " + nf.format(sleepTime) + "; ";
 			}
 		}
 

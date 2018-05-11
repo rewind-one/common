@@ -493,7 +493,7 @@ public class MouseEventModeler {
 				logger.info("\tX not change.");
 			}
 			else {
-				logger.warn("x_sum_ub:{}, x_sum_lb:{}", x_sum_ub, x_sum_lb);
+				logger.info("x_sum_ub:{}, x_sum_lb:{}", x_sum_ub, x_sum_lb);
 				throw new MorphException();
 			}
 
