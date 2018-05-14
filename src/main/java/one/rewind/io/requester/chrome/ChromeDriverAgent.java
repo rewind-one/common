@@ -146,7 +146,7 @@ public class ChromeDriverAgent {
 		FAILED // 失败状态
 	}
 
-	private List<Runnable> newCallbacks = new ArrayList<>();
+	List<Runnable> newCallbacks = new ArrayList<>();
 
 	private List<Runnable> idleCallbacks = new ArrayList<>();
 

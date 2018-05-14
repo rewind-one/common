@@ -5,6 +5,7 @@ import com.typesafe.config.Config;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.auth.AuthType;
+import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.Task;
 import one.rewind.io.requester.exception.ChromeDriverException;
@@ -15,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
@@ -109,6 +111,14 @@ public class ChromeDriverRequester implements Runnable {
 
 	/**
 	 *
+	 * @return
+	 */
+	private ChromeDriverDockerContainer getChromeDriverDockerContainer() {
+		return null;
+	}
+
+	/**
+	 *
 	 * @param agent
 	 */
 	public void addAgent(ChromeDriverAgent agent) throws ChromeDriverException.IllegalStatusException {
@@ -131,11 +141,23 @@ public class ChromeDriverRequester implements Runnable {
 			URL newRemoteAddress = null;
 			RemoteShell newRemoteShell = null;
 
-			// TODO 需要dockerMgr 终止旧容器 启动新容器
+			// 需要 dockerMgr 终止旧容器 启动新容器
 			if(agent.remoteAddress != null) {
 
-				newRemoteAddress = agent.remoteAddress;
-				newRemoteShell = agent.remoteShell;
+				ChromeDriverDockerContainer container = getChromeDriverDockerContainer();
+
+				if(container != null) {
+					try {
+						newRemoteAddress = container.getRemoteAddress();
+					} catch (MalformedURLException e) {
+						logger.error(e);
+					}
+					newRemoteShell = container;
+				} else {
+					// 没有必要创建新的agent
+					// agent会越用越少
+					return;
+				}
 			}
 
 			ChromeDriverAgent new_agent = new ChromeDriverAgent(
@@ -144,6 +166,13 @@ public class ChromeDriverRequester implements Runnable {
 					agent.proxy,
 					agent.flags.toArray(new ChromeDriverAgent.Flag[agent.flags.size()])
 			);
+
+			// 把原来的newCallbacks复制到新agent
+			List<Runnable> newCallbacks = agent.newCallbacks;
+			newCallbacks.remove(newCallbacks.size()-1);
+			if(newCallbacks.size() > 0) {
+				new_agent.newCallbacks = newCallbacks;
+			}
 
 			try {
 				addAgent(new_agent);
