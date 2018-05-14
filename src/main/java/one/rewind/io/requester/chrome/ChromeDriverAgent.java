@@ -1,5 +1,6 @@
 package one.rewind.io.requester.chrome;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.client.ClientUtil;
@@ -28,7 +29,6 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.*;
-import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -197,8 +197,6 @@ public class ChromeDriverAgent {
 
 				instances.add(ChromeDriverAgent.this);
 			}
-
-			name = "ChromeDriverAgent-" + instances.size();
 
 			logger.info("New chromedriver name:[{}].", name);
 
@@ -403,6 +401,11 @@ public class ChromeDriverAgent {
 		this.remoteShell = remoteShell;
 		this.proxy = proxy;
 		this.flags = new HashSet<Flag>(Arrays.asList(flags));
+
+		name = "ChromeDriverAgent-" + instances.size();
+
+		executor.setThreadFactory(new ThreadFactoryBuilder()
+				.setNameFormat(name + "-%d").build());
 	}
 
 	/**

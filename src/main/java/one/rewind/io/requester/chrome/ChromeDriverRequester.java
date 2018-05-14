@@ -107,6 +107,9 @@ public class ChromeDriverRequester implements Runnable {
 
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
+		post_executor.setThreadFactory(new ThreadFactoryBuilder()
+				.setNameFormat("ChromeDriverRequester-PostWorker-%d").build());
+
 	}
 
 	/**
