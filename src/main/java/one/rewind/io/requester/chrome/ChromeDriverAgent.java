@@ -657,11 +657,11 @@ public class ChromeDriverAgent {
 	 * @param startPoint
 	 */
 	public void setPosition(Point startPoint) {
-
 		if(driver != null) {
 			/*Random r = new Random();
 			startPoint = new Point(60 * r.nextInt(10), 40 * r.nextInt(10));*/
 			driver.manage().window().setPosition(startPoint);
+
 		}
 	}
 
