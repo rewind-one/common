@@ -144,13 +144,29 @@ public class ChromeDriverRequester implements Runnable {
 			URL newRemoteAddress = null;
 			RemoteShell newRemoteShell = null;
 
-			// 需要 dockerMgr 终止旧容器 启动新容器
+			// 需要 dockerMgr 终止旧容器
 			if(agent.remoteAddress != null) {
 
+				// 终止旧容器
+				if(agent.remoteShell instanceof ChromeDriverDockerContainer) {
+
+					try {
+						logger.info("Remote container: {}", ((ChromeDriverDockerContainer) agent.remoteShell).getRemoteAddress());
+						((ChromeDriverDockerContainer) agent.remoteShell).rm();
+					} catch (Exception e) {
+						logger.error(e);
+					}
+
+				} else {
+					return;
+				}
+
+				// 启动新容器
 				ChromeDriverDockerContainer container = getChromeDriverDockerContainer();
 
 				if(container != null) {
 					try {
+						logger.info("Set new remote address: {}", container.getRemoteAddress());
 						newRemoteAddress = container.getRemoteAddress();
 					} catch (MalformedURLException e) {
 						logger.error(e);

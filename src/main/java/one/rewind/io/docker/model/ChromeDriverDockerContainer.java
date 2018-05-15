@@ -11,7 +11,7 @@ import java.net.URL;
 /**
  * 容器
  */
-public class ChromeDriverDockerContainer extends DockerContainer{
+public class ChromeDriverDockerContainer extends DockerContainer {
 
 	public static int SELENIUM_BEGIN_PORT = 31000;
 	public static int VNC_BEGIN_PORT = 32000;
