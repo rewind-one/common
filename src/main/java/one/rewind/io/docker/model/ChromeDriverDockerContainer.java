@@ -94,11 +94,30 @@ public class ChromeDriverDockerContainer extends DockerContainer {
 		}
 	}
 
+	/**
+	 *
+	 * @throws Exception
+	 */
+	public void rebuild() throws Exception {
+		DockerHost.logger.info("Rebuild... {} {}", name, getRemoteAddress());
+		this.rm();
+		this.create();
+		DockerHost.logger.info("Rebuild {} {} done.", name, getRemoteAddress());
+	}
+
+	/**
+	 *
+	 * @throws Exception
+	 */
 	public void setIdle() throws Exception {
 		this.status = Status.IDLE;
 		this.update();
 	}
 
+	/**
+	 *
+	 * @throws Exception
+	 */
 	public void setOccupied() throws Exception {
 		this.status = Status.OCCUPIED;
 		this.update();

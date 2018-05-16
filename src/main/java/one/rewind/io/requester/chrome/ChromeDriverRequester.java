@@ -116,7 +116,7 @@ public class ChromeDriverRequester implements Runnable {
 	 *
 	 * @return
 	 */
-	private ChromeDriverDockerContainer getChromeDriverDockerContainer() {
+	public ChromeDriverDockerContainer getChromeDriverDockerContainer() {
 		return null;
 	}
 
@@ -139,10 +139,11 @@ public class ChromeDriverRequester implements Runnable {
 
 		}).addTerminatedCallback(() -> {
 
-			agents.remove(agent);
+			// agents.remove(agent);
+			// idleAgentQueue.remove(agent);
 
-			URL newRemoteAddress = null;
-			RemoteShell newRemoteShell = null;
+			/*URL newRemoteAddress = null;
+			RemoteShell newRemoteShell = null;*/
 
 			// 需要 dockerMgr 终止旧容器
 			if(agent.remoteAddress != null) {
@@ -152,7 +153,7 @@ public class ChromeDriverRequester implements Runnable {
 
 					try {
 						logger.info("Remote container: {}", ((ChromeDriverDockerContainer) agent.remoteShell).getRemoteAddress());
-						((ChromeDriverDockerContainer) agent.remoteShell).rm();
+						((ChromeDriverDockerContainer) agent.remoteShell).rebuild();
 					} catch (Exception e) {
 						logger.error(e);
 					}
@@ -162,7 +163,7 @@ public class ChromeDriverRequester implements Runnable {
 				}
 
 				// 启动新容器
-				ChromeDriverDockerContainer container = getChromeDriverDockerContainer();
+				/*ChromeDriverDockerContainer container = getChromeDriverDockerContainer();
 
 				if(container != null) {
 					try {
@@ -176,10 +177,23 @@ public class ChromeDriverRequester implements Runnable {
 					// 没有必要创建新的agent
 					// agent会越用越少
 					return;
-				}
+				}*/
 			}
 
-			ChromeDriverAgent new_agent = new ChromeDriverAgent(
+			/*agent.remoteAddress = newRemoteAddress;
+			agent.remoteShell = newRemoteShell;*/
+
+			new Thread(
+					()->{
+						try {
+							agent.start();
+						} catch (ChromeDriverException.IllegalStatusException e) {
+							logger.error(e);
+						}
+					}
+			).start();
+
+			/*ChromeDriverAgent new_agent = new ChromeDriverAgent(
 					newRemoteAddress,
 					newRemoteShell,
 					agent.proxy,
@@ -198,7 +212,7 @@ public class ChromeDriverRequester implements Runnable {
 				new_agent.start();
 			} catch (ChromeDriverException.IllegalStatusException e) {
 				logger.error("Can't add callbacks for new agent, ", e);
-			}
+			}*/
 
 		});
 	}
@@ -306,12 +320,12 @@ public class ChromeDriverRequester implements Runnable {
 	/**
 	 *
 	 */
-	public void close() {
+	public void close() throws ChromeDriverException.IllegalStatusException {
 
 		executor.shutdown();
 		for(ChromeDriverAgent agent : agents) {
 			agent.clearTerminatedCallbacks();
-			agent.stop();
+			agent.destroy();
 		}
 	}
 

@@ -127,30 +127,29 @@ public class ChromeDriverAgent {
 	private LinkedBlockingQueue queue = new LinkedBlockingQueue<Runnable>();
 
 	// Executor
-	private ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, queue);
+	private ThreadPoolExecutor executor;
 
 	volatile Status status = Status.STARTING;
 
-	volatile boolean starting = false;
-
-	volatile boolean stopping = false;
 
 	// Agent状态信息
 	public enum Status {
+		INIT, // 新创建
 		STARTING, // 启动中
-		NEW, // 新创建
+		NEW, // 启动完成，待使用 TODO 需要改名 存在混淆
 		BUSY, // 处理采集任务
 		IDLE, // 空闲
 		STOPPING, // 终止中
 		TERMINATED, // 停止
-		FAILED // 失败状态
+		FAILED, // 失败状态
+		DESTROYED
 	}
 
 	List<Runnable> newCallbacks = new ArrayList<>();
 
 	private List<Runnable> idleCallbacks = new ArrayList<>();
 
-	private List<Runnable> terminatedCallbacks = new ArrayList<>();
+	List<Runnable> terminatedCallbacks = new ArrayList<>();
 
 	private List<Runnable> accountFailedCallbacks = new ArrayList<>();
 
@@ -175,7 +174,7 @@ public class ChromeDriverAgent {
 
 		public Boolean call() throws Exception {
 
-			logger.info("Init...");
+			logger.info("Init...{}", Thread.currentThread().getName());
 
 			capabilities = buildCapabilities();
 
@@ -184,21 +183,14 @@ public class ChromeDriverAgent {
 			File userDir = new File("chrome_user_dir/" + this.hashCode());
 			logger.info("User dir: {}", userDir.getAbsolutePath());
 
-			synchronized (instances) {
-
-				// 启动 Chrome
-				if(remoteAddress != null) {
-					driver = new RemoteWebDriver(remoteAddress, capabilities);
-				} else {
-					driver = new ChromeDriver(capabilities);
-				}
-
-				logger.info("Create chromedriver done.");
-
-				instances.add(ChromeDriverAgent.this);
+			// 启动 Chrome
+			if(remoteAddress != null) {
+				driver = new RemoteWebDriver(remoteAddress, capabilities);
+			} else {
+				driver = new ChromeDriver(capabilities);
 			}
 
-			logger.info("New chromedriver name:[{}].", name);
+			logger.info("Create chromedriver: [{}] done.", name);
 
 			// 设置脚本运行超时参数
 			driver.manage().timeouts().setScriptTimeout(10, TimeUnit.SECONDS);
@@ -259,9 +251,9 @@ public class ChromeDriverAgent {
 				driver.quit();
 				driver = null;
 
-				synchronized(instances) {
+				/*synchronized(instances) {
 					instances.remove(this);
-				}
+				}*/
 
 				logger.info("[{}] stopping.", name);
 			}
@@ -356,7 +348,7 @@ public class ChromeDriverAgent {
 
 			task.setDuration();
 			// 停止页面加载
-			driver.executeScript("window.stop()");
+			// driver.executeScript("window.stop()");
 
 			return null;
 		}
@@ -395,28 +387,34 @@ public class ChromeDriverAgent {
 	 */
 	public ChromeDriverAgent(URL remoteAddress, RemoteShell remoteShell, one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
 
-		status = Status.STARTING;
+		status = Status.INIT;
 
 		this.remoteAddress = remoteAddress;
 		this.remoteShell = remoteShell;
 		this.proxy = proxy;
 		this.flags = new HashSet<Flag>(Arrays.asList(flags));
 
+		instances.add(ChromeDriverAgent.this);
 		name = "ChromeDriverAgent-" + instances.size();
 
+		// 初始化单线程执行器
+		executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, queue);
 		executor.setThreadFactory(new ThreadFactoryBuilder()
 				.setNameFormat(name + "-%d").build());
 	}
 
 	/**
-	 *
+	 * 启动
 	 */
-	public ChromeDriverAgent start() {
+	public synchronized ChromeDriverAgent start() throws ChromeDriverException.IllegalStatusException {
 
-		if(starting) return this;
+		if(!(status == Status.INIT || status == Status.TERMINATED)) {
+			throw new ChromeDriverException.IllegalStatusException();
+		}
 
-		starting = true;
+		status = Status.STARTING;
 
+		//
 		Future<Boolean> initFuture = executor.submit(new Init());
 
 		try {
@@ -462,11 +460,11 @@ public class ChromeDriverAgent {
 	/**
 	 * 停止
 	 */
-	public void stop() {
+	public synchronized void stop() throws ChromeDriverException.IllegalStatusException {
 
-		if(stopping) return;
-
-		stopping = true;
+		if(! (status == Status.IDLE || status == Status.NEW || status == Status.BUSY || status == Status.FAILED) ) {
+			throw new ChromeDriverException.IllegalStatusException();
+		}
 
 		status = Status.STOPPING;
 
@@ -499,8 +497,23 @@ public class ChromeDriverAgent {
 		}
 
 		runCallbacks(terminatedCallbacks);
+	}
+
+	/**
+	 *
+	 * @throws ChromeDriverException.IllegalStatusException
+	 */
+	public synchronized void destroy() throws ChromeDriverException.IllegalStatusException {
+
+		terminatedCallbacks.clear();
+
+		stop();
 
 		executor.shutdown();
+
+		instances.remove(ChromeDriverAgent.this);
+
+		status = Status.DESTROYED;
 	}
 
 	/**
@@ -993,7 +1006,7 @@ public class ChromeDriverAgent {
 
 			status = Status.IDLE;
 			taskFuture.cancel(true);
-			logger.error("Task timeout. ", e);
+			logger.error("{} Task timeout. ", name, e);
 
 		}
 
@@ -1038,7 +1051,11 @@ public class ChromeDriverAgent {
 		}
 
 		if(status == Status.FAILED) {
-			stop();
+			try {
+				stop();
+			} catch (ChromeDriverException.IllegalStatusException e) {
+				logger.error(e);
+			}
 		} else if (status == Status.IDLE) {
 			runCallbacks(idleCallbacks);
 		}
@@ -1062,8 +1079,9 @@ public class ChromeDriverAgent {
 	 */
 	public ChromeDriverAgent addNewCallback(Runnable callback) throws ChromeDriverException.IllegalStatusException {
 
-		if(status != Status.STARTING) throw new ChromeDriverException.IllegalStatusException();
+		if(status != Status.INIT) throw new ChromeDriverException.IllegalStatusException();
 
+		// TODO
 		newCallbacks.add(0, callback);
 		return this;
 	}
