@@ -131,6 +131,8 @@ public class ChromeDriverAgent {
 
 	volatile Status status = Status.STARTING;
 
+	int cycle = 0;
+
 
 	// Agent状态信息
 	public enum Status {
@@ -174,7 +176,7 @@ public class ChromeDriverAgent {
 
 		public Boolean call() throws Exception {
 
-			logger.info("Init...{}", Thread.currentThread().getName());
+			logger.info("Init...");
 
 			capabilities = buildCapabilities();
 
@@ -190,7 +192,7 @@ public class ChromeDriverAgent {
 				driver = new ChromeDriver(capabilities);
 			}
 
-			logger.info("Create chromedriver: [{}] done.", name);
+			logger.info("Create chromedriver: [{}] done, cycle:{}", name, ++cycle);
 
 			// 设置脚本运行超时参数
 			driver.manage().timeouts().setScriptTimeout(10, TimeUnit.SECONDS);
@@ -255,7 +257,7 @@ public class ChromeDriverAgent {
 					instances.remove(this);
 				}*/
 
-				logger.info("[{}] stopping.", name);
+				logger.info("[{}] stopped.", name);
 			}
 
 			return null;
@@ -394,7 +396,10 @@ public class ChromeDriverAgent {
 		this.proxy = proxy;
 		this.flags = new HashSet<Flag>(Arrays.asList(flags));
 
-		instances.add(ChromeDriverAgent.this);
+		synchronized (instances) {
+			instances.add(ChromeDriverAgent.this);
+		}
+
 		name = "ChromeDriverAgent-" + instances.size();
 
 		// 初始化单线程执行器
@@ -424,9 +429,9 @@ public class ChromeDriverAgent {
 			status = Status.NEW;
 
 			if(initSuccess) {
-				logger.info("INIT done.");
+				logger.info("INIT:{} done.", cycle);
 			} else {
-				logger.error("INIT done, Auto scripts exec failed.");
+				logger.error("INIT:{} done, Auto scripts exec failed.", cycle);
 			}
 
 			// 执行状态回调函数
@@ -485,7 +490,7 @@ public class ChromeDriverAgent {
 		}
 		catch (ExecutionException e) {
 
-			status = Status.FAILED;
+			status = Status.TERMINATED;
 			logger.error("Stop failed. ", e.getCause());
 
 		}

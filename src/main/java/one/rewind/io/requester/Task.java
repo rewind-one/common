@@ -16,7 +16,6 @@ import one.rewind.txt.URLUtil;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.openqa.selenium.remote.UnreachableBrowserException;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -367,9 +366,7 @@ public class Task implements Comparable<Task>{
 	 * @throws AccountException.Frozen
 	 */
 	public Task validate() throws ProxyException.Failed, AccountException.Failed, AccountException.Frozen {
-		//return this;
-
-		throw new UnreachableBrowserException("bad--");
+		return this;
 	}
 
 	public String toJSON() {

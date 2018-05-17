@@ -9,15 +9,12 @@ import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.Task;
 import one.rewind.io.requester.exception.ChromeDriverException;
-import one.rewind.io.ssh.RemoteShell;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -148,21 +145,20 @@ public class ChromeDriverRequester implements Runnable {
 			// 需要 dockerMgr 终止旧容器
 			if(agent.remoteAddress != null) {
 
-				// 终止旧容器
+				// 重启旧容器
 				if(agent.remoteShell instanceof ChromeDriverDockerContainer) {
 
 					try {
-						logger.info("Remote container: {}", ((ChromeDriverDockerContainer) agent.remoteShell).getRemoteAddress());
+						// logger.info("Remote container: {}", ((ChromeDriverDockerContainer) agent.remoteShell).getRemoteAddress());
 						((ChromeDriverDockerContainer) agent.remoteShell).rebuild();
 					} catch (Exception e) {
-						logger.error(e);
+						logger.error("Restart container error, ", e);
 					}
 
 				} else {
 					return;
 				}
 
-				// 启动新容器
 				/*ChromeDriverDockerContainer container = getChromeDriverDockerContainer();
 
 				if(container != null) {
@@ -188,7 +184,7 @@ public class ChromeDriverRequester implements Runnable {
 						try {
 							agent.start();
 						} catch (ChromeDriverException.IllegalStatusException e) {
-							logger.error(e);
+							logger.error("{} status:{}", agent.name, agent.status, e);
 						}
 					}
 			).start();

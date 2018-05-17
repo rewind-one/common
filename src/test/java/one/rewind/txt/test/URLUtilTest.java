@@ -1,13 +1,23 @@
 package one.rewind.txt.test;
 
+import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.Task;
 import one.rewind.txt.URLUtil;
 import org.junit.Test;
-import one.rewind.txt.URLUtil;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
 public class URLUtilTest {
+
+	@Test
+	public void test() throws MalformedURLException, URISyntaxException {
+		String url = "http://aitest.315free.com:50125/rcmd/user/d5f4111e53d34d6f8a12d60d49391af9";
+		Task t = new Task(url);
+		t.setDelete();
+		BasicRequester.getInstance().submit(t);
+		System.err.println(t.getResponse().getText());
+	}
 
 	@Test
 	public void getRootDomainNameTest() {

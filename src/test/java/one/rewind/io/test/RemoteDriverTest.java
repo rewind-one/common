@@ -139,8 +139,11 @@ public class RemoteDriverTest {
 
 		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
 		host.delAllDockerContainers();
+
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
+
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
+
 		// final Proxy proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
 		final URL remoteAddress = container.getRemoteAddress();
 		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container);
@@ -148,12 +151,11 @@ public class RemoteDriverTest {
 
 		agent.start();
 
-		while(true) {
-			Task task = new Task("http://www.baidu.com/s?wd=ip");
+		for(int i=0; i<10; i++) {
+			Task task = new FailedTask("http://www.baidu.com/s?wd=ip");
 			requester.submit(task);
 		}
 
+		Thread.sleep(1000000);
 	}
-
-
 }
