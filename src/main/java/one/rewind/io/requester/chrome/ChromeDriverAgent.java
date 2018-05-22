@@ -398,9 +398,8 @@ public class ChromeDriverAgent {
 
 		synchronized (instances) {
 			instances.add(ChromeDriverAgent.this);
+			name = "ChromeDriverAgent-" + instances.size();
 		}
-
-		name = "ChromeDriverAgent-" + instances.size();
 
 		// 初始化单线程执行器
 		executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, queue);
@@ -440,13 +439,13 @@ public class ChromeDriverAgent {
 		} catch (InterruptedException e) {
 
 			status = Status.FAILED;
-			logger.error("INIT interrupted. ", e);
+			logger.error("{} INIT interrupted. ", name, e);
 			stop();
 
 		} catch (ExecutionException e) {
 
 			status = Status.FAILED;
-			logger.error("INIT failed. ", e.getCause());
+			logger.error("{} INIT failed. ", name, e.getCause());
 			stop();
 
 		} catch (TimeoutException e) {
@@ -454,7 +453,7 @@ public class ChromeDriverAgent {
 			initFuture.cancel(true);
 
 			status = Status.FAILED;
-			logger.error("INIT failed. ", e);
+			logger.error("{} INIT failed. ", name, e);
 			stop();
 		}
 
@@ -835,11 +834,11 @@ public class ChromeDriverAgent {
 			new FluentWait<WebDriver>(driver)
 					.withTimeout(10, TimeUnit.SECONDS)
 					.pollingEvery(settleCondition.getSettleTime(), TimeUnit.MILLISECONDS)
-					.ignoring(WebDriverException.class, TimeoutException.class)
+					.ignoring(WebDriverException.class) // TODO add TimeoutException.class may lead wait infinitely.
 					.until(settleCondition);
 
 		} catch (Exception e) {
-			logger.error("Wait page load error, {}", e.getMessage());
+			logger.warn("Wait page load error, {}", e.getMessage());
 		}
 
 		String readyState = driver.executeScript("return document.readyState").toString();
@@ -901,12 +900,12 @@ public class ChromeDriverAgent {
 				ChromeDriverRequester.getInstance().post_executor.submit(runnable);
 			}
 
-			logger.info("Task done.");
+			logger.info("Task done. {}", task.getUrl());
 		}
 		// 超时终止
 		catch (InterruptedException e) {
 
-			logger.error("Task interrupted. ", e);
+			logger.error("Task interrupted. {} ", task.getUrl(), e);
 			task.addExceptions(e.getCause());
 			task.setDuration();
 			task.setRetry();
@@ -928,7 +927,7 @@ public class ChromeDriverAgent {
 			}
 			// 代理问题
 			catch (SocketException e) {
-				logger.error("Proxy may error, ", e);
+				logger.error("{}, Proxy may error, ", name, e);
 				status = Status.FAILED;
 			}
 			// 脚本异常
@@ -938,36 +937,36 @@ public class ChromeDriverAgent {
 					ElementNotSelectableException |
 					NoSuchFrameException |
 					NoSuchElementException e) {
-				logger.error("Task script error, ", e);
+				logger.error("{}, Task script error, ", name, e);
 				status = Status.IDLE;
 			}
 			// WebDriver 命令超时问题 网络连接问题
 			catch (org.openqa.selenium.TimeoutException e) {
-				logger.error("WebDriver command timeout, ", e);
+				logger.error("{}, WebDriver command timeout, ", name, e);
 				status = Status.IDLE;
 			}
 			catch (NoSuchWindowException e) {
-				logger.error("Window unreachable, ", e);
+				logger.error("{}, Window unreachable, ", name, e);
 				status = Status.FAILED;
 			}
 			// chromedriver连接问题 --> 关闭
 			catch (UnreachableBrowserException e) {
-				logger.error("Browser unreachable, ", e);
+				logger.error("{}, Browser unreachable, ", name, e);
 				status = Status.FAILED;
 			}
 			// 非正常 WebDriver.quit() 调用
 			catch (NoSuchSessionException e) {
-				logger.error("Session broken, ", e);
+				logger.error("{}, Session broken, ", name, e);
 				status = Status.FAILED;
 			}
 			// 服务端问题 --> 关闭
 			catch (ErrorHandler.UnknownServerException e) {
-				logger.error("Server failed, ", e);
+				logger.error("{}, Server failed, ", name, e);
 				status = Status.FAILED;;
 			}
 			// 无法正常调用WebDriver --> 关闭
 			catch (WebDriverException e) {
-				logger.error("WebDriver exception, ", e);
+				logger.error("{}, WebDriver exception, ", name, e);
 				status = Status.FAILED;
 			}
 			// 帐号被冻结
@@ -999,16 +998,18 @@ public class ChromeDriverAgent {
 			}
 			// 其他异常 TODO 待验证
 			catch (Throwable e) {
-				logger.error("Unknown exception, ", e);
+				logger.error("{}, Unknown exception, ", name, e);
 				status = Status.IDLE;
 			}
 
 			if(status == Status.FAILED) {
+				// TODO 这样处理会导致 IDLE状态判断两次，执行两次idle callback
 				stop();
 			}
 		}
 		catch (TimeoutException e) {
 
+			task.setRetry();
 			status = Status.IDLE;
 			taskFuture.cancel(true);
 			logger.error("{} Task timeout. ", name, e);

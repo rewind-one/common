@@ -131,25 +131,20 @@ public class SshManager {
 		 *
 		 * @throws IOException
 		 */
-		public void connect() {
+		public void connect() throws IOException {
 
-			try {
+			conn = new Connection(ip, port);
+			conn.connect();
 
-				conn = new Connection(ip, port);
-				conn.connect();
+			boolean isAuthenticated = false;
+			if (pemFile != null) {
+				isAuthenticated = conn.authenticateWithPublicKey(user, pemFile, null);
+			} else {
+				isAuthenticated = conn.authenticateWithPassword(user, passwd);
+			}
 
-				boolean isAuthenticated = false;
-				if (pemFile != null) {
-					isAuthenticated = conn.authenticateWithPublicKey(user, pemFile, null);
-				} else {
-					isAuthenticated = conn.authenticateWithPassword(user, passwd);
-				}
-
-				if (isAuthenticated == false) {
-					throw new IOException("Authentication failed.");
-				}
-			} catch (Exception e) {
-				logger.error(e);
+			if (isAuthenticated == false) {
+				throw new IOException("Authentication failed.");
 			}
 		}
 
@@ -187,7 +182,6 @@ public class SshManager {
 
 			} catch (Exception e) {
 				logger.error("Error open session. ", e);
-				connect();
 			}
 
 			return output;

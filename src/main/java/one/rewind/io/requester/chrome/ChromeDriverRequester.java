@@ -87,7 +87,14 @@ public class ChromeDriverRequester implements Runnable {
 
 	ThreadPoolExecutor post_executor = new ThreadPoolExecutor(
 			10,
-			20,
+			10,
+			0, TimeUnit.MICROSECONDS,
+			new LinkedBlockingQueue<>()
+	);
+
+	ThreadPoolExecutor restart_executor = new ThreadPoolExecutor(
+			4,
+			4,
 			0, TimeUnit.MICROSECONDS,
 			new LinkedBlockingQueue<>()
 	);
@@ -106,6 +113,9 @@ public class ChromeDriverRequester implements Runnable {
 
 		post_executor.setThreadFactory(new ThreadFactoryBuilder()
 				.setNameFormat("ChromeDriverRequester-PostWorker-%d").build());
+
+		restart_executor.setThreadFactory(new ThreadFactoryBuilder()
+				.setNameFormat("ChromeDriverRequester-RestartWorker-%d").build());
 
 	}
 
@@ -151,6 +161,8 @@ public class ChromeDriverRequester implements Runnable {
 					try {
 						// logger.info("Remote container: {}", ((ChromeDriverDockerContainer) agent.remoteShell).getRemoteAddress());
 						((ChromeDriverDockerContainer) agent.remoteShell).rebuild();
+						logger.info("Sleep 5s for container restart.");
+						Thread.sleep(5000);
 					} catch (Exception e) {
 						logger.error("Restart container error, ", e);
 					}
@@ -179,7 +191,7 @@ public class ChromeDriverRequester implements Runnable {
 			/*agent.remoteAddress = newRemoteAddress;
 			agent.remoteShell = newRemoteShell;*/
 
-			new Thread(
+			restart_executor.submit(
 					()->{
 						try {
 							agent.start();
@@ -187,7 +199,7 @@ public class ChromeDriverRequester implements Runnable {
 							logger.error("{} status:{}", agent.name, agent.status, e);
 						}
 					}
-			).start();
+			);
 
 			/*ChromeDriverAgent new_agent = new ChromeDriverAgent(
 					newRemoteAddress,
@@ -225,6 +237,8 @@ public class ChromeDriverRequester implements Runnable {
 			if(!agent.isRemote())
 				localAgentCount ++;
 		}
+
+		if(localAgentCount < 2) return;
 
 		int gap = 600 / (localAgentCount/2);
 
@@ -267,6 +281,7 @@ public class ChromeDriverRequester implements Runnable {
 						ChromeDriverAgent agent = null;
 
 						try {
+
 							agent = idleAgentQueue.take();
 						} catch (InterruptedException e) {
 							logger.error("ChromeDriverAgent assignment interrupted, ", e);
@@ -276,31 +291,31 @@ public class ChromeDriverRequester implements Runnable {
 
 							logger.info("Assign {}", agent.name);
 
-							try {
+							t.addDoneCallback(() -> {
 
-								t.addDoneCallback(() -> {
+								if(t.needRetry()) {
+									if( t.getRetryCount() < 3 ) {
 
-									if(t.needRetry()) {
-										if( t.getRetryCount() < 3 ) {
+										t.addRetryCount();
+										submit(t);
 
-											t.addRetryCount();
-											submit(t);
+									} else {
 
-										} else {
-
-											try {
-												t.insert();
-											} catch (Exception e) {
-												logger.error(e);
-											}
+										try {
+											t.insert();
+										} catch (Exception e) {
+											logger.error(e);
 										}
 									}
-								});
+								}
+							});
 
+							// TODO 如果Agent出现了错误 导致task需要retry
+							// 此时 原agent 时不能提交的
+							try {
 								agent.submit(t);
-							}
-							catch (ChromeDriverException.IllegalStatusException e) {
-								logger.error("{} status illegal, ", agent.name, e);
+							} catch (ChromeDriverException.IllegalStatusException e) {
+								logger.error("{}, ", agent.name, e);
 							}
 						}
 					});

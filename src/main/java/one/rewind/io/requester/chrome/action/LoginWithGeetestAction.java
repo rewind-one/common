@@ -170,6 +170,7 @@ public class LoginWithGeetestAction extends LoginAction {
 		try {
 			// 识别成功
 			agent.getElementWait(geetestSuccessMsgCssPath);
+			geetest_retry_count = 0;
 		} catch (org.openqa.selenium.TimeoutException e) {
 			// 重试
 			if(geetest_retry_count < 100) {

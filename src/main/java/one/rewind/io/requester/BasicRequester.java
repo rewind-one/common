@@ -114,14 +114,14 @@ public class BasicRequester {
 			future.get(timeout, TimeUnit.MILLISECONDS);
 		}
 		catch (InterruptedException e){
-			logger.error("Task was interrupted, ", e);
+			logger.error("Task {}, was interrupted, ", task.getUrl(), e);
 		}
 		catch (TimeoutException e){
 			future.cancel(true);
-			logger.error(e);
+			logger.error("Task {}, ", task.getUrl(), e);
 		}
 		catch (ExecutionException e) {
-			logger.error(e.getCause());
+			logger.error("Task {}, ", task.getUrl(), e.getCause());
 		}
 
 		wrapper.close();

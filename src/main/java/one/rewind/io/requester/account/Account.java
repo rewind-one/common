@@ -141,4 +141,22 @@ public abstract class Account implements JSONable<Account> {
 			}
 		}
 	}
+
+	/**
+	 *
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean update() throws Exception{
+
+		update_time = new Date();
+
+		Dao dao = DaoManager.getDao(this.getClass());
+
+		if (dao.update(this) == 1) {
+			return true;
+		}
+
+		return false;
+	}
 }

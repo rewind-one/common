@@ -28,6 +28,23 @@ public class RemoteDriverTest {
 		}
 	}
 
+	@Test
+	public void simpleTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException {
+
+		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
+
+		ChromeDriverDockerContainer container =
+				new ChromeDriverDockerContainer(host, "ChromeContainer-10.0.0.62-2", 31002, 32002);
+
+
+		ChromeDriverAgent agent = new ChromeDriverAgent(container.getRemoteAddress(), container);
+
+		agent.start();
+
+		agent.submit(new Task("http://www.baidu.com"));
+
+	}
+
 
 	@Test
 	public void remoteTest() throws Exception {
