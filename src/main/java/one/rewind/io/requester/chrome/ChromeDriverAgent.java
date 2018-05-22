@@ -1005,6 +1005,7 @@ public class ChromeDriverAgent {
 			if(status == Status.FAILED) {
 				// TODO 这样处理会导致 IDLE状态判断两次，执行两次idle callback
 				stop();
+				return;
 			}
 		}
 		catch (TimeoutException e) {
