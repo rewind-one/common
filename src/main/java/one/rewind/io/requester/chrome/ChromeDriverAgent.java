@@ -341,11 +341,11 @@ public class ChromeDriverAgent {
 					task.getResponse().buildDom();
 				}
 
+				task.validate();
+
 				if(task.shootScreen()) {
 					task.getResponse().setScreenshot(driver.getScreenshotAs(OutputType.BYTES));
 				}
-
-				task.validate();
 			}
 
 			task.setDuration();
@@ -972,7 +972,7 @@ public class ChromeDriverAgent {
 			// 帐号被冻结
 			catch (AccountException.Frozen e) {
 
-				logger.error("Account Frozen, ", e);
+				logger.error("{}, Account Frozen, ", name, e);
 
 				runCallbacks(accountFrozenCallbacks);
 				return;
@@ -981,7 +981,7 @@ public class ChromeDriverAgent {
 			// 帐号失效
 			catch (AccountException.Failed e) {
 
-				logger.error("Account failed, ", e);
+				logger.error("{}, Account failed, ", name , e);
 
 				runCallbacks(accountFailedCallbacks);
 				return;
@@ -990,7 +990,7 @@ public class ChromeDriverAgent {
 			// 代理失效
 			catch (ProxyException.Failed e) {
 
-				logger.error("Proxy failed, ", e);
+				logger.error("{}, Proxy failed, ", name, e);
 
 				runCallbacks(proxyFailedCallbacks);
 				return;

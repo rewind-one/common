@@ -120,6 +120,8 @@ public class LoginWithGeetestAction extends LoginAction {
 
 		// 第一次
 		if(geetest_retry_count == 0) {
+			Thread.sleep(5000);
+
 			// 点击识别框
 			try {
 				agent.getElementWait(geetestContentCssPath).click();
@@ -188,6 +190,7 @@ public class LoginWithGeetestAction extends LoginAction {
 		try {
 			bypass();
 		} catch (Exception e) {
+			geetest_retry_count = 0;
 			logger.error("GeeTest bypass error, ", e);
 			return;
 		}
