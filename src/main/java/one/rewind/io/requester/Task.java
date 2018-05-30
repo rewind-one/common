@@ -3,6 +3,8 @@ package one.rewind.io.requester;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
+import net.lightbody.bmp.filters.RequestFilter;
+import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.db.DaoManager;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.chrome.action.ChromeAction;
@@ -101,6 +103,12 @@ public class Task implements Comparable<Task>{
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 	private List<Flag> flags = new ArrayList<>();
 
+	// 请求过滤器
+	private RequestFilter requestFilter;
+
+	// 响应过滤器
+	private ResponseFilter responseFilter;
+
 	// 返回对象
 	private transient Response response = new Response();
 
@@ -164,7 +172,6 @@ public class Task implements Comparable<Task>{
 		} else {
 			this.request_method = RequestMethod.GET;
 		}
-
 	}
 	
 	/**
@@ -303,8 +310,45 @@ public class Task implements Comparable<Task>{
 		return actions;
 	}
 
-	public void addAction(ChromeAction action) {
+	public Task addAction(ChromeAction action) {
 		this.actions.add(action);
+		return this;
+	}
+
+	/**
+	 *
+	 * @param filter
+	 * @return
+	 */
+	public Task setRequestFilter(RequestFilter filter) {
+		this.requestFilter = filter;
+		return this;
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public RequestFilter getRequestFilter() {
+		return this.requestFilter;
+	}
+
+	/**
+	 *
+	 * @param filter
+	 * @return
+	 */
+	public Task setResponseFilter(ResponseFilter filter) {
+		this.responseFilter = filter;
+		return this;
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public ResponseFilter getResponseFilter() {
+		return this.responseFilter;
 	}
 
 	public void setResponse() {
@@ -455,9 +499,10 @@ public class Task implements Comparable<Task>{
 		}
 	}
 
-	public void addDoneCallback(Runnable doneCallBack) {
+	public Task addDoneCallback(Runnable doneCallBack) {
 		if(this.doneCallBacks == null) this.doneCallBacks = new LinkedList<>();
 		this.doneCallBacks.add(doneCallBack);
+		return this;
 	}
 
 	/**
@@ -470,6 +515,8 @@ public class Task implements Comparable<Task>{
 		private byte[] src;
 		private String encoding;
 		private String cookies;
+
+		private Map<String, String> vars = new HashMap<>();
 
 		private boolean actionDone;
 
@@ -529,6 +576,14 @@ public class Task implements Comparable<Task>{
 
 		public void setScreenshot(byte[] screenshot) {
 			this.screenshot = screenshot;
+		}
+
+		public void setVar(String key, String value) {
+			vars.put(key, value);
+		}
+
+		public String getVar(String key) {
+			return vars.get(key);
 		}
 
 		/**

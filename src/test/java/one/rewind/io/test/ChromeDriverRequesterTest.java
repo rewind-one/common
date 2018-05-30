@@ -59,16 +59,24 @@ public class ChromeDriverRequesterTest {
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
 		Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
-		requester.addAgent(new ChromeDriverAgent(proxy));
+		ChromeDriverAgent agent1 = new ChromeDriverAgent(proxy);
+		requester.addAgent(agent1);
+		agent1.start();
 
 		proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
-		requester.addAgent(new ChromeDriverAgent(proxy));
+		ChromeDriverAgent agent2 = new ChromeDriverAgent(proxy);
+		requester.addAgent(agent2);
+		agent2.start();
 
 		proxy = new ProxyImpl("118.190.133.34", 59998, "tfelab", "TfeLAB2@15");
-		requester.addAgent(new ChromeDriverAgent(proxy));
+		ChromeDriverAgent agent3 = new ChromeDriverAgent(proxy);
+		requester.addAgent(agent3);
+		agent3.start();
 
 		proxy = new ProxyImpl("118.190.44.184", 59998, "tfelab", "TfeLAB2@15");
-		requester.addAgent(new ChromeDriverAgent(proxy));
+		ChromeDriverAgent agent4 = new ChromeDriverAgent(proxy);
+		requester.addAgent(agent4);
+		agent4.start();
 
 		requester.layout();
 

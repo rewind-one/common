@@ -77,4 +77,46 @@ public class ChromeDriverAgentTest {
 		}
 
 	}
+
+	@Test
+	public void requesterFilterTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException {
+
+		final Task t = new Task("https://www.baidu.com/");
+		t.addDoneCallback(()->{
+			System.err.println(t.getResponse().getVar("test"));
+		});
+
+		t.setResponseFilter((response, contents, messageInfo) -> {
+			if(messageInfo.getOriginalUrl().contains("tu_329aca4.js")) {
+				t.getResponse().setVar("test", contents.getTextContents());
+			}
+		});
+
+		Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
+		ChromeDriverAgent agent = new ChromeDriverAgent(proxy, ChromeDriverAgent.Flag.MITM);
+		agent.start();
+
+		/*agent.setIdleCallback(()->{
+			System.err.println("IDLE");
+		});*/
+
+		agent.addTerminatedCallback(()->{
+			System.err.println("TERMINATED");
+		});
+
+		agent.submit(t);
+
+
+
+		/*Task t1 = new Task("https://www.jd.com/");
+		t1.setResponseFilter((response, contents, messageInfo) -> {
+			System.out.println("R2");
+		});
+
+		agent.submit(t);*/
+
+		Thread.sleep(10000);
+
+		agent.stop();
+	}
 }

@@ -120,6 +120,9 @@ public class ChromeDriverAgent {
 
 	public int bmProxy_port = 0;
 
+	RequestFilter requestFilter;
+	ResponseFilter responseFilter;
+
 	// 启动后的初始化脚本
 	private List<ChromeAction> autoScripts = new ArrayList<>();
 
@@ -291,6 +294,8 @@ public class ChromeDriverAgent {
 
 			logger.info("Change to {}:{}", proxy.host, proxy.port);
 
+			// TODO set request / response filter
+
 			return null;
 		}
 	}
@@ -318,6 +323,16 @@ public class ChromeDriverAgent {
 		public Void call() throws Exception {
 
 			logger.info("{}", task.getUrl());
+
+			// 设定ProxyRequestFilter
+			if(task.getRequestFilter() != null) {
+				setProxyRequestFilter(task.getRequestFilter());
+			}
+
+			// 设定ProxyResponseFilter
+			if(task.getResponseFilter() != null) {
+				setProxyResponseFilter(task.getResponseFilter());
+			}
 
 			getUrl(task.getUrl());
 			waitPageLoad(task.getUrl());
@@ -349,8 +364,20 @@ public class ChromeDriverAgent {
 			}
 
 			task.setDuration();
+
 			// 停止页面加载
 			// driver.executeScript("window.stop()");
+
+			if(ChromeDriverAgent.this.requestFilter != null) {
+				setProxyRequestFilter((request, contents, messageInfo) -> {
+					return null;
+				});
+			}
+
+			if(ChromeDriverAgent.this.responseFilter != null) {
+				setProxyResponseFilter((response, contents, messageInfo) -> {
+				});
+			}
 
 			return null;
 		}
@@ -615,16 +642,6 @@ public class ChromeDriverAgent {
 		return capabilities;
 	}
 
-	/**
-	 * MITM 监听
-	 * 对请求信息进行过滤监听
-	 * @param requestFilter 请求过滤器
-	 */
-	public void addProxyRequestFilter(RequestFilter requestFilter) {
-
-		if(bmProxy != null)
-			bmProxy.addRequestFilter(requestFilter);
-	}
 
 	public boolean isRemote() {
 		return this.remoteAddress != null;
@@ -633,11 +650,43 @@ public class ChromeDriverAgent {
 	/**
 	 * MITM 监听
 	 * 对请求信息进行过滤监听
+	 * @param requestFilter 请求过滤器
+	 */
+	public void setProxyRequestFilter(RequestFilter requestFilter) throws Exception {
+
+		if(bmProxy == null) throw new Exception("BrowserMob Proxy is not set.");
+
+		// 第1次设定
+		if(this.requestFilter == null) {
+			this.requestFilter = requestFilter;
+			bmProxy.addRequestFilter(this.requestFilter);
+		}
+		// 第2 ~ n次设定
+		else {
+			this.requestFilter = requestFilter;
+			bmProxy.replaceFirstHttpFilter(this.requestFilter);
+		}
+	}
+
+	/**
+	 * MITM 监听
+	 * 对请求信息进行过滤监听
 	 * @param responseFilter 响应过滤器
 	 */
-	public void addProxyResponseFilter(ResponseFilter responseFilter) {
-		if(bmProxy != null)
-			bmProxy.addResponseFilter(responseFilter);
+	public void setProxyResponseFilter(ResponseFilter responseFilter) throws Exception {
+
+		if(bmProxy == null) throw new Exception("BrowserMob Proxy is not set.");
+
+		// 第1次设定
+		if(this.responseFilter == null) {
+			this.responseFilter = responseFilter;
+			bmProxy.addResponseFilter(this.responseFilter);
+		}
+		// 第2 ~ n次设定
+		else {
+			this.responseFilter = responseFilter;
+			bmProxy.replaceLastHttpFilter(this.responseFilter);
+		}
 	}
 
 	/**
@@ -681,7 +730,6 @@ public class ChromeDriverAgent {
 			/*Random r = new Random();
 			startPoint = new Point(60 * r.nextInt(10), 40 * r.nextInt(10));*/
 			driver.manage().window().setPosition(startPoint);
-
 		}
 	}
 
