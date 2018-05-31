@@ -123,4 +123,17 @@ public class BasicRequesterTest {
 
 	}
 
+	@Test
+	public void postTest() throws MalformedURLException, URISyntaxException {
+
+		String project_id = "abd77e88193a396337f2e4e0bfe02ceb";
+		String url = "http://localhost/zbj/get_contact/" + project_id;
+
+		Task t = new Task(url);
+		t.setPost();
+
+		BasicRequester.getInstance().submit(t);
+
+		System.err.println(t.getResponse().getText());
+	}
 }

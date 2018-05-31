@@ -581,7 +581,7 @@ public class ChromeDriverAgent {
 		perfLogPrefs.put("traceCategories", "browser,devtools.timeline,devtools"); // comma-separated trace categories*/
 
 		// 设定 Chrome 代理
-		if(proxy != null) {
+		if(proxy != null || flags.contains(Flag.MITM)) {
 
 			Proxy seleniumProxy;
 
