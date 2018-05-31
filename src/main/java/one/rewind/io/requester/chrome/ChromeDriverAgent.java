@@ -324,6 +324,19 @@ public class ChromeDriverAgent {
 
 			logger.info("{}", task.getUrl());
 
+			// 当使用Request/Response Filters时
+			// 需要重置bmProxy
+			// 参考：https://github.com/lightbody/browsermob-proxy/issues/491
+			if(task.getRequestFilter() != null || task.getResponseFilter() != null) {
+				logger.info("Restart BMProxy to add Request/Response filter.");
+
+				bmProxy.stop();
+
+				bmProxy = ChromeDriverRequester.buildBMProxy(bmProxy_port, proxy);
+
+				logger.info("Restart BMProxy done.");
+			}
+
 			// 设定ProxyRequestFilter
 			if(task.getRequestFilter() != null) {
 				setProxyRequestFilter(task.getRequestFilter());

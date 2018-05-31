@@ -1,6 +1,7 @@
 package one.rewind.io.requester.chrome.action;
 
 import one.rewind.io.requester.account.Account;
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.json.JSON;
 
 /**
@@ -25,24 +26,36 @@ public class LoginWithGeetestAction extends LoginAction {
 
 	public LoginWithGeetestAction(Account account) {
 		super(account);
-	}
-
-	public void run() {
-
-		if(!fillUsernameAndPassword()) return;
 
 		action = new GeetestAction();
+
 		action.geetestContentCssPath = geetestContentCssPath;
 		action.geetestWindowCssPath = geetestWindowCssPath;
 		action.geetestSliderButtonCssPath = geetestSliderButtonCssPath;
 		action.geetestSuccessMsgCssPath = geetestSuccessMsgCssPath;
 		action.geetestResetTipCssPath = geetestResetTipCssPath;
 		action.geetestRefreshButtonCssPath = geetestRefreshButtonCssPath;
+	}
+
+	public void run() {
+
+		if(!fillUsernameAndPassword()) return;
+
+		logger.info("Bypass geetest...");
+
 		action.run();
+
+		logger.info("Bypass geetest done...");
 
 		if(clickSubmitButton()) {
 			this.success = true;
 		}
+	}
+
+	@Override
+	public void setAgent(ChromeDriverAgent agent) {
+		this.agent = agent;
+		this.action.setAgent(agent);
 	}
 
 	@Override

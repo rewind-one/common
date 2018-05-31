@@ -123,6 +123,7 @@ public class GeetestAction extends ChromeAction {
 			}
 			// 如果页面上没有GeeTest识别框，直接返回
 			catch (Exception e) {
+				logger.error("Geetest content [{}] not found.", geetestContentCssPath, e);
 				return;
 			}
 		}

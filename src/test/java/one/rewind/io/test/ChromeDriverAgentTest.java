@@ -92,8 +92,8 @@ public class ChromeDriverAgentTest {
 			}
 		});
 
-		Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
-		ChromeDriverAgent agent = new ChromeDriverAgent(proxy, ChromeDriverAgent.Flag.MITM);
+		// Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
+		ChromeDriverAgent agent = new ChromeDriverAgent(ChromeDriverAgent.Flag.MITM);
 		agent.start();
 
 		/*agent.setIdleCallback(()->{
@@ -105,8 +105,6 @@ public class ChromeDriverAgentTest {
 		});
 
 		agent.submit(t);
-
-
 
 		/*Task t1 = new Task("https://www.jd.com/");
 		t1.setResponseFilter((response, contents, messageInfo) -> {
