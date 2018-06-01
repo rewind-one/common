@@ -82,7 +82,8 @@ public class DockerHost {
 
 		} catch (Exception e) {
 
-			logger.error(e);
+			// 无法连接服务器，则程序停止运行
+			e.printStackTrace();
 
 		} finally {
 			if(sshHost.conn != null) {
