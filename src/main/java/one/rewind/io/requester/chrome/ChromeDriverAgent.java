@@ -635,6 +635,7 @@ public class ChromeDriverAgent {
 		options.addArguments("--disk-cache-size=1");
 		options.addArguments("--timeout=28000"); // 	Issues a stop after the specified number of milliseconds. This cancels all navigation and causes the DOMContentLoaded event to fire.
 		options.addArguments("--ipc-connection-timeout=28"); // Overrides the timeout, in seconds, that a child process waits for a connection from the browser before killing itself. ↪
+		options.addArguments("--detach=true");
 
 		/*options.addArguments("--log-level=3");
 		options.addArguments("--silent");*/
@@ -813,6 +814,8 @@ public class ChromeDriverAgent {
 		// 先整体截图
 		BufferedImage img = null;
 		img = ImageIO.read(screen);
+
+		logger.info("P.getX{}, P.getY{}, rect.width{}, rect.height{} ", p.getX(), p.getY(), rect.width, rect.height);
 
 		// 再根据元素相对位置抠图
 		BufferedImage dest = img.getSubimage(p.getX(), p.getY(), rect.width, rect.height);
@@ -1027,8 +1030,15 @@ public class ChromeDriverAgent {
 			}
 			// 无法正常调用WebDriver --> 关闭
 			catch (WebDriverException e) {
+
 				logger.error("{}, WebDriver exception, ", name, e);
-				status = Status.FAILED;
+
+				// 处理元素无法点击异常
+				if(e.getMessage().contains("is not clickable")) {
+					status = Status.IDLE;
+				} else {
+					status = Status.FAILED;
+				}
 			}
 			// 帐号被冻结
 			catch (AccountException.Frozen e) {

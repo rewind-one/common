@@ -83,6 +83,7 @@ public class ChromeDriverAgentTest {
 
 		final Task t = new Task("https://www.baidu.com/");
 		t.addDoneCallback(()->{
+			System.err.println("Done!");
 			System.err.println(t.getResponse().getVar("test"));
 		});
 

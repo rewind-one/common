@@ -22,15 +22,26 @@ import java.util.Random;
  */
 public class GeetestAction extends ChromeAction {
 
+	// 点击验证
 	public String geetestContentCssPath = ".geetest_radar_tip";
 
+	// 窗口
 	public String geetestWindowCssPath = ".geetest_window";
+
+	// 滑块
 	public String geetestSliderButtonCssPath = ".geetest_slider_button";
+
+	// 验证通过
 	public String geetestSuccessMsgCssPath = ".geetest_success_radar_tip_content";
 
+	// 重置
 	public String geetestResetTipCssPath = "#password-captcha-box > div.geetest_holder.geetest_wind.geetest_radar_error > div.geetest_btn > div.geetest_radar_btn > div.geetest_radar_tip > span.geetest_reset_tip_content";
+
+	// 刷新
 	public String geetestRefreshButtonCssPath = "a.geetest_refresh_1";
 	//#password-captcha-box > div.geetest_holder.geetest_wind.geetest_radar_error > div.geetest_btn > div.geetest_radar_btn > div.geetest_radar_tip > span.geetest_radar_error_code
+
+	// 验证过多
 	public String geetestRefreshTooManyErrorCssPath = "span.geetest_radar_error_code";
 
 	transient int geetest_retry_count = 0;
@@ -121,10 +132,16 @@ public class GeetestAction extends ChromeAction {
 			try {
 				agent.getElementWait(geetestContentCssPath).click();
 			}
-			// 如果页面上没有GeeTest识别框，直接返回
+			// 如果页面上没有GeeTest识别框
 			catch (Exception e) {
-				logger.error("Geetest content [{}] not found.", geetestContentCssPath, e);
-				return;
+				// 并且没有滑块，直接返回
+				try {
+					agent.getDriver().findElement(By.cssSelector(geetestSliderButtonCssPath));
+				}
+				catch (Exception ex) {
+					logger.warn("Geetest content [{}] not found.", geetestSliderButtonCssPath, ex);
+					return;
+				}
 			}
 		}
 		// 第 2 - N 次
@@ -144,7 +161,8 @@ public class GeetestAction extends ChromeAction {
 			// 验证DIV已经关闭
 			catch (NoSuchElementException e) {
 				// 主页面出现 尝试过多 请点击重试 01
-				if(agent.getElementWait(geetestRefreshTooManyErrorCssPath).getText().equals("01")) {
+				if(agent.getElementWait(geetestRefreshTooManyErrorCssPath).getText().equals("01")
+						|| agent.getElementWait(geetestRefreshTooManyErrorCssPath).getText().equals("12")) {
 					// 点击重试连接
 					logger.info("Try to click reset link.");
 					agent.getElementWait(geetestResetTipCssPath).click();

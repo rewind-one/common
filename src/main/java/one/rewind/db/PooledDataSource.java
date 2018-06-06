@@ -67,7 +67,7 @@ public class PooledDataSource {
 			
 			cpds.setJdbcUrl(config.getString("url"));
 			cpds.setUser(config.getString("username"));
-			cpds.setPassword(config.getString("password"));                                  
+			cpds.setPassword(config.getString("password"));
 			
 			cpds.setInitialPoolSize(config.getInt("initialPoolSize"));   
 			cpds.setMinPoolSize(config.getInt("minPoolSize"));                                     
