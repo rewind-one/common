@@ -52,7 +52,7 @@ public class DateFormatUtil {
 		in = in.trim();
 		
 		String prefix = null;
-		Pattern p = Pattern.compile("今天|昨天|前天|\\d+(天|分钟|小时)前");
+		Pattern p = Pattern.compile("今天|昨天|前天|\\d+(年|个月|个星期|天|分钟|小时)前");
 		Matcher m = p.matcher(in);
 		if(m.find()){
 			prefix = m.group();

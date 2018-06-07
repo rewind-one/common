@@ -1,5 +1,5 @@
 group 'one.rewind'
-version '1.0.81-SNAPSHOT'
+version '1.0.83-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
