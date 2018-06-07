@@ -35,6 +35,7 @@ public class FormatUtilTest {
 			"6天前",
 			"昨天",
 			"41分钟前",
+			"2个星期前",
 			"11小时前",
 			"2小时前",
 			"August 3, 2016 ",

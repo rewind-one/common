@@ -52,7 +52,7 @@ public class DateFormatUtil {
 		in = in.trim();
 		
 		String prefix = null;
-		Pattern p = Pattern.compile("今天|昨天|前天|\\d+(年|个月|个星期|天|分钟|小时)前");
+		Pattern p = Pattern.compile("今天|昨天|前天|\\d+(个星期|天|分钟|小时)前");
 		Matcher m = p.matcher(in);
 		if(m.find()){
 			prefix = m.group();
@@ -219,6 +219,9 @@ public class DateFormatUtil {
 		} else if (prefix.matches("\\d+分钟前")){
 			int n = Integer.parseInt(prefix.replaceAll("分钟前", ""));
 			v = - n * 60 * 1000;
+		}else if (prefix.matches("\\d+个星期前")){
+			int n = Integer.parseInt(prefix.replaceAll("个星期前", ""));
+			v = - n * 7 * 24 * 60 * 60 * 1000;
 		}
 		
 		return v;
