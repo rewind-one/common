@@ -40,6 +40,7 @@ public class ChromeDriverRequester implements Runnable {
 	static {
 
 		Config ioConfig = Configs.getConfig(BasicRequester.class);
+
 		CONNECT_TIMEOUT = ioConfig.getInt("connectTimeout");
 		READ_TIMEOUT = ioConfig.getInt("readTimeout");
 		AGENT_NUM = ioConfig.getInt("chromeDriverAgentNum");
@@ -67,13 +68,16 @@ public class ChromeDriverRequester implements Runnable {
 		return instance;
 	}
 
+	//
+	private Map<String, BlockingQueue<Task>> tasks = new HashMap<>();
+
+	public PriorityBlockingQueue<Task> queue = new PriorityBlockingQueue<>();
+
 	private Map<String, Set<ChromeDriverAgent>> domain_agents_map;
 
 	private Map<String, Set<ChromeDriverAgent>> account_agents_map;
 
 	public List<ChromeDriverAgent> agents = new LinkedList<>();
-
-	public PriorityBlockingQueue<Task> queue = new PriorityBlockingQueue<>();
 
 	public BlockingQueue<ChromeDriverAgent> idleAgentQueue = new LinkedBlockingQueue<>();
 

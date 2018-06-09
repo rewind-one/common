@@ -1,9 +1,8 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.json.JSON;
-import org.openqa.selenium.WebElement;
 import one.rewind.io.requester.account.Account;
 import one.rewind.json.JSON;
+import org.openqa.selenium.WebElement;
 
 /**
  * 登录脚本
@@ -29,6 +28,10 @@ public class LoginAction extends ChromeAction {
 
 	public void setAccount(Account account) {
 		this.account = account;
+	}
+
+	public Account getAccount() {
+		return this.account;
 	}
 
 	/**

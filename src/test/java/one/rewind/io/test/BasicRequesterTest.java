@@ -4,6 +4,7 @@ import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.Task;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
+import one.rewind.json.JSON;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -126,13 +127,18 @@ public class BasicRequesterTest {
 	@Test
 	public void postTest() throws MalformedURLException, URISyntaxException {
 
-		String project_id = "1f2a020c95bd44aaa29caf31088b8d2f";
-		String url = "http://localhost/zbj/get_contact/" + project_id;
+		String url = "http://www.baidu.com";
 
 		Task t = new Task(url);
-		t.setPost();
+		t.addDoneCallback(()->{
+			System.out.println("A");
+		});
 
-		BasicRequester.getInstance().submit(t);
+		String json = t.toJSON();
+
+		Task t_ = JSON.fromJson(json, Task.class);
+
+		BasicRequester.getInstance().submit(t_,10000);
 
 		System.err.println(t.getResponse().getText());
 	}

@@ -8,7 +8,9 @@ import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.Task;
+import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.chrome.action.ChromeAction;
+import one.rewind.io.requester.chrome.action.LoginAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
@@ -94,7 +96,7 @@ public class ChromeDriverAgent {
 	}
 
 	// 所有实例的列表
-	public static final List<ChromeDriverAgent> instances = new ArrayList<ChromeDriverAgent>();
+	public static final List<ChromeDriverAgent> instances = new ArrayList<>();
 
 	// 名称
 	public String name;
@@ -118,10 +120,14 @@ public class ChromeDriverAgent {
 	// 代理服务器
 	public BrowserMobProxyServer bmProxy;
 
+	// Cluster MITM 本地端口
 	public int bmProxy_port = 0;
 
-	RequestFilter requestFilter;
-	ResponseFilter responseFilter;
+	// HTTP 请求过滤器
+	private RequestFilter requestFilter;
+
+	// HTTP 返回过滤器
+	private ResponseFilter responseFilter;
 
 	// 启动后的初始化脚本
 	private List<ChromeAction> autoScripts = new ArrayList<>();
@@ -132,10 +138,13 @@ public class ChromeDriverAgent {
 	// Executor
 	private ThreadPoolExecutor executor;
 
+	// 状态
 	volatile Status status = Status.STARTING;
 
-	int cycle = 0;
+	public Map<String, Account> accounts = new HashMap<>();
 
+	// 重启周期
+	int cycle = 0;
 
 	// Agent状态信息
 	public enum Status {
@@ -150,24 +159,31 @@ public class ChromeDriverAgent {
 		DESTROYED
 	}
 
+	// 启动回调
 	List<Runnable> newCallbacks = new ArrayList<>();
 
+	// 空闲回调
 	private List<Runnable> idleCallbacks = new ArrayList<>();
 
+	// 终止回调
 	List<Runnable> terminatedCallbacks = new ArrayList<>();
 
+	// 账户异常回调
 	private List<Runnable> accountFailedCallbacks = new ArrayList<>();
 
+	// 账户冻结回调
 	private List<Runnable> accountFrozenCallbacks = new ArrayList<>();
 
+	// 代理被封禁回调
 	private List<Runnable> proxyFailedCallbacks = new ArrayList<>();
 
+	// 代理超时回调
 	private List<Runnable> proxyTimeoutCallbacks = new ArrayList<>();
 
 	/**
 	 * 启动标签类
 	 */
-	public static enum Flag {
+	public enum Flag {
 		REMOTE,
 		MITM // 设定MITM 未启用
 	}
@@ -356,8 +372,17 @@ public class ChromeDriverAgent {
 				boolean actionResult = true;
 
 				for(ChromeAction action : task.getActions()) {
+
 					action.setAgent(ChromeDriverAgent.this);
 					action.run();
+
+					// 分domain记录当前Chrome登陆的账户
+					// 一个 Chrome 一个 domain 下只能记录一个 账户
+					if(action instanceof LoginAction && action.success) {
+						LoginAction action_ = (LoginAction) action;
+						accounts.put(action_.getAccount().domain, action_.getAccount());
+					}
+
 					actionResult = actionResult && action.success;
 				}
 
@@ -635,7 +660,6 @@ public class ChromeDriverAgent {
 		options.addArguments("--disk-cache-size=1");
 		options.addArguments("--timeout=28000"); // 	Issues a stop after the specified number of milliseconds. This cancels all navigation and causes the DOMContentLoaded event to fire.
 		options.addArguments("--ipc-connection-timeout=28"); // Overrides the timeout, in seconds, that a child process waits for a connection from the browser before killing itself. ↪
-		options.addArguments("--detach=true");
 
 		/*options.addArguments("--log-level=3");
 		options.addArguments("--silent");*/
@@ -724,10 +748,10 @@ public class ChromeDriverAgent {
 	}
 
 	/**
-	 *
+	 * 设定Chrome窗口大小
 	 * @param dimension
 	 */
-    public void setSize(Dimension dimension) {
+	public void setSize(Dimension dimension) {
 
 		if(driver != null) {
 			// dimension = new Dimension(1024, 600);
@@ -736,7 +760,7 @@ public class ChromeDriverAgent {
 	}
 
 	/**
-	 *
+	 * 设定Chrome窗口在屏幕位置
 	 * @param startPoint
 	 */
 	public void setPosition(Point startPoint) {
@@ -754,9 +778,9 @@ public class ChromeDriverAgent {
 	 */
 	public WebElement getElementWait(String path) {
 		WebDriverWait wait = new WebDriverWait(driver, GET_ELEMENT_TIMEOUT);
-	    return wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(path)));
+		return wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(path)));
 	}
-	
+
 	/**
 	 * 在特定元素上执行JavaScript脚本
 	 * Really should only be used when the web driver is sucking at exposing
@@ -765,7 +789,7 @@ public class ChromeDriverAgent {
 	 * @param element The target of the script, referenced as arguments[0]
 	 */
 	public void trigger(String script, WebElement element) {
-	    ((JavascriptExecutor) driver).executeScript(script, element);
+		((JavascriptExecutor) driver).executeScript(script, element);
 	}
 
 	/**
@@ -775,7 +799,7 @@ public class ChromeDriverAgent {
 	 * @param script The script to execute
 	 */
 	public Object trigger(String script) {
-	    return ((JavascriptExecutor) driver).executeScript(script);
+		return ((JavascriptExecutor) driver).executeScript(script);
 	}
 
 	/**
@@ -791,7 +815,7 @@ public class ChromeDriverAgent {
 	        throw new org.openqa.selenium.JavascriptException("Unable to open tab");
 	    }
 	}*/
-	
+
 	/**
 	 * 截图
 	 * @param imgPath 图片的CSS路径
@@ -799,9 +823,9 @@ public class ChromeDriverAgent {
 	 * @throws IOException ImageIO异常
 	 */
 	public byte[] shoot(String imgPath) throws IOException {
-		
+
 		WebElement element = getElementWait(imgPath);
-		
+
 		File screen = driver.getScreenshotAs(OutputType.FILE);
 
 		Point p = element.getLocation();
@@ -815,13 +839,11 @@ public class ChromeDriverAgent {
 		BufferedImage img = null;
 		img = ImageIO.read(screen);
 
-		logger.info("P.getX{}, P.getY{}, rect.width{}, rect.height{} ", p.getX(), p.getY(), rect.width, rect.height);
-
 		// 再根据元素相对位置抠图
 		BufferedImage dest = img.getSubimage(p.getX(), p.getY(), rect.width, rect.height);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ImageIO.write(dest, "png", baos);
-		
+
 		return baos.toByteArray();
 	}
 
@@ -938,7 +960,7 @@ public class ChromeDriverAgent {
 
 		submit(task, ChromeDriverRequester.CONNECT_TIMEOUT + ChromeDriverRequester.READ_TIMEOUT);
 	}
-	
+
 	/**
 	 * 同步执行任务 可以设定超时时间
 	 * @param task
@@ -1030,15 +1052,8 @@ public class ChromeDriverAgent {
 			}
 			// 无法正常调用WebDriver --> 关闭
 			catch (WebDriverException e) {
-
 				logger.error("{}, WebDriver exception, ", name, e);
-
-				// 处理元素无法点击异常
-				if(e.getMessage().contains("is not clickable")) {
-					status = Status.IDLE;
-				} else {
-					status = Status.FAILED;
-				}
+				status = Status.FAILED;
 			}
 			// 帐号被冻结
 			catch (AccountException.Frozen e) {

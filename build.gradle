@@ -1,10 +1,12 @@
 group 'one.rewind'
-version '1.0.84-SNAPSHOT'
+version '1.0.75-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'idea'
 apply plugin: 'application'
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'maven-publish'
 
 sourceCompatibility = 1.8
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -12,6 +14,16 @@ sourceCompatibility = 1.8
 // mainClassName = 'one.rewind.io.BasicRequester'
 
 applicationDefaultJvmArgs = ["-Xms200m", "-Xmx4000m", "-Dsun.net.inetaddr.ttl=-1", "-Djava.net.preferIPv4Stack=true", "-Dlog4j.configurationFile=log4j2.xml", "-Dfile.encoding=UTF8", "-Djdk.http.auth.tunneling.disabledSchemes=\"\""]
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.0.1"
+    }
+}
+
 
 repositories {
 
@@ -34,15 +46,56 @@ repositories {
     }
 }
 
-uploadArchives {
+/*uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: 'http://tfelab.org:60002/content/repositories/releases/') {
+            *//*repository(url: 'http://tfelab.org:60002/content/repositories/releases/') {
                 authentication(userName: deployment, password: deployment_password)
             }
             snapshotRepository(url: 'http://tfelab.org:60002/content/repositories/snapshots/') {
                 authentication(userName: deployment, password: deployment_password)
+            }*//*
+            repository(url: 'http://10.0.0.51:8081/artifactory/libs-release-local/') {
+                authentication(userName: artifactory_username, password: artifactory_password)
             }
+            snapshotRepository(url: 'http://10.0.0.51:8081/artifactory/libs-snapshot-local/') {
+                authentication(userName: artifactory_username, password: artifactory_password)
+            }
+        }
+    }
+}*/
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+artifactory {
+
+    contextUrl = 'http://10.0.0.56:8081/artifactory'
+    publish {
+        repository {
+            repoKey = 'libs-snapshot-local'
+
+            username = artifactory_username
+            password = artifactory_password
+        }
+        snapshotRepository {
+            repoKey = 'libs-snapshot-local'
+            username = artifactory_username
+            password = artifactory_password
+        }
+        defaults {
+
+            publications('mavenJava')
+
+            publishArtifacts = true
+
+            properties = ['qa.level': 'basic', 'q.os': 'linux', 'dev.team': 'core']
+            publishPom = true
         }
     }
 }
@@ -93,7 +146,7 @@ dependencies {
     compile 'com.j256.ormlite:ormlite-jdbc:4.48'
 
     // Redisson Redis Java 分布式对象映射
-    compile 'org.redisson:redisson:3.6.4'
+    compile 'org.redisson:redisson:3.7.1'
 
     // MongoDB Java
     compile 'org.mongodb:mongo-java-driver:3.6.3'

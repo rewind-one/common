@@ -11,9 +11,6 @@ import one.rewind.io.requester.Task;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import one.rewind.util.Configs;
-import one.rewind.io.requester.BasicRequester;
-import one.rewind.io.requester.Task;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;

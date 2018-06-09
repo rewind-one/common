@@ -29,7 +29,7 @@ import java.util.*;
  * @author karajan
  *
  */
-public class Task implements Comparable<Task>{
+public class Task implements Comparable<Task> {
 
 	public enum Priority {
 		LOW,
@@ -116,29 +116,35 @@ public class Task implements Comparable<Task>{
 	@DatabaseField(dataType = DataType.DATE)
 	private Date start_time;
 
+	// 总执行时间
 	@DatabaseField(dataType = DataType.LONG)
 	private long duration = 0;
 
+	// 是否需要重试
 	private transient boolean retry = false;
 
+	// 重试次数
 	@DatabaseField(dataType = DataType.INTEGER)
 	private int retryCount = 0;
 
-	public transient List<Runnable> doneCallBacks = new LinkedList<>();
+	// 采集后回调
+	public List<Runnable> doneCallBacks = new LinkedList<>();
 
 	// 异常记录
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 	private ArrayList<Throwable> exceptions = new ArrayList<>();
 
+	// 创建时间
 	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
 	private Date create_time = new Date();
 
 	private Task() {
 		this.response = new Response();
 	}
-	
+
 	/**
 	 * 简单 GET 请求
+	 *
 	 * @param url url地址
 	 * @throws MalformedURLException
 	 * @throws URISyntaxException
@@ -150,32 +156,34 @@ public class Task implements Comparable<Task>{
 		this.id = StringUtil.MD5(url + System.nanoTime());
 		this.request_method = RequestMethod.GET;
 	}
-	
+
 	/**
 	 * 简单 POST 请求
-	 * @param url url 地址
+	 *
+	 * @param url       url 地址
 	 * @param post_data post data 字符串格式
 	 * @throws MalformedURLException
 	 * @throws URISyntaxException
 	 */
 	public Task(String url, String post_data) throws MalformedURLException, URISyntaxException {
-		
+
 		this.url = url;
 		this.post_data = post_data;
 		domain = URLUtil.getDomainName(url);
-		
+
 		this.response = new Response();
 		this.id = StringUtil.MD5(url + post_data + System.nanoTime());
 
-		if(post_data != null && post_data.length() > 0) {
+		if (post_data != null && post_data.length() > 0) {
 			this.request_method = RequestMethod.POST;
 		} else {
 			this.request_method = RequestMethod.GET;
 		}
 	}
-	
+
 	/**
 	 * 需要 Cookie 的 POST 请求
+	 *
 	 * @param url
 	 * @param post_data
 	 * @param cookies
@@ -184,17 +192,17 @@ public class Task implements Comparable<Task>{
 	 * @throws URISyntaxException
 	 */
 	public Task(String url, String post_data, String cookies, String ref) throws MalformedURLException, URISyntaxException {
-		
+
 		this.url = url;
 		this.post_data = post_data;
 		this.cookies = cookies;
 		this.ref = ref;
 		domain = URLUtil.getDomainName(url);
-		
+
 		this.response = new Response();
 		this.id = StringUtil.MD5(url + post_data + cookies + System.nanoTime());
 
-		if(post_data != null && post_data.length() > 0) {
+		if (post_data != null && post_data.length() > 0) {
 			this.request_method = RequestMethod.POST;
 		} else {
 			this.request_method = RequestMethod.GET;
@@ -203,6 +211,7 @@ public class Task implements Comparable<Task>{
 
 	/**
 	 * 完整参数请求
+	 *
 	 * @param url
 	 * @param headers
 	 * @param post_data
@@ -223,7 +232,7 @@ public class Task implements Comparable<Task>{
 		this.response = new Response();
 		this.id = StringUtil.MD5(url + post_data + cookies + System.nanoTime());
 
-		if(post_data != null && post_data.length() > 0) {
+		if (post_data != null && post_data.length() > 0) {
 			this.request_method = RequestMethod.POST;
 		} else {
 			this.request_method = RequestMethod.GET;
@@ -316,7 +325,6 @@ public class Task implements Comparable<Task>{
 	}
 
 	/**
-	 *
 	 * @param filter
 	 * @return
 	 */
@@ -326,7 +334,6 @@ public class Task implements Comparable<Task>{
 	}
 
 	/**
-	 *
 	 * @return
 	 */
 	public RequestFilter getRequestFilter() {
@@ -334,7 +341,6 @@ public class Task implements Comparable<Task>{
 	}
 
 	/**
-	 *
 	 * @param filter
 	 * @return
 	 */
@@ -344,7 +350,6 @@ public class Task implements Comparable<Task>{
 	}
 
 	/**
-	 *
 	 * @return
 	 */
 	public ResponseFilter getResponseFilter() {
@@ -404,7 +409,6 @@ public class Task implements Comparable<Task>{
 	}
 
 	/**
-	 *
 	 * @return
 	 * @throws ProxyException.Failed
 	 * @throws AccountException.Failed
@@ -443,13 +447,13 @@ public class Task implements Comparable<Task>{
 	}
 
 	public String getParamString(String key) {
-		if(params.get(key) == null) return null;
+		if (params.get(key) == null) return null;
 
 		return String.valueOf(params.get(key));
 	}
 
 	public int getParamInt(String key) {
-		if(params.get(key) == null) return 0;
+		if (params.get(key) == null) return 0;
 		//return Integer.valueOf((int) params.get(key));
 		return NumberFormatUtil.parseInt(String.valueOf(params.get(key)));
 	}
@@ -460,7 +464,6 @@ public class Task implements Comparable<Task>{
 
 
 	/**
-	 *
 	 * @return
 	 * @throws Exception
 	 */
@@ -485,6 +488,7 @@ public class Task implements Comparable<Task>{
 
 	/**
 	 * 优先级比较
+	 *
 	 * @param another
 	 * @return
 	 */
@@ -492,7 +496,7 @@ public class Task implements Comparable<Task>{
 
 		final Priority me = this.getPriority();
 		final Priority it = another.getPriority();
-		if(me.ordinal() == it.ordinal()) {
+		if (me.ordinal() == it.ordinal()) {
 			return this.create_time.compareTo(another.create_time);
 		} else {
 			return it.ordinal() - me.ordinal();
@@ -500,116 +504,221 @@ public class Task implements Comparable<Task>{
 	}
 
 	public Task addDoneCallback(Runnable doneCallBack) {
-		if(this.doneCallBacks == null) this.doneCallBacks = new LinkedList<>();
+		if (this.doneCallBacks == null) this.doneCallBacks = new LinkedList<>();
 		this.doneCallBacks.add(doneCallBack);
 		return this;
 	}
 
-	/**
-	 * 返回对象
-	 * @author karajan
-	 */
+	public List<Task> postProc() {
+		return new ArrayList<>();
+	}
+
 	public class Response {
 
+		public Task task;
+
+		// 返回Header
 		private Map<String, List<String>> header;
+
+		// 返回源代码
 		private byte[] src;
+
+		// 源代码编码
 		private String encoding;
-		private String cookies;
 
-		private Map<String, String> vars = new HashMap<>();
-
-		private boolean actionDone;
-
+		// 返回文本内容
 		private String text;
 
+		// 返回Cookie
+		private String cookies;
+
+		// 变量集
+		private Map<String, String> vars = new HashMap<>();
+
+		// 标识符 是否task的action都已经执行完
+		private boolean actionDone;
+
+		// 界面截图
 		private byte[] screenshot = null;
 
+		// 返回DOM对象
 		private Document doc = null;
 
+		/**
+		 * 获取Header
+		 *
+		 * @return
+		 */
 		public Map<String, List<String>> getHeader() {
 			return header;
 		}
 
+		/**
+		 * 设置Header
+		 *
+		 * @param header
+		 */
 		public void setHeader(Map<String, List<String>> header) {
 			this.header = header;
 		}
 
+		/**
+		 * 获取源文件
+		 *
+		 * @return
+		 */
 		public byte[] getSrc() {
 			return src;
 		}
 
+		/**
+		 * 设置源文件
+		 *
+		 * @param src
+		 */
 		public void setSrc(byte[] src) {
 			this.src = src;
 		}
 
+		/**
+		 * 获取编码
+		 *
+		 * @return
+		 */
 		public String getEncoding() {
 			return encoding;
 		}
 
+		/**
+		 * 设置编码
+		 *
+		 * @param encoding
+		 */
 		public void setEncoding(String encoding) {
 			this.encoding = encoding;
 		}
 
+		/**
+		 * 获取返回cookie
+		 *
+		 * @return
+		 */
 		public String getCookies() {
 			return cookies;
 		}
 
+		/**
+		 * 设置cookie
+		 *
+		 * @param cookies
+		 */
 		public void setCookies(String cookies) {
 			this.cookies = cookies;
 		}
 
+		/**
+		 * 判断 Task 中 Action是否已经执行完毕
+		 *
+		 * @return
+		 */
 		public boolean isActionDone() {
 			return actionDone;
 		}
 
+		/**
+		 * @param actionDone
+		 */
 		public void setActionDone(boolean actionDone) {
 			this.actionDone = actionDone;
 		}
 
+		/**
+		 * @return
+		 */
 		public String getText() {
 			return text;
 		}
 
+		/**
+		 * @return
+		 */
 		public byte[] getScreenshot() {
 			return screenshot;
 		}
 
+		/**
+		 * @param screenshot
+		 */
 		public void setScreenshot(byte[] screenshot) {
 			this.screenshot = screenshot;
 		}
 
+		/**
+		 * @param key
+		 * @param value
+		 */
 		public void setVar(String key, String value) {
 			vars.put(key, value);
 		}
 
+		/**
+		 * @param key
+		 * @return
+		 */
 		public String getVar(String key) {
 			return vars.get(key);
 		}
 
 		/**
-		 * 判断 Response 是否为文本
+		 * @param key
 		 * @return
 		 */
-		public boolean isText(){
-			if(header == null) return true;
-			if(header.get("Content-Type") != null){
-				for(String item: header.get("Content-Type")){
+		public int getIntVar(String key) {
+			return Integer.parseInt(vars.get(key));
+		}
 
-					if((item.contains("application") && !item.contains("json") && !item.contains("xml") && !item.contains("x-javascript"))
-						|| item.contains("application") && item.contains("officedocument")
-						|| item.contains("video")
-						|| item.contains("audio")
-						|| item.contains("image")
-					){
+		/**
+		 * 判断 Response 是否为文本
+		 *
+		 * @return
+		 */
+		public boolean isText() {
+
+			if (header == null) return true;
+
+			// 根据Content-Type进行判断
+			if (header.get("Content-Type") != null) {
+
+				//
+				for (String item : header.get("Content-Type")) {
+
+					if (
+						// 非Javascript
+							(item.contains("application")
+									&& !item.contains("json")
+									&& !item.contains("xml")
+									&& !item.contains("x-javascript")
+							)
+									// office 文件
+									|| item.contains("application") && item.contains("officedocument")
+									// 视频
+									|| item.contains("video")
+									// 音频
+									|| item.contains("audio")
+									// 图片
+									|| item.contains("image")
+							) {
 						return false;
 					}
 				}
 			}
+
 			return true;
 		}
 
 		/**
 		 * 文本内容预处理
+		 *
 		 * @param input 原始文本
 		 * @throws UnsupportedEncodingException
 		 */
@@ -617,7 +726,7 @@ public class Task implements Comparable<Task>{
 
 			this.text = input;
 
-			if(preProc()) {
+			if (preProc()) {
 
 				try {
 					text = StringEscapeUtils.unescapeHtml4(text);
@@ -641,6 +750,7 @@ public class Task implements Comparable<Task>{
 
 		/**
 		 * 文本内容预处理
+		 *
 		 * @throws UnsupportedEncodingException
 		 */
 		public void setText() {
@@ -653,13 +763,21 @@ public class Task implements Comparable<Task>{
 			}
 		}
 
+		/**
+		 *
+		 * @throws UnsupportedEncodingException
+		 */
 		public void buildDom() throws UnsupportedEncodingException {
 
-			if(src !=null && src.length > 0) {
+			if (src != null && src.length > 0) {
 				doc = Jsoup.parse(BasicRequester.autoDecode(src, encoding));
 			}
 		}
 
+		/**
+		 * 获取文档
+		 * @return
+		 */
 		public Document getDoc() {
 			return doc;
 		}
