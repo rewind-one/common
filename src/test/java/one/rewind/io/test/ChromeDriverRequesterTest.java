@@ -28,8 +28,8 @@ public class ChromeDriverRequesterTest {
 
 			ChromeDriverAgent agent = new ChromeDriverAgent();
 
-			agent.addProxyFailedCallback(() -> {
-				agent.changeProxy(null);
+			agent.addProxyFailedCallback((a, proxy) -> {
+				a.changeProxy(null);
 			});
 
 			requester.addAgent(agent);
@@ -102,6 +102,4 @@ public class ChromeDriverRequesterTest {
 		System.err.println(ps.getPort());
 		Thread.sleep(100000);
 	}
-
-
 }

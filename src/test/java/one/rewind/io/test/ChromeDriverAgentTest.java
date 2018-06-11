@@ -37,7 +37,7 @@ public class ChromeDriverAgentTest {
 			System.err.println("IDLE");
 		});*/
 
-		agent.addTerminatedCallback(()->{
+		agent.addTerminatedCallback((a)->{
 			System.err.println("TERMINATED");
 		});
 
@@ -101,7 +101,7 @@ public class ChromeDriverAgentTest {
 			System.err.println("IDLE");
 		});*/
 
-		agent.addTerminatedCallback(()->{
+		agent.addTerminatedCallback((a)->{
 			System.err.println("TERMINATED");
 		});
 

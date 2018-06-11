@@ -78,9 +78,9 @@ public class RemoteDriverTest {
 					AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
 					task.addAction(new LoginWithGeetestAction(account));
 
-					agent.addNewCallback(()->{
+					agent.addNewCallback((a)->{
 						try {
-							agent.submit(task);
+							a.submit(task);
 						} catch (ChromeDriverException.IllegalStatusException e) {
 							e.printStackTrace();
 						}

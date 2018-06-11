@@ -139,16 +139,16 @@ public class ChromeDriverRequester implements Runnable {
 
 		agents.add(agent);
 
-		agent.addIdleCallback(() -> {
+		agent.addIdleCallback((a) -> {
 
-			idleAgentQueue.add(agent);
+			idleAgentQueue.add(a);
 
-		}).addNewCallback(() -> {
+		}).addNewCallback((a) -> {
 
 			// TODO 此处应该增加登陆操作
-			idleAgentQueue.add(agent);
+			idleAgentQueue.add(a);
 
-		}).addTerminatedCallback(() -> {
+		}).addTerminatedCallback((a) -> {
 
 			// agents.remove(agent);
 			// idleAgentQueue.remove(agent);
@@ -157,14 +157,14 @@ public class ChromeDriverRequester implements Runnable {
 			RemoteShell newRemoteShell = null;*/
 
 			// 需要 dockerMgr 终止旧容器
-			if(agent.remoteAddress != null) {
+			if(a.remoteAddress != null) {
 
 				// 重启旧容器
-				if(agent.remoteShell instanceof ChromeDriverDockerContainer) {
+				if(a.remoteShell instanceof ChromeDriverDockerContainer) {
 
 					try {
 						// logger.info("Remote container: {}", ((ChromeDriverDockerContainer) agent.remoteShell).getRemoteAddress());
-						((ChromeDriverDockerContainer) agent.remoteShell).rebuild();
+						((ChromeDriverDockerContainer) a.remoteShell).rebuild();
 						logger.info("Sleep 5s for container restart.");
 						Thread.sleep(5000);
 					} catch (Exception e) {
@@ -198,9 +198,9 @@ public class ChromeDriverRequester implements Runnable {
 			restart_executor.submit(
 					()->{
 						try {
-							agent.start();
+							a.start();
 						} catch (ChromeDriverException.IllegalStatusException e) {
-							logger.error("{} status:{}", agent.name, agent.status, e);
+							logger.error("{} status:{}", a.name, a.status, e);
 						}
 					}
 			);

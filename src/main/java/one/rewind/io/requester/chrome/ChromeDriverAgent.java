@@ -9,6 +9,9 @@ import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.Task;
 import one.rewind.io.requester.account.Account;
+import one.rewind.io.requester.callback.AccountCallback;
+import one.rewind.io.requester.callback.ChromeDriverAgentCallback;
+import one.rewind.io.requester.callback.ProxyCallBack;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.chrome.action.LoginAction;
 import one.rewind.io.requester.exception.AccountException;
@@ -141,7 +144,8 @@ public class ChromeDriverAgent {
 	// 状态
 	volatile Status status = Status.STARTING;
 
-	public Map<String, Account> accounts = new HashMap<>();
+	// 账户信息
+	public ConcurrentHashMap<String, Account> accounts = new ConcurrentHashMap<>();
 
 	// 重启周期
 	int cycle = 0;
@@ -160,25 +164,25 @@ public class ChromeDriverAgent {
 	}
 
 	// 启动回调
-	List<Runnable> newCallbacks = new ArrayList<>();
+	List<ChromeDriverAgentCallback> newCallbacks = new ArrayList<>();
 
 	// 空闲回调
-	private List<Runnable> idleCallbacks = new ArrayList<>();
+	private List<ChromeDriverAgentCallback> idleCallbacks = new ArrayList<>();
 
 	// 终止回调
-	List<Runnable> terminatedCallbacks = new ArrayList<>();
+	List<ChromeDriverAgentCallback> terminatedCallbacks = new ArrayList<>();
 
 	// 账户异常回调
-	private List<Runnable> accountFailedCallbacks = new ArrayList<>();
+	private List<AccountCallback> accountFailedCallbacks = new ArrayList<>();
 
 	// 账户冻结回调
-	private List<Runnable> accountFrozenCallbacks = new ArrayList<>();
+	private List<AccountCallback> accountFrozenCallbacks = new ArrayList<>();
 
 	// 代理被封禁回调
-	private List<Runnable> proxyFailedCallbacks = new ArrayList<>();
+	private List<ProxyCallBack> proxyFailedCallbacks = new ArrayList<>();
 
 	// 代理超时回调
-	private List<Runnable> proxyTimeoutCallbacks = new ArrayList<>();
+	private List<ProxyCallBack> proxyTimeoutCallbacks = new ArrayList<>();
 
 	/**
 	 * 启动标签类
@@ -187,6 +191,7 @@ public class ChromeDriverAgent {
 		REMOTE,
 		MITM // 设定MITM 未启用
 	}
+
 
 	/**
 	 * 初始化类
@@ -298,7 +303,7 @@ public class ChromeDriverAgent {
 		public Void call() throws ProxyException.Failed {
 
 			if(proxy == null || !proxy.validate()) {
-				throw new ProxyException.Failed();
+				throw new ProxyException.Failed(proxy);
 			}
 
 			// 关闭 ProxyServer
@@ -1058,29 +1063,43 @@ public class ChromeDriverAgent {
 			// 帐号被冻结
 			catch (AccountException.Frozen e) {
 
-				logger.error("{}, Account Frozen, ", name, e);
+				logger.error("{}, Account {}::{} frozen, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				runCallbacks(accountFrozenCallbacks);
+				accounts.remove(e.account.domain);
+
+				if(accountFrozenCallbacks == null) return;
+				for(AccountCallback callback : accountFrozenCallbacks) {
+					callback.run(this, e.account);
+				}
+
 				return;
 
 			}
 			// 帐号失效
 			catch (AccountException.Failed e) {
 
-				logger.error("{}, Account failed, ", name , e);
+				logger.error("{}, Account {}::{} failed, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				runCallbacks(accountFailedCallbacks);
+				accounts.remove(e.account.domain);
+
+				if(accountFailedCallbacks == null) return;
+				for(AccountCallback callback : accountFailedCallbacks) {
+					callback.run(this, e.account);
+				}
+
 				return;
-
 			}
 			// 代理失效
 			catch (ProxyException.Failed e) {
 
-				logger.error("{}, Proxy failed, ", name, e);
+				logger.error("{}, Proxy {}:{} failed, ", name, e.proxy.host, e.proxy.port, e);
 
-				runCallbacks(proxyFailedCallbacks);
+				if(proxyFailedCallbacks == null) return;
+				for(ProxyCallBack callback : proxyFailedCallbacks) {
+					callback.run(this, e.proxy);
+				}
+
 				return;
-
 			}
 			// 其他异常 TODO 待验证
 			catch (Throwable e) {
@@ -1158,11 +1177,11 @@ public class ChromeDriverAgent {
 	 *
 	 * @param callbacks
 	 */
-	private void runCallbacks(List<Runnable> callbacks) {
+	private void runCallbacks(List<ChromeDriverAgentCallback> callbacks) {
 
 		if(callbacks == null) return;
-		for(Runnable callback : callbacks) {
-			callback.run();
+		for(ChromeDriverAgentCallback callback : callbacks) {
+			callback.run(this);
 		}
 	}
 
@@ -1170,7 +1189,7 @@ public class ChromeDriverAgent {
 	 *
 	 * @param callback
 	 */
-	public ChromeDriverAgent addNewCallback(Runnable callback) throws ChromeDriverException.IllegalStatusException {
+	public ChromeDriverAgent addNewCallback(ChromeDriverAgentCallback callback) throws ChromeDriverException.IllegalStatusException {
 
 		if(status != Status.INIT) throw new ChromeDriverException.IllegalStatusException();
 
@@ -1183,7 +1202,7 @@ public class ChromeDriverAgent {
 	 *
 	 * @param callback
 	 */
-	public ChromeDriverAgent addIdleCallback(Runnable callback) {
+	public ChromeDriverAgent addIdleCallback(ChromeDriverAgentCallback callback) {
 
 		idleCallbacks.add(callback);
 		return this;
@@ -1193,7 +1212,7 @@ public class ChromeDriverAgent {
 	 *
 	 * @param callback
 	 */
-	public ChromeDriverAgent addTerminatedCallback(Runnable callback) {
+	public ChromeDriverAgent addTerminatedCallback(ChromeDriverAgentCallback callback) {
 
 		terminatedCallbacks.add(callback);
 		return this;
@@ -1210,30 +1229,35 @@ public class ChromeDriverAgent {
 	 * @param callback
 	 * @return
 	 */
-	public ChromeDriverAgent addAccountFailedCallback(Runnable callback) {
+	public ChromeDriverAgent addAccountFailedCallback(AccountCallback callback) {
 
 		accountFailedCallbacks.add(callback);
 		return this;
 	}
 
-	public ChromeDriverAgent addAccountFrozenCallback(Runnable callback) {
+	public ChromeDriverAgent addAccountFrozenCallback(AccountCallback callback) {
 
 		accountFrozenCallbacks.add(callback);
 		return this;
 	}
 
 	/**
-	 * 只需要设置agent的状态，不需要调用agent.stop()
+	 * 增加代理失效异常回调
 	 * @param callback
 	 * @return
 	 */
-	public ChromeDriverAgent addProxyFailedCallback(Runnable callback) {
+	public ChromeDriverAgent addProxyFailedCallback(ProxyCallBack callback) {
 
 		proxyFailedCallbacks.add(callback);
 		return this;
 	}
 
-	public ChromeDriverAgent addProxyTimeoutCallback(Runnable callback) {
+	/**
+	 * 增加代理超时异常回调
+	 * @param callback
+	 * @return
+	 */
+	public ChromeDriverAgent addProxyTimeoutCallback(ProxyCallBack callback) {
 
 		proxyTimeoutCallbacks.add(callback);
 		return this;
