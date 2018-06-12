@@ -147,6 +147,9 @@ public class ChromeDriverAgent {
 	// 账户信息
 	public ConcurrentHashMap<String, Account> accounts = new ConcurrentHashMap<>();
 
+	public AccountCallback accountAddCallback;
+	public AccountCallback accountRemoveCallback;
+
 	// 重启周期
 	int cycle = 0;
 
@@ -385,7 +388,9 @@ public class ChromeDriverAgent {
 					// 一个 Chrome 一个 domain 下只能记录一个 账户
 					if(action instanceof LoginAction && action.success) {
 						LoginAction action_ = (LoginAction) action;
-						accounts.put(action_.getAccount().domain, action_.getAccount());
+
+						updateAccountsInfo(action_.getAccount().domain, action_.getAccount());
+
 					}
 
 					actionResult = actionResult && action.success;
@@ -480,7 +485,7 @@ public class ChromeDriverAgent {
 	/**
 	 * 启动
 	 */
-	public synchronized ChromeDriverAgent start() throws ChromeDriverException.IllegalStatusException {
+	public synchronized ChromeDriverAgent start() throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		if(!(status == Status.INIT || status == Status.TERMINATED)) {
 			throw new ChromeDriverException.IllegalStatusException();
@@ -498,9 +503,9 @@ public class ChromeDriverAgent {
 			status = Status.NEW;
 
 			if(initSuccess) {
-				logger.info("INIT:{} done.", cycle);
+				logger.info("INIT[{}] done.", cycle);
 			} else {
-				logger.error("INIT:{} done, Auto scripts exec failed.", cycle);
+				logger.error("INIT[{}] done, Auto scripts exec failed.", cycle);
 			}
 
 			// 执行状态回调函数
@@ -534,7 +539,7 @@ public class ChromeDriverAgent {
 	/**
 	 * 停止
 	 */
-	public synchronized void stop() throws ChromeDriverException.IllegalStatusException {
+	public synchronized void stop() throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		if(! (status == Status.IDLE || status == Status.NEW || status == Status.BUSY || status == Status.FAILED) ) {
 			throw new ChromeDriverException.IllegalStatusException();
@@ -577,7 +582,7 @@ public class ChromeDriverAgent {
 	 *
 	 * @throws ChromeDriverException.IllegalStatusException
 	 */
-	public synchronized void destroy() throws ChromeDriverException.IllegalStatusException {
+	public synchronized void destroy() throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		terminatedCallbacks.clear();
 
@@ -961,7 +966,7 @@ public class ChromeDriverAgent {
 	 * 同步执行任务
 	 * @param task
 	 */
-	public synchronized void submit(Task task) throws ChromeDriverException.IllegalStatusException {
+	public synchronized void submit(Task task) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		submit(task, ChromeDriverRequester.CONNECT_TIMEOUT + ChromeDriverRequester.READ_TIMEOUT);
 	}
@@ -971,7 +976,7 @@ public class ChromeDriverAgent {
 	 * @param task
 	 * @param timeout
 	 */
-	public synchronized void submit(Task task, long timeout) throws ChromeDriverException.IllegalStatusException {
+	public synchronized void submit(Task task, long timeout) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		// 状态时间切分可能存在问题
 		if(status != Status.NEW && status != Status.IDLE) {
@@ -1065,27 +1070,30 @@ public class ChromeDriverAgent {
 
 				logger.error("{}, Account {}::{} frozen, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				accounts.remove(e.account.domain);
+				updateAccountsInfo(e.account.domain, null);
 
 				if(accountFrozenCallbacks == null) return;
 				for(AccountCallback callback : accountFrozenCallbacks) {
 					callback.run(this, e.account);
 				}
 
-				return;
+				status = Status.IDLE;
 
+				return;
 			}
 			// 帐号失效
 			catch (AccountException.Failed e) {
 
 				logger.error("{}, Account {}::{} failed, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				accounts.remove(e.account.domain);
+				updateAccountsInfo(e.account.domain, null);
 
 				if(accountFailedCallbacks == null) return;
 				for(AccountCallback callback : accountFailedCallbacks) {
 					callback.run(this, e.account);
 				}
+
+				status = Status.IDLE;
 
 				return;
 			}
@@ -1098,6 +1106,8 @@ public class ChromeDriverAgent {
 				for(ProxyCallBack callback : proxyFailedCallbacks) {
 					callback.run(this, e.proxy);
 				}
+
+				status = Status.IDLE;
 
 				return;
 			}
@@ -1131,10 +1141,31 @@ public class ChromeDriverAgent {
 	}
 
 	/**
+	 * 更新加载账户信息
+	 */
+	private void updateAccountsInfo(String domain, Account account) {
+
+		if(account == null) {
+			accounts.remove(domain);
+
+			if(accountRemoveCallback != null)
+				accountRemoveCallback.run(this, account);
+
+		} else {
+			accounts.put(domain, account);
+
+			if(accountRemoveCallback != null)
+				accountRemoveCallback.run(this, account);
+		}
+
+
+	}
+
+	/**
 	 * 切换代理
 	 * @param proxy
 	 */
-	public void changeProxy(one.rewind.io.requester.proxy.Proxy proxy) {
+	public void changeProxy(one.rewind.io.requester.proxy.Proxy proxy) throws InterruptedException, ChromeDriverException.IllegalStatusException {
 
 		Future<Void> changeProxyFuture = executor.submit(new ChangeProxy(proxy));
 
@@ -1177,7 +1208,7 @@ public class ChromeDriverAgent {
 	 *
 	 * @param callbacks
 	 */
-	private void runCallbacks(List<ChromeDriverAgentCallback> callbacks) {
+	private void runCallbacks(List<ChromeDriverAgentCallback> callbacks) throws InterruptedException, ChromeDriverException.IllegalStatusException {
 
 		if(callbacks == null) return;
 		for(ChromeDriverAgentCallback callback : callbacks) {
@@ -1186,7 +1217,7 @@ public class ChromeDriverAgent {
 	}
 
 	/**
-	 *
+	 * 新增加的最先执行
 	 * @param callback
 	 */
 	public ChromeDriverAgent addNewCallback(ChromeDriverAgentCallback callback) throws ChromeDriverException.IllegalStatusException {

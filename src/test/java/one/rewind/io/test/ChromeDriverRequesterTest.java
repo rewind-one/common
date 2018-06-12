@@ -24,17 +24,10 @@ public class ChromeDriverRequesterTest {
 
 		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
 
-		for(int i=0; i<1; i++) {
+		for(int i=0; i<4; i++) {
 
 			ChromeDriverAgent agent = new ChromeDriverAgent();
-
-			agent.addProxyFailedCallback((a, proxy) -> {
-				a.changeProxy(null);
-			});
-
 			requester.addAgent(agent);
-
-			agent.start();
 		}
 
 		requester.layout();

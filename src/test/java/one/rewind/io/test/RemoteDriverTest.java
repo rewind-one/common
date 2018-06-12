@@ -29,7 +29,7 @@ public class RemoteDriverTest {
 	}
 
 	@Test
-	public void simpleTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException {
+	public void simpleTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
 
@@ -95,6 +95,8 @@ public class RemoteDriverTest {
 				} catch (URISyntaxException e) {
 					e.printStackTrace();
 				} catch (MalformedURLException e) {
+					e.printStackTrace();
+				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}).start();

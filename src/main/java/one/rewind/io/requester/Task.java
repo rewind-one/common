@@ -6,7 +6,6 @@ import com.j256.ormlite.field.DatabaseField;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.db.DaoManager;
-import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ProxyException;
@@ -32,10 +31,13 @@ import java.util.*;
 public class Task implements Comparable<Task> {
 
 	public enum Priority {
+		LOWEST,
+		LOWER,
 		LOW,
 		MEDIUM,
 		HIGH,
-		URGENT
+		HIGHER,
+		HIGHEST
 	}
 
 	public static enum RequestMethod {
@@ -87,11 +89,14 @@ public class Task implements Comparable<Task> {
 	@DatabaseField(dataType = DataType.STRING, width = 256)
 	private String requester_class = BasicRequester.class.getSimpleName();
 
-	// 代理出口信息
-	@DatabaseField(dataType = DataType.SERIALIZABLE)
-	private Account account;
-	// 账户信息
+	@DatabaseField(dataType = DataType.BOOLEAN)
+	private boolean login_task = false;
 
+	// 账户信息
+	@DatabaseField(dataType = DataType.STRING, width = 256)
+	private String username;
+
+	// 代理出口信息
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 	private one.rewind.io.requester.proxy.Proxy proxy;
 
@@ -307,12 +312,23 @@ public class Task implements Comparable<Task> {
 		this.proxy = proxy;
 	}
 
-	public Account getAccount() {
-		return this.account;
+	public Task setLoginTask() {
+		this.login_task = true;
+		return this;
 	}
 
-	public void setAccount(Account aw) {
-		this.account = aw;
+	public boolean isLoginTask() {
+		return this.login_task;
+	}
+
+	public String getUsername() {
+		return this.username;
+	}
+
+	public Task setUsername(String username) {
+		this.username = username;
+		this.login_task = true;
+		return this;
 	}
 
 	public List<ChromeAction> getActions() {

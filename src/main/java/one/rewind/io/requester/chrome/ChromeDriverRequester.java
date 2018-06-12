@@ -1,5 +1,6 @@
 package one.rewind.io.requester.chrome;
 
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import net.lightbody.bmp.BrowserMobProxyServer;
@@ -17,8 +18,9 @@ import org.openqa.selenium.Point;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
-public class ChromeDriverRequester implements Runnable {
+public class ChromeDriverRequester {
 
 	public static ChromeDriverRequester instance;
 
@@ -34,8 +36,6 @@ public class ChromeDriverRequester implements Runnable {
 
 	public static String REQUESTER_LOCAL_IP;
 
-	public static ExecutorService requester_executor;
-
 	// 配置设定
 	static {
 
@@ -45,9 +45,6 @@ public class ChromeDriverRequester implements Runnable {
 		READ_TIMEOUT = ioConfig.getInt("readTimeout");
 		AGENT_NUM = ioConfig.getInt("chromeDriverAgentNum");
 		REQUESTER_LOCAL_IP = ioConfig.getString("requesterLocalIp");
-
-		requester_executor = Executors.newSingleThreadExecutor(
-				new ThreadFactoryBuilder().setNameFormat("ChromeDriverRequester-%d").build());
 	}
 
 	/**
@@ -60,7 +57,6 @@ public class ChromeDriverRequester implements Runnable {
 			synchronized (ChromeDriverRequester.class) {
 				if (instance == null) {
 					instance = new ChromeDriverRequester();
-					requester_executor.submit(instance);
 				}
 			}
 		}
@@ -68,19 +64,13 @@ public class ChromeDriverRequester implements Runnable {
 		return instance;
 	}
 
-	//
-	private Map<String, BlockingQueue<Task>> tasks = new HashMap<>();
+	private ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<Task>> queues = new ConcurrentHashMap<>();
 
-	public PriorityBlockingQueue<Task> queue = new PriorityBlockingQueue<>();
+	private Map<String, ChromeDriverAgent> domain_account_agent_map = new HashMap<>();
 
-	private Map<String, Set<ChromeDriverAgent>> domain_agents_map;
+	private Map<String, List<ChromeDriverAgent>> domain_agent_map = new HashMap<>();
 
-	private Map<String, Set<ChromeDriverAgent>> account_agents_map;
-
-	public List<ChromeDriverAgent> agents = new LinkedList<>();
-
-	public BlockingQueue<ChromeDriverAgent> idleAgentQueue = new LinkedBlockingQueue<>();
-
+	// 任务 Wrapper 线程池
 	ThreadPoolExecutor executor = new ThreadPoolExecutor(
 			10,
 			20,
@@ -89,6 +79,7 @@ public class ChromeDriverRequester implements Runnable {
 			new SynchronousQueue<>()
 	);
 
+	// 后续任务线程池
 	ThreadPoolExecutor post_executor = new ThreadPoolExecutor(
 			10,
 			10,
@@ -96,17 +87,10 @@ public class ChromeDriverRequester implements Runnable {
 			new LinkedBlockingQueue<>()
 	);
 
-	ThreadPoolExecutor restart_executor = new ThreadPoolExecutor(
-			4,
-			4,
-			0, TimeUnit.MICROSECONDS,
-			new LinkedBlockingQueue<>()
-	);
-
 	private volatile boolean done = false;
 
 	/**
-	 *
+	 * 初始化
 	 */
 	public ChromeDriverRequester() {
 
@@ -117,9 +101,6 @@ public class ChromeDriverRequester implements Runnable {
 
 		post_executor.setThreadFactory(new ThreadFactoryBuilder()
 				.setNameFormat("ChromeDriverRequester-PostWorker-%d").build());
-
-		restart_executor.setThreadFactory(new ThreadFactoryBuilder()
-				.setNameFormat("ChromeDriverRequester-RestartWorker-%d").build());
 
 	}
 
@@ -132,29 +113,70 @@ public class ChromeDriverRequester implements Runnable {
 	}
 
 	/**
-	 *
+	 * 获取任务
+	 * @param agent
+	 * @return
+	 * @throws InterruptedException
+	 */
+	public Task getTask(ChromeDriverAgent agent) throws InterruptedException {
+
+		Task t = queues.get(agent).take();
+
+		// 任务失败重试逻辑
+		t.addDoneCallback(() -> {
+
+			if(t.needRetry()) {
+
+				// 重试逻辑
+				if( t.getRetryCount() < 3 ) {
+
+					t.addRetryCount();
+					submit(t);
+
+				}
+				// 失败任务保存到数据库
+				else {
+
+					try {
+						t.insert();
+					} catch (Exception e) {
+						logger.error(e);
+					}
+				}
+			}
+		});
+
+		logger.info("Assign {}.", agent.name);
+		return t;
+	}
+
+	/**
+	 * 添加Agent
 	 * @param agent
 	 */
-	public void addAgent(ChromeDriverAgent agent) throws ChromeDriverException.IllegalStatusException {
+	public void addAgent(ChromeDriverAgent agent)
+			throws ChromeDriverException.IllegalStatusException, InterruptedException
+	{
 
-		agents.add(agent);
+		CountDownLatch down = new CountDownLatch(1);
 
+		// 空闲回调
 		agent.addIdleCallback((a) -> {
 
-			idleAgentQueue.add(a);
+			a.submit(getTask(a));
 
-		}).addNewCallback((a) -> {
+		})
+		// 启动回调
+		.addNewCallback((a) -> {
 
-			// TODO 此处应该增加登陆操作
-			idleAgentQueue.add(a);
+			// 解锁同步
+			down.countDown();
 
-		}).addTerminatedCallback((a) -> {
+			a.submit(getTask(a));
 
-			// agents.remove(agent);
-			// idleAgentQueue.remove(agent);
-
-			/*URL newRemoteAddress = null;
-			RemoteShell newRemoteShell = null;*/
+		})
+		// 失败回调
+		.addTerminatedCallback((a) -> {
 
 			// 需要 dockerMgr 终止旧容器
 			if(a.remoteAddress != null) {
@@ -174,59 +196,52 @@ public class ChromeDriverRequester implements Runnable {
 				} else {
 					return;
 				}
-
-				/*ChromeDriverDockerContainer container = getChromeDriverDockerContainer();
-
-				if(container != null) {
-					try {
-						logger.info("Set new remote address: {}", container.getRemoteAddress());
-						newRemoteAddress = container.getRemoteAddress();
-					} catch (MalformedURLException e) {
-						logger.error(e);
-					}
-					newRemoteShell = container;
-				} else {
-					// 没有必要创建新的agent
-					// agent会越用越少
-					return;
-				}*/
 			}
 
-			/*agent.remoteAddress = newRemoteAddress;
-			agent.remoteShell = newRemoteShell;*/
-
-			restart_executor.submit(
-					()->{
-						try {
-							a.start();
-						} catch (ChromeDriverException.IllegalStatusException e) {
-							logger.error("{} status:{}", a.name, a.status, e);
-						}
-					}
-			);
-
-			/*ChromeDriverAgent new_agent = new ChromeDriverAgent(
-					newRemoteAddress,
-					newRemoteShell,
-					agent.proxy,
-					agent.flags.toArray(new ChromeDriverAgent.Flag[agent.flags.size()])
-			);
-
-			// 把原来的newCallbacks复制到新agent
-			List<Runnable> newCallbacks = agent.newCallbacks;
-			newCallbacks.remove(newCallbacks.size()-1);
-			if(newCallbacks.size() > 0) {
-				new_agent.newCallbacks = newCallbacks;
-			}
-
+			// 重启Agent
 			try {
-				addAgent(new_agent);
-				new_agent.start();
-			} catch (ChromeDriverException.IllegalStatusException e) {
-				logger.error("Can't add callbacks for new agent, ", e);
-			}*/
+				a.start();
+			} catch (InterruptedException | ChromeDriverException.IllegalStatusException e) {
+				logger.error("{} status:{}", a.name, a.status, e);
+			}
 
 		});
+
+		// 账户登录回调
+		agent.accountAddCallback = (a, account) -> {
+
+			domain_agent_map.computeIfAbsent(account.getDomain(), k -> new ArrayList<>());
+
+			domain_agent_map.get(account.getDomain()).add(a);
+
+			domain_account_agent_map.put(account.getDomain() + "-" + account.getUsername(), a);
+
+		};
+
+		// 账户退出回调
+		agent.accountRemoveCallback = (a, account) -> {
+
+			domain_agent_map.computeIfAbsent(account.getDomain(), k -> new ArrayList<>());
+
+			domain_agent_map.get(account.getDomain()).remove(a);
+
+			domain_account_agent_map.remove(account.getDomain() + "-" + account.getUsername());
+
+		};
+
+		// 添加Queue
+		queues.put(agent, new PriorityBlockingQueue<>());
+
+		// 在单独进程执行
+		executor.submit(() -> {
+			try {
+				agent.start();
+			} catch (InterruptedException | ChromeDriverException.IllegalStatusException e) {
+				logger.error("{} add failed, status:{}. ", agent.name, agent.status, e);
+			}
+		});
+
+		down.await();
 	}
 
 
@@ -236,7 +251,7 @@ public class ChromeDriverRequester implements Runnable {
 	public synchronized void layout() {
 
 		int localAgentCount = 0;
-		for(ChromeDriverAgent agent : agents) {
+		for(ChromeDriverAgent agent : queues.keySet()) {
 
 			if(!agent.isRemote())
 				localAgentCount ++;
@@ -247,7 +262,7 @@ public class ChromeDriverRequester implements Runnable {
 		int gap = 600 / (localAgentCount/2);
 
 		int i = 0;
-		for(ChromeDriverAgent agent : agents) {
+		for(ChromeDriverAgent agent : queues.keySet()) {
 
 			if(!agent.isRemote()) {
 				Random r = new Random();
@@ -261,84 +276,75 @@ public class ChromeDriverRequester implements Runnable {
 	}
 
 	/**
-	 *
+	 * 提交任务
 	 * @param task
 	 */
 	public void submit(Task task) {
-		queue.offer(task);
-	}
 
-	@Override
-	public void run() {
+		String domain = task.getDomain();
+		String username = task.getUsername();
 
-		while(!done) {
+		ChromeDriverAgent agent;
 
-			try {
+		// 特定用户的采集任务
+		if(username != null) {
 
-				final Task t = queue.take();
-				logger.info("Get Task: {}", t.getUrl());
+			String account_key = domain + "-" + username;
 
-				if(t != null) {
+			agent = domain_account_agent_map.get(account_key);
 
-					executor.submit(() -> {
+			task.setPriority(Task.Priority.HIGHER);
 
-						ChromeDriverAgent agent = null;
-
-						try {
-
-							agent = idleAgentQueue.take();
-						} catch (InterruptedException e) {
-							logger.error("ChromeDriverAgent assignment interrupted, ", e);
-						}
-
-						if(agent != null) {
-
-							logger.info("Assign {}", agent.name);
-
-							t.addDoneCallback(() -> {
-
-								if(t.needRetry()) {
-									if( t.getRetryCount() < 3 ) {
-
-										t.addRetryCount();
-										submit(t);
-
-									} else {
-
-										try {
-											t.insert();
-										} catch (Exception e) {
-											logger.error(e);
-										}
-									}
-								}
-							});
-
-							// TODO 如果Agent出现了错误 导致task需要retry
-							// 此时 原agent 时不能提交的
-							try {
-								agent.submit(t);
-							} catch (ChromeDriverException.IllegalStatusException e) {
-								logger.error("{}, ", agent.name, e);
-							}
-						}
-					});
-
-				}
-
-			} catch (InterruptedException e) {
-				logger.error("Task assignment interrupted, ", e);
-			}
 		}
+		// 需要登录采集的任务
+		else if(task.isLoginTask()){
+
+			if(!domain_agent_map.keySet().contains(domain)) {
+				logger.warn("No agent has {} login accounts.", domain);
+				return;
+			}
+
+			agent = domain_agent_map.get(domain).stream().map(a -> {
+				int queue_size = queues.get(a).size();
+				return Maps.immutableEntry(a, queue_size);
+			})
+			.sorted(Map.Entry.<ChromeDriverAgent, Integer>comparingByValue())
+			.limit(1)
+			.map(Map.Entry::getKey)
+			.collect(Collectors.toList())
+			.get(0);
+		}
+		// 一般任务
+		else {
+
+			agent = queues.keySet().stream().map(a -> {
+				int queue_size = queues.get(a).size();
+				return Maps.immutableEntry(a, queue_size);
+			})
+			.sorted(Map.Entry.<ChromeDriverAgent, Integer>comparingByValue())
+			.limit(1)
+			.map(Map.Entry::getKey)
+			.collect(Collectors.toList())
+			.get(0);
+		}
+
+		if(agent != null) {
+			logger.info("Assign task:{}-{} to Agent:{}.", domain, username, agent.name);
+			queues.get(agent).put(task);
+		} else {
+			logger.warn("Agent not found for {}-{}.", domain, username);
+		}
+
 	}
 
 	/**
-	 *
+	 * 关闭
+	 * TODO 应该将未执行的任务持久化
 	 */
-	public void close() throws ChromeDriverException.IllegalStatusException {
+	public void close() throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		executor.shutdown();
-		for(ChromeDriverAgent agent : agents) {
+		for(ChromeDriverAgent agent : queues.keySet()) {
 			agent.clearTerminatedCallbacks();
 			agent.destroy();
 		}
