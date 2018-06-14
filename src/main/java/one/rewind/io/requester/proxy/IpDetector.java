@@ -7,7 +7,7 @@
 package one.rewind.io.requester.proxy;
 
 import one.rewind.io.requester.BasicRequester;
-import one.rewind.io.requester.Task;
+import one.rewind.io.requester.task.Task;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -1,7 +1,7 @@
 package one.rewind.io.requester.chrome.action;
 
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.RemoteMouseEventSimulator;
-import one.rewind.json.JSON;
 import one.rewind.opencv.OpenCVUtil;
 import one.rewind.simulator.mouse.Action;
 import one.rewind.simulator.mouse.MouseEventModeler;
@@ -20,7 +20,7 @@ import java.util.Random;
 /**
  * GeeTest bypass
  */
-public class GeetestAction extends ChromeAction {
+public class GeetestAction extends BasicAction {
 
 	// 点击验证
 	public String geetestContentCssPath = ".geetest_radar_tip";
@@ -50,7 +50,7 @@ public class GeetestAction extends ChromeAction {
 
 	public GeetestAction() {}
 
-	public int getOffset() throws IOException, InterruptedException {
+	public int getOffset(ChromeDriverAgent agent) throws IOException, InterruptedException {
 
 		String ts = System.currentTimeMillis() + "-" + StringUtil.uuid();
 
@@ -84,7 +84,7 @@ public class GeetestAction extends ChromeAction {
 	 * @param sys_error_x 误差
 	 * @throws Exception
 	 */
-	private void mouseManipulate(int offset, int sys_error_x) throws Exception {
+	private void mouseManipulate(ChromeDriverAgent agent, int offset, int sys_error_x) throws Exception {
 
 		if (offset != -1) {
 			// TODO
@@ -92,7 +92,7 @@ public class GeetestAction extends ChromeAction {
 					+ 15 + new Random().nextInt(20);
 
 			int y_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().y
-					+ this.agent.getDriver().manage().window().getPosition().y + 105 + 10 + new Random().nextInt(20);
+					+ agent.getDriver().manage().window().getPosition().y + 105 + 10 + new Random().nextInt(20);
 
 		/*Robot bot = new Robot();
 		bot.mouseMove(x_init, y_init);*/
@@ -104,9 +104,9 @@ public class GeetestAction extends ChromeAction {
 
 			// 初始化 RemoteMouseEventSimulator
 			MouseEventSimulator simulator;
-			if (this.agent.remoteShell != null) {
-				logger.info(this.agent.remoteAddress);
-				simulator = new RemoteMouseEventSimulator(actions, this.agent.remoteShell);
+			if (agent.remoteShell != null) {
+				logger.info(agent.remoteAddress);
+				simulator = new RemoteMouseEventSimulator(actions, agent.remoteShell);
 			} else {
 				simulator = new MouseEventSimulator(actions);
 			}
@@ -120,12 +120,13 @@ public class GeetestAction extends ChromeAction {
 	 * 滑块验证
 	 * @throws Exception
 	 */
-	private void bypass() throws Exception {
+	private void bypass(ChromeDriverAgent agent) throws Exception {
 
 		logger.info("Retry:{}", geetest_retry_count);
 
 		// 第一次
 		if(geetest_retry_count == 0) {
+
 			Thread.sleep(5000);
 
 			// 点击识别框
@@ -179,7 +180,7 @@ public class GeetestAction extends ChromeAction {
 
 		// 此时验证DIV已经打开
 
-		mouseManipulate(getOffset(), 0);
+		mouseManipulate(agent, getOffset(agent), 0);
 
 		geetest_retry_count++;
 
@@ -190,27 +191,23 @@ public class GeetestAction extends ChromeAction {
 		} catch (org.openqa.selenium.TimeoutException e) {
 			// 重试
 			if(geetest_retry_count < 100) {
-				bypass();
+				bypass(agent);
 			} else {
 				throw new ByPassErrorException();
 			}
 		}
 	}
 
-	public void run() {
+	public boolean run(ChromeDriverAgent agent) {
 
 		try {
-			bypass();
+			bypass(agent);
+			return true;
 		} catch (Exception e) {
 			geetest_retry_count = 0;
 			logger.error("GeeTest bypass error, ", e);
-			return;
+			return false;
 		}
-	}
-
-	@Override
-	public String toJSON() {
-		return JSON.toJson(this);
 	}
 
 }

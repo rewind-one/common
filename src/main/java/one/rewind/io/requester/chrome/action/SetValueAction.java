@@ -1,15 +1,14 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.json.JSON;
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import org.openqa.selenium.WebElement;
-import one.rewind.json.JSON;
 
 /**
 * 输入框填值
 * @author karajan@tfelab.org
 * 2017年3月21日 下午8:47:31
 */
-public class SetValueAction extends ChromeAction {
+public class SetValueAction extends BasicAction {
 
    public String inputCssPath;
    public String value;
@@ -21,7 +20,7 @@ public class SetValueAction extends ChromeAction {
 	   this.value = value;
    }
 
-   public void run() {
+   public boolean run(ChromeDriverAgent agent) {
 
 	   try {
 
@@ -29,20 +28,16 @@ public class SetValueAction extends ChromeAction {
 
 		   if(el == null) {
 			   logger.warn("{} not found.", inputCssPath);
-			   return;
+			   return false;
 		   }
 
 		   el.clear();
 		   el.sendKeys(value);
-		   success = false;
+		   return true;
 
 	   } catch (Exception e) {
-			logger.error(e);
+			logger.error("Set [{}]:[{}] error, ", inputCssPath, value, e);
+			return false;
 	   }
    }
-
-	@Override
-	public String toJSON() {
-		return JSON.toJson(this);
-	}
 }

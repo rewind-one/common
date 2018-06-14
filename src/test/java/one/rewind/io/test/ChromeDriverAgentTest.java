@@ -1,7 +1,7 @@
 package one.rewind.io.test;
 
 import net.lightbody.bmp.BrowserMobProxyServer;
-import one.rewind.io.requester.Task;
+import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
@@ -82,9 +82,9 @@ public class ChromeDriverAgentTest {
 	public void requesterFilterTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		final Task t = new Task("https://www.baidu.com/");
-		t.addDoneCallback(()->{
+		t.addDoneCallback((task)->{
 			System.err.println("Done!");
-			System.err.println(t.getResponse().getVar("test"));
+			System.err.println(task.getResponse().getVar("test"));
 		});
 
 		t.setResponseFilter((response, contents, messageInfo) -> {

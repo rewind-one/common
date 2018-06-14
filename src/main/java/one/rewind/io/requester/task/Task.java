@@ -1,4 +1,4 @@
-package one.rewind.io.requester;
+package one.rewind.io.requester.task;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
@@ -6,9 +6,10 @@ import com.j256.ormlite.field.DatabaseField;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.db.DaoManager;
+import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.callback.TaskCallback;
+import one.rewind.io.requester.callback.TaskValidator;
 import one.rewind.io.requester.chrome.action.ChromeAction;
-import one.rewind.io.requester.exception.AccountException;
-import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.json.JSON;
 import one.rewind.txt.ChineseChar;
 import one.rewind.txt.NumberFormatUtil;
@@ -132,8 +133,10 @@ public class Task implements Comparable<Task> {
 	@DatabaseField(dataType = DataType.INTEGER)
 	private int retryCount = 0;
 
+	public TaskValidator validator;
+
 	// 采集后回调
-	public List<Runnable> doneCallBacks = new LinkedList<>();
+	public List<TaskCallback> doneCallbacks = new LinkedList<>();
 
 	// 异常记录
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
@@ -143,9 +146,7 @@ public class Task implements Comparable<Task> {
 	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
 	private Date create_time = new Date();
 
-	private Task() {
-		this.response = new Response();
-	}
+	private Task() {}
 
 	/**
 	 * 简单 GET 请求
@@ -158,7 +159,7 @@ public class Task implements Comparable<Task> {
 		this.url = url;
 		domain = URLUtil.getDomainName(url);
 		this.response = new Response();
-		this.id = StringUtil.MD5(url + System.nanoTime());
+		this.id = StringUtil.MD5(url + " " + System.nanoTime());
 		this.request_method = RequestMethod.GET;
 	}
 
@@ -244,103 +245,212 @@ public class Task implements Comparable<Task> {
 		}
 	}
 
+	/**
+	 * 获取ID
+	 * @return
+	 */
 	public String getId() {
 		return this.id;
 	}
 
+	/**
+	 * 获取URL
+	 * @return
+	 */
 	public String getUrl() {
 		return url;
 	}
 
+	/**
+	 * 设置URL
+	 * @param url
+	 */
 	public void setUrl(String url) {
 		this.url = url;
 	}
 
+	/**
+	 * 获取HTTP请求方法
+	 * 仅对BasicRequester有效
+	 * @return
+	 */
 	public String getRequestMethod() {
 		return request_method.name();
 	}
 
-	public void setRequestethod(RequestMethod request_method) {
+	/**
+	 * 设定请求方法
+	 * 仅对BasicRequester有效
+	 * @param request_method
+	 */
+	public void setRequestMethod(RequestMethod request_method) {
 		this.request_method = request_method;
 	}
 
+	/**
+	 * 设定POST请求方法
+	 * 仅对BasicRequester有效
+	 */
 	public void setPost() {
 		this.request_method = RequestMethod.POST;
 	}
 
+	/**
+	 * 设定PUT请求方法
+	 * 仅对BasicRequester有效
+	 */
 	public void setPut() {
 		this.request_method = RequestMethod.PUT;
 	}
 
+	/**
+	 * 设定DELETE请求方法
+	 * 仅对BasicRequester有效
+	 */
 	public void setDelete() {
 		this.request_method = RequestMethod.DELETE;
 	}
 
+	/**
+	 * 获取HEADER
+	 * 仅对BasicRequester有效
+	 * @return
+	 */
 	public Map<String, String> getHeaders() {
 		return headers;
 	}
 
+	/**
+	 * 设定HEADER
+	 * 仅对BasicRequester有效
+	 * @param headers
+	 */
 	public void setHeaders(Map<String, String> headers) {
 		this.headers = headers;
 	}
 
+	/**
+	 * 获取POST DATA
+	 * 仅对BasicRequester有效
+	 * @return
+	 */
 	public String getPost_data() {
 		return post_data;
 	}
 
+	/**
+	 * 获取Cookies
+	 * 仅对BasicRequester有效
+	 * @return
+	 */
 	public String getCookies() {
 		return cookies;
 	}
 
+	/**
+	 * 获取Reference
+	 * 仅对BasicRequester有效
+	 * @return
+	 */
 	public String getRef() {
 		return ref;
 	}
 
+	/**
+	 * 仅对BasicRequester有效
+	 * @param ref
+	 */
 	public void setRef(String ref) {
 		this.ref = ref;
 	}
 
+	/**
+	 * 获取Domain
+	 * @return
+	 */
 	public String getDomain() {
 		return domain;
 	}
 
+	/**
+	 * 获取Proxy
+	 * @return
+	 */
 	public one.rewind.io.requester.proxy.Proxy getProxy() {
 		return proxy;
 	}
 
+	/**
+	 * 设定Proxy
+	 * @param proxy
+	 */
 	public void setProxy(one.rewind.io.requester.proxy.Proxy proxy) {
 		this.proxy = proxy;
 	}
 
+	/**
+	 * 设定登录任务标识
+	 * ChromeDriverAgent 专用
+	 * @return
+	 */
 	public Task setLoginTask() {
 		this.login_task = true;
 		return this;
 	}
 
+	/**
+	 * 判断是否为登录任务
+	 * ChromeDriverAgent 专用
+	 * @return
+	 */
 	public boolean isLoginTask() {
 		return this.login_task;
 	}
 
+	/**
+	 * 获取用户名
+	 * ChromeDriverAgent 专用
+	 * @return
+	 */
 	public String getUsername() {
 		return this.username;
 	}
 
+	/**
+	 * 设定用户名
+	 * ChromeDriverAgent 专用
+	 * @param username
+	 * @return
+	 */
 	public Task setUsername(String username) {
 		this.username = username;
 		this.login_task = true;
 		return this;
 	}
 
+	/**
+	 * 获取前置操作
+	 * ChromeDriverAgent 专用
+	 * @return
+	 */
 	public List<ChromeAction> getActions() {
 		return actions;
 	}
 
+	/**
+	 * 添加前置操作
+	 * ChromeDriverAgent 专用
+	 * @param action
+	 * @return
+	 */
 	public Task addAction(ChromeAction action) {
 		this.actions.add(action);
 		return this;
 	}
 
 	/**
+	 * 设定请求过滤器
+	 * ChromeDriverAgent 专用
 	 * @param filter
 	 * @return
 	 */
@@ -350,6 +460,8 @@ public class Task implements Comparable<Task> {
 	}
 
 	/**
+	 * 获取请求过滤器
+	 * ChromeDriverAgent 专用
 	 * @return
 	 */
 	public RequestFilter getRequestFilter() {
@@ -357,6 +469,8 @@ public class Task implements Comparable<Task> {
 	}
 
 	/**
+	 * 设定返回过滤器
+	 * ChromeDriverAgent 专用
 	 * @param filter
 	 * @return
 	 */
@@ -366,120 +480,205 @@ public class Task implements Comparable<Task> {
 	}
 
 	/**
+	 * 获取返回过滤器
+	 * ChromeDriverAgent 专用
 	 * @return
 	 */
 	public ResponseFilter getResponseFilter() {
 		return this.responseFilter;
 	}
 
-	public void setResponse() {
-		response = new Response();
-	}
-
+	/**
+	 * 获得返回对象
+	 * @return
+	 */
 	public Response getResponse() {
 		return response;
 	}
 
+	/**
+	 * 是否前置处理
+	 * @return
+	 */
 	public boolean preProc() {
 		return flags.contains(Flag.PRE_PROC);
 	}
 
+	/**
+	 * 设定前置处理
+	 */
 	public void setPreProc() {
 		flags.add(Flag.PRE_PROC);
 	}
 
+	/**
+	 * 是否构建DOM
+	 * ChromeDriverAgent 专用
+	 * @return
+	 */
 	public boolean buildDom() {
 		return flags.contains(Flag.BUILD_DOM);
 	}
 
+	/**
+	 * 设定构建DOM
+	 * ChromeDriverAgent 专用
+	 */
 	public void setBuildDom() {
 		flags.add(Flag.BUILD_DOM);
 	}
 
+	/**
+	 * 是否进行截屏
+	 * ChromeDriverAgent 专用
+	 * @return
+	 */
 	public boolean shootScreen() {
 		return flags.contains(Flag.SHOOT_SCREEN);
 	}
 
+	/**
+	 * 设定进行截屏
+	 */
 	public void setShootScreen() {
 		flags.contains(Flag.SHOOT_SCREEN);
 	}
 
+	/**
+	 * 设定开始时间
+	 */
 	public void setStartTime() {
 		this.start_time = new Date();
 	}
 
+	/**
+	 * 获取用时
+	 * @return
+	 */
 	public long getDuration() {
 		return duration;
 	}
 
+	/**
+	 * 设定用时
+	 */
 	public void setDuration() {
 		this.duration = System.currentTimeMillis() - this.start_time.getTime();
 	}
 
+	/**
+	 * 设定重试
+	 */
 	public void setRetry() {
 		this.retry = true;
 	}
 
+	/**
+	 * 判断重试
+	 * @return
+	 */
 	public boolean needRetry() {
 		return this.retry;
 	}
 
 	/**
+	 * 设置验证器
+	 * @param validator
 	 * @return
-	 * @throws ProxyException.Failed
-	 * @throws AccountException.Failed
-	 * @throws AccountException.Frozen
 	 */
-	public Task validate() throws ProxyException.Failed, AccountException.Failed, AccountException.Frozen {
+	public Task setValidator(TaskValidator validator) {
+		this.validator = validator;
 		return this;
 	}
 
+	/**
+	 * 生成JSON
+	 * @return
+	 */
 	public String toJSON() {
 		return JSON.toJson(this);
 	}
 
+	/**
+	 * 获取重试次数
+	 * @return
+	 */
 	public int getRetryCount() {
 		return retryCount;
 	}
 
+	/**
+	 * 增加重试次数
+	 */
 	public void addRetryCount() {
-
+		this.retryCount ++;
 	}
 
+	/**
+	 * 获取请求器类名
+	 * @return
+	 */
 	public String getRequester_class() {
 		return requester_class;
 	}
 
+	/**
+	 * 设置请求器类名
+	 * @param requester_class
+	 */
 	public void setRequester_class(String requester_class) {
 		this.requester_class = requester_class;
 	}
 
+	/**
+	 * 获取异常列表
+	 * @return
+	 */
 	public List<Throwable> getExceptions() {
 		return exceptions;
 	}
 
+	/**
+	 * 添加Exception
+	 * @param e
+	 */
 	public void addExceptions(Throwable e) {
 		this.exceptions.add(e);
 	}
 
+	/**
+	 * 获取字符串类型参数
+	 * @param key
+	 * @return
+	 */
 	public String getParamString(String key) {
 		if (params.get(key) == null) return null;
 
 		return String.valueOf(params.get(key));
 	}
 
+	/**
+	 * 获取Int类型参数
+	 * @param key
+	 * @return
+	 */
 	public int getParamInt(String key) {
 		if (params.get(key) == null) return 0;
 		//return Integer.valueOf((int) params.get(key));
 		return NumberFormatUtil.parseInt(String.valueOf(params.get(key)));
 	}
 
+	/**
+	 * 设置参数
+	 * @param key
+	 * @param object
+	 */
 	public void setParam(String key, Object object) {
 		this.params.put(key, object);
 	}
 
-
 	/**
+	 * 保存到数据库
 	 * @return
 	 * @throws Exception
 	 */
@@ -494,10 +693,18 @@ public class Task implements Comparable<Task> {
 		return false;
 	}
 
+	/**
+	 * 设定优先级
+	 * @param priority
+	 */
 	public void setPriority(Priority priority) {
 		this.priority = priority;
 	}
 
+	/**
+	 * 获取优先级
+	 * @return
+	 */
 	public Priority getPriority() {
 		return priority;
 	}
@@ -519,19 +726,21 @@ public class Task implements Comparable<Task> {
 		}
 	}
 
-	public Task addDoneCallback(Runnable doneCallBack) {
-		if (this.doneCallBacks == null) this.doneCallBacks = new LinkedList<>();
-		this.doneCallBacks.add(doneCallBack);
+	/**
+	 * 增加完成回调
+	 * @param callback
+	 * @return
+	 */
+	public Task addDoneCallback(TaskCallback callback) {
+		if (this.doneCallbacks == null) this.doneCallbacks = new LinkedList<>();
+		this.doneCallbacks.add(callback);
 		return this;
 	}
 
-	public List<Task> postProc() {
-		return new ArrayList<>();
-	}
-
+	/**
+	 *
+	 */
 	public class Response {
-
-		public Task task;
 
 		// 返回Header
 		private Map<String, List<String>> header;

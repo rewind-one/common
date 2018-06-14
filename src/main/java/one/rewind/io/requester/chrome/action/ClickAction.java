@@ -1,19 +1,15 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.json.JSON;
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import one.rewind.json.JSON;
-
-import static one.rewind.io.requester.chrome.ChromeDriverAgent.logger;
 
 /**
 * 点击
 * @author karajan@tfelab.org
 * 2017年3月21日 下午8:47:18
 */
-public class ClickAction extends ChromeAction {
+public class ClickAction extends BasicAction {
 
 	public String elementPath;
 
@@ -23,7 +19,7 @@ public class ClickAction extends ChromeAction {
 		this.elementPath = elementPath;
 	}
 
-	public void run() {
+	public boolean run(ChromeDriverAgent agent) {
 
 		try {
 
@@ -32,20 +28,16 @@ public class ClickAction extends ChromeAction {
 			if (el != null) {
 
 				el.click();
-				success = true;
+				return true;
 
 			} else {
-
 				logger.warn("{} not found.", elementPath);
 			}
 
 		} catch (Exception e) {
 			logger.error("Exec click action error. ", e);
 		}
-	}
 
-	@Override
-	public String toJSON() {
-		return JSON.toJson(this);
+		return false;
 	}
 }

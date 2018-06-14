@@ -1,7 +1,7 @@
 package one.rewind.io.test;
 
 import one.rewind.io.requester.BasicRequester;
-import one.rewind.io.requester.Task;
+import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.json.JSON;
@@ -130,7 +130,7 @@ public class BasicRequesterTest {
 		String url = "http://www.baidu.com";
 
 		Task t = new Task(url);
-		t.addDoneCallback(()->{
+		t.addDoneCallback((task)->{
 			System.out.println("A");
 		});
 

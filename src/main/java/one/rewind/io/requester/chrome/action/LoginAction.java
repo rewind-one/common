@@ -1,13 +1,15 @@
 package one.rewind.io.requester.chrome.action;
 
 import one.rewind.io.requester.account.Account;
-import one.rewind.json.JSON;
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import org.openqa.selenium.WebElement;
 
 /**
  * 登录脚本
  */
-public class LoginAction extends ChromeAction {
+public class LoginAction extends BasicAction {
+
+	ChromeDriverAgent agent;
 
 	public String url = "https://login.zbj.com/login";
 
@@ -85,17 +87,16 @@ public class LoginAction extends ChromeAction {
 	}
 
 	@Override
-	public void run() {
+	public boolean run(ChromeDriverAgent agent) {
 
-		if(!fillUsernameAndPassword()) return;
+		this.agent = agent;
+
+		if(!fillUsernameAndPassword()) return false;
 
 		if(clickSubmitButton()) {
-			this.success = true;
+			return true;
 		}
-	}
 
-	@Override
-	public String toJSON() {
-		return JSON.toJson(this);
+		return false;
 	}
 }

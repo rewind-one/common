@@ -7,11 +7,12 @@ import net.lightbody.bmp.client.ClientUtil;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.BasicRequester;
-import one.rewind.io.requester.Task;
+import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.callback.AccountCallback;
 import one.rewind.io.requester.callback.ChromeDriverAgentCallback;
 import one.rewind.io.requester.callback.ProxyCallBack;
+import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.chrome.action.LoginAction;
 import one.rewind.io.requester.exception.AccountException;
@@ -19,7 +20,6 @@ import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.util.DocumentSettleCondition;
 import one.rewind.io.ssh.RemoteShell;
-import one.rewind.json.JSON;
 import one.rewind.util.Configs;
 import one.rewind.util.EnvUtil;
 import org.apache.logging.log4j.LogManager;
@@ -132,9 +132,6 @@ public class ChromeDriverAgent {
 	// HTTP 返回过滤器
 	private ResponseFilter responseFilter;
 
-	// 启动后的初始化脚本
-	private List<ChromeAction> autoScripts = new ArrayList<>();
-
 	// Executor Queue
 	private LinkedBlockingQueue queue = new LinkedBlockingQueue<Runnable>();
 
@@ -232,22 +229,7 @@ public class ChromeDriverAgent {
 			// karajan 2018/4/4
 			driver.manage().timeouts().pageLoadTimeout(300, TimeUnit.SECONDS);
 
-			boolean execute_success = true;
-
-			if(autoScripts.size() > 0) {
-
-				logger.info("Try to execute auto scripts...");
-
-				for (ChromeAction action : autoScripts) {
-					action.setAgent(ChromeDriverAgent.this);
-					action.run();
-					execute_success = execute_success && action.success;
-				}
-
-				logger.info("Auto scripts execute {}.", execute_success ? "succeed" : "failed");
-			}
-
-			return execute_success;
+			return true;
 		}
 	}
 
@@ -377,26 +359,27 @@ public class ChromeDriverAgent {
 			// 正常解析到页面
 			if(!driver.getCurrentUrl().matches("^data:.+?")) {
 
-				boolean actionResult = true;
+				boolean actionSuccess = true;
 
 				for(ChromeAction action : task.getActions()) {
 
-					action.setAgent(ChromeDriverAgent.this);
-					action.run();
+					// 当前线程执行 action
+					boolean currentActionSuccess = action.run(ChromeDriverAgent.this);
 
 					// 分domain记录当前Chrome登陆的账户
 					// 一个 Chrome 一个 domain 下只能记录一个 账户
-					if(action instanceof LoginAction && action.success) {
+					if(action instanceof LoginAction && currentActionSuccess) {
+
 						LoginAction action_ = (LoginAction) action;
 
-						updateAccountsInfo(action_.getAccount().domain, action_.getAccount());
-
+						// 更新账户信息
+						updateLoginInfo(action_.getAccount().domain, action_.getAccount());
 					}
 
-					actionResult = actionResult && action.success;
+					actionSuccess = actionSuccess && currentActionSuccess;
 				}
 
-				task.getResponse().setActionDone(actionResult);
+				task.getResponse().setActionDone(actionSuccess);
 				task.getResponse().setSrc(getAllSrc().getBytes());
 				task.getResponse().setText();
 
@@ -404,7 +387,8 @@ public class ChromeDriverAgent {
 					task.getResponse().buildDom();
 				}
 
-				task.validate();
+				// 对内容进行验证
+				task.validator.run(task);
 
 				if(task.shootScreen()) {
 					task.getResponse().setScreenshot(driver.getScreenshotAs(OutputType.BYTES));
@@ -746,18 +730,6 @@ public class ChromeDriverAgent {
 	}
 
 	/**
-	 * 添加自运行脚本
-	 * @param json
-	 * @param className
-	 * @throws Exception
-	 */
-	public void addAutoActions(String json, String className) throws Exception {
-
-		Class<ChromeAction> clazz = (Class<ChromeAction>) Class.forName(className);
-		this.autoScripts.add(JSON.fromJson(json, clazz));
-	}
-
-	/**
 	 * 设定Chrome窗口大小
 	 * @param dimension
 	 */
@@ -992,8 +964,14 @@ public class ChromeDriverAgent {
 			taskFuture.get(timeout, TimeUnit.MILLISECONDS);
 			status = Status.IDLE;
 
-			for(Runnable runnable : task.doneCallBacks) {
-				ChromeDriverRequester.getInstance().post_executor.submit(runnable);
+			for(TaskCallback callback : task.doneCallbacks) {
+				ChromeDriverRequester.getInstance().post_executor.submit(()->{
+					try {
+						callback.run(task);
+					} catch (Exception e) {
+						logger.error("Error proc doneCallback, Task:{}. ", task.getUrl(), e);
+					}
+				});
 			}
 
 			logger.info("Task done. {}", task.getUrl());
@@ -1003,7 +981,6 @@ public class ChromeDriverAgent {
 
 			logger.error("Task interrupted. {} ", task.getUrl(), e);
 			task.addExceptions(e.getCause());
-			task.setDuration();
 			task.setRetry();
 
 		}
@@ -1013,7 +990,6 @@ public class ChromeDriverAgent {
 			logger.error("Task failed.");
 
 			task.addExceptions(ex.getCause());
-			task.setDuration();
 
 			// 重试机制
 			task.setRetry();
@@ -1070,7 +1046,7 @@ public class ChromeDriverAgent {
 
 				logger.error("{}, Account {}::{} frozen, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				updateAccountsInfo(e.account.domain, null);
+				updateLoginInfo(e.account.domain, null);
 
 				if(accountFrozenCallbacks == null) return;
 				for(AccountCallback callback : accountFrozenCallbacks) {
@@ -1086,7 +1062,7 @@ public class ChromeDriverAgent {
 
 				logger.error("{}, Account {}::{} failed, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				updateAccountsInfo(e.account.domain, null);
+				updateLoginInfo(e.account.domain, null);
 
 				if(accountFailedCallbacks == null) return;
 				for(AccountCallback callback : accountFailedCallbacks) {
@@ -1131,6 +1107,9 @@ public class ChromeDriverAgent {
 			logger.error("{} Task timeout. ", name, e);
 
 		}
+		finally {
+			task.setDuration();
+		}
 
 		// Set idle callback
 		// TODO 为什么要Check queue.size
@@ -1143,7 +1122,7 @@ public class ChromeDriverAgent {
 	/**
 	 * 更新加载账户信息
 	 */
-	private void updateAccountsInfo(String domain, Account account) {
+	private void updateLoginInfo(String domain, Account account) {
 
 		if(account == null) {
 			accounts.remove(domain);

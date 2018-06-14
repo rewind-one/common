@@ -2,7 +2,6 @@ package one.rewind.io.requester.chrome.action;
 
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.json.JSON;
 
 /**
  * 登录脚本 bypass GeeTest
@@ -37,30 +36,28 @@ public class LoginWithGeetestAction extends LoginAction {
 		action.geetestRefreshButtonCssPath = geetestRefreshButtonCssPath;
 	}
 
-	public void run() {
+	/**
+	 *
+	 * @param agent
+	 */
+	public boolean run(ChromeDriverAgent agent) {
 
-		if(!fillUsernameAndPassword()) return;
+		this.agent = agent;
+
+		if(!fillUsernameAndPassword()) return false;
 
 		logger.info("Bypass geetest...");
 
-		action.run();
+		if(!action.run(agent)) {
+			return false;
+		}
 
 		logger.info("Bypass geetest done...");
 
 		if(clickSubmitButton()) {
-			this.success = true;
+			return true;
 		}
-	}
-
-	@Override
-	public void setAgent(ChromeDriverAgent agent) {
-		this.agent = agent;
-		this.action.setAgent(agent);
-	}
-
-	@Override
-	public String toJSON() {
-		return JSON.toJson(this);
+		return false;
 	}
 
 }

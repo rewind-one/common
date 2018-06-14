@@ -1,7 +1,7 @@
 package one.rewind.io.test;
 
 import net.lightbody.bmp.BrowserMobProxyServer;
-import one.rewind.io.requester.Task;
+import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
@@ -35,8 +35,8 @@ public class ChromeDriverRequesterTest {
 		for(int i=0; i<100; i++) {
 
 			Task task = new Task("http://www.baidu.com/s?word=" + (1950 + i));
-			task.addDoneCallback(() -> {
-				System.err.println(task.getUrl() + " -- " + task.getResponse().getSrc().length);
+			task.addDoneCallback((t) -> {
+				System.err.println(t.getUrl() + " -- " + t.getResponse().getSrc().length);
 			});
 			requester.submit(task);
 		}
@@ -54,30 +54,54 @@ public class ChromeDriverRequesterTest {
 		Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
 		ChromeDriverAgent agent1 = new ChromeDriverAgent(proxy);
 		requester.addAgent(agent1);
-		agent1.start();
 
 		proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
 		ChromeDriverAgent agent2 = new ChromeDriverAgent(proxy);
 		requester.addAgent(agent2);
-		agent2.start();
-
 		proxy = new ProxyImpl("118.190.133.34", 59998, "tfelab", "TfeLAB2@15");
 		ChromeDriverAgent agent3 = new ChromeDriverAgent(proxy);
 		requester.addAgent(agent3);
-		agent3.start();
 
 		proxy = new ProxyImpl("118.190.44.184", 59998, "tfelab", "TfeLAB2@15");
 		ChromeDriverAgent agent4 = new ChromeDriverAgent(proxy);
 		requester.addAgent(agent4);
-		agent4.start();
 
 		requester.layout();
 
 		Account account = new AccountImpl("zbj.com", "15284812411", "123456");
 
-		for(int i=0; i<100; i++) {
+		for(int i=0; i<10000; i++) {
 
 			Task task = new Task("http://www.baidu.com/s?word=ip");
+			requester.submit(task);
+		}
+
+		Thread.sleep(60000);
+
+		requester.close();
+	}
+
+	@Test
+	public void ExceptionTest() throws MalformedURLException, URISyntaxException, InterruptedException, ChromeDriverException.IllegalStatusException {
+
+		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
+
+		for(int i=0; i<1; i++) {
+
+			ChromeDriverAgent agent = new ChromeDriverAgent();
+			requester.addAgent(agent);
+		}
+
+		requester.layout();
+
+		for(int i=0; i<1; i++) {
+
+			Task task = new Task("http://www.baidu.com/s?word=" + (1950 + i));
+
+			task.addDoneCallback((t) -> {
+				System.err.println(t.getUrl() + " -- " + t.getResponse().getSrc().length);
+			});
+
 			requester.submit(task);
 		}
 

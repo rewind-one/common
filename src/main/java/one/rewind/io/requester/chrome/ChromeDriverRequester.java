@@ -8,7 +8,7 @@ import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.requester.BasicRequester;
-import one.rewind.io.requester.Task;
+import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
@@ -120,10 +120,10 @@ public class ChromeDriverRequester {
 	 */
 	public Task getTask(ChromeDriverAgent agent) throws InterruptedException {
 
-		Task t = queues.get(agent).take();
+		Task task = queues.get(agent).take();
 
 		// 任务失败重试逻辑
-		t.addDoneCallback(() -> {
+		task.addDoneCallback((t) -> {
 
 			if(t.needRetry()) {
 
@@ -146,8 +146,8 @@ public class ChromeDriverRequester {
 			}
 		});
 
-		logger.info("Assign {}.", agent.name);
-		return t;
+		logger.info("Task:{} Assign {}.", task.getUrl(), agent.name);
+		return task;
 	}
 
 	/**
@@ -260,7 +260,6 @@ public class ChromeDriverRequester {
 		if(localAgentCount < 2) return;
 
 		int gap = 600 / (localAgentCount/2);
-
 		int i = 0;
 		for(ChromeDriverAgent agent : queues.keySet()) {
 

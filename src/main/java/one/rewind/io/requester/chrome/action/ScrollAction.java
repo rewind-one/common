@@ -1,13 +1,11 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.json.JSON;
-import org.openqa.selenium.chrome.ChromeDriver;
-import one.rewind.json.JSON;
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
 
 /**
  * 滚轮事件
  */
-public class ScrollAction extends ChromeAction {
+public class ScrollAction extends BasicAction {
 
 	public String value;
 
@@ -17,18 +15,14 @@ public class ScrollAction extends ChromeAction {
 		this.value = value;
 	}
 
-	public void run() {
+	public boolean run(ChromeDriverAgent agent) {
 		try {
 			String setscroll = "document.documentElement.scrollTop=" + value;
 			agent.trigger(setscroll);
-			success = true;
+			return true;
 		} catch (Exception e) {
-			logger.error(e);
+			logger.error("Scroll error, ", e);
+			return false;
 		}
-	}
-
-	@Override
-	public String toJSON() {
-		return JSON.toJson(this);
 	}
 }

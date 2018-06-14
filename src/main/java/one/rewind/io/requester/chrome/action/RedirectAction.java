@@ -1,8 +1,8 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.json.JSON;
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
 
-public class RedirectAction extends ChromeAction {
+public class RedirectAction extends BasicAction {
 
 	String url;
 
@@ -10,12 +10,10 @@ public class RedirectAction extends ChromeAction {
 		this.url = url;
 	}
 
-	public void run() {
-		agent.getDriver().navigate().to(url);
-	}
+	public boolean run(ChromeDriverAgent agent) {
 
-	@Override
-	public String toJSON() {
-		return JSON.toJson(this);
+		agent.getDriver().navigate().to(url);
+
+		return true;
 	}
 }

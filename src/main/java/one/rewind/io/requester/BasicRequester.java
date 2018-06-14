@@ -2,6 +2,7 @@ package one.rewind.io.requester;
 
 import com.typesafe.config.Config;
 import one.rewind.io.requester.cookie.CookiesHolderManager;
+import one.rewind.io.requester.task.Task;
 import one.rewind.txt.ChineseChar;
 import one.rewind.txt.URLUtil;
 import one.rewind.util.Configs;
