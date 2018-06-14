@@ -8,6 +8,7 @@ import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.util.Configs;
@@ -278,7 +279,9 @@ public class ChromeDriverRequester {
 	 * 提交任务
 	 * @param task
 	 */
-	public void submit(Task task) {
+	public Map<String, Object> submit(Task task)
+			throws ChromeDriverException.NotFoundException, AccountException.NotFound
+	{
 
 		String domain = task.getDomain();
 		String username = task.getUsername();
@@ -300,7 +303,7 @@ public class ChromeDriverRequester {
 
 			if(!domain_agent_map.keySet().contains(domain)) {
 				logger.warn("No agent has {} login accounts.", domain);
-				return;
+				throw new AccountException.NotFound();
 			}
 
 			agent = domain_agent_map.get(domain).stream().map(a -> {
@@ -328,12 +331,24 @@ public class ChromeDriverRequester {
 		}
 
 		if(agent != null) {
+
 			logger.info("Assign task:{}-{} to Agent:{}.", domain, username, agent.name);
 			queues.get(agent).put(task);
-		} else {
-			logger.warn("Agent not found for {}-{}.", domain, username);
+
+			Map<String, Object> assignInfo = new HashMap<>();
+			assignInfo.put("requester_host", REQUESTER_LOCAL_IP);
+			assignInfo.put("agent_name", agent.name);
+			assignInfo.put("agent_address", agent.remoteAddress.toString());
+			assignInfo.put("exe_sequence", queues.get(agent).size());
+			assignInfo.put("domain", domain);
+			assignInfo.put("account", username);
+
+			return assignInfo;
+
 		}
 
+		logger.warn("Agent not found for {}-{}.", domain, username);
+		throw new ChromeDriverException.NotFoundException();
 	}
 
 	/**

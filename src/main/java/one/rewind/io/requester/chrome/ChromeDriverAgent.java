@@ -144,11 +144,23 @@ public class ChromeDriverAgent {
 	// 账户信息
 	public ConcurrentHashMap<String, Account> accounts = new ConcurrentHashMap<>();
 
+	// 账户登录回调
 	public AccountCallback accountAddCallback;
+
+	// 账户失效回调
 	public AccountCallback accountRemoveCallback;
 
 	// 重启周期
 	int cycle = 0;
+
+	// 上次启动时间
+	public Date init_time;
+
+	// 执行任务数量
+	public int task_count = 0;
+
+	// 产生异常数量
+	public int exception_count = 0;
 
 	// Agent状态信息
 	public enum Status {
@@ -228,6 +240,8 @@ public class ChromeDriverAgent {
 			// 否则会出现 org.openqa.selenium.TimeoutException: timeout: cannot determine loading status
 			// karajan 2018/4/4
 			driver.manage().timeouts().pageLoadTimeout(300, TimeUnit.SECONDS);
+
+			init_time = new Date();
 
 			return true;
 		}
@@ -388,7 +402,8 @@ public class ChromeDriverAgent {
 				}
 
 				// 对内容进行验证
-				task.validator.run(task);
+				if(task.validator != null)
+					task.validator.run(task);
 
 				if(task.shootScreen()) {
 					task.getResponse().setScreenshot(driver.getScreenshotAs(OutputType.BYTES));

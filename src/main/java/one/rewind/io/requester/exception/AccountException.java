@@ -30,4 +30,6 @@ public class AccountException extends Exception {
 			this.account = account;
 		}
 	}
+
+	public static class NotFound extends Exception {}
 }

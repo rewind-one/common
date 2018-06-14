@@ -133,6 +133,10 @@ public class Task implements Comparable<Task> {
 	@DatabaseField(dataType = DataType.INTEGER)
 	private int retryCount = 0;
 
+	// 任务指定步骤 当 step = 1 时 不生成下一步任务
+	// step = 0 不进行任何限制
+	private int step = 0;
+
 	public TaskValidator validator;
 
 	// 采集后回调
@@ -579,6 +583,21 @@ public class Task implements Comparable<Task> {
 	 */
 	public boolean needRetry() {
 		return this.retry;
+	}
+
+	/**
+	 * 设定重试
+	 */
+	public void setStep(int step) {
+		this.step = step;
+	}
+
+	/**
+	 * 判断重试
+	 * @return
+	 */
+	public int getStep() {
+		return this.step;
 	}
 
 	/**
