@@ -1,11 +1,11 @@
 package one.rewind.io.test;
 
 import net.lightbody.bmp.BrowserMobProxyServer;
+import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverRequester;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
@@ -15,14 +15,14 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
-import static one.rewind.io.requester.chrome.ChromeDriverRequester.buildBMProxy;
+import static one.rewind.io.requester.chrome.ChromeDriverDistributor.buildBMProxy;
 
 public class ChromeDriverRequesterTest {
 
 	@Test
 	public void basicTest() throws MalformedURLException, URISyntaxException, InterruptedException, ChromeDriverException.IllegalStatusException {
 
-		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
+		ChromeDriverDistributor requester = ChromeDriverDistributor.getInstance();
 
 		for(int i=0; i<4; i++) {
 
@@ -49,7 +49,7 @@ public class ChromeDriverRequesterTest {
 	@Test
 	public void proxyTest() throws MalformedURLException, URISyntaxException, InterruptedException, ChromeDriverException.IllegalStatusException {
 
-		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
+		ChromeDriverDistributor requester = ChromeDriverDistributor.getInstance();
 
 		Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
 		ChromeDriverAgent agent1 = new ChromeDriverAgent(proxy);
@@ -84,7 +84,7 @@ public class ChromeDriverRequesterTest {
 	@Test
 	public void ExceptionTest() throws MalformedURLException, URISyntaxException, InterruptedException, ChromeDriverException.IllegalStatusException {
 
-		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
+		ChromeDriverDistributor requester = ChromeDriverDistributor.getInstance();
 
 		for(int i=0; i<1; i++) {
 

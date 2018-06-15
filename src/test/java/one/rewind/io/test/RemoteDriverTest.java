@@ -3,10 +3,10 @@ package one.rewind.io.test;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.docker.model.DockerHost;
+import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverRequester;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
@@ -18,7 +18,7 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static one.rewind.io.requester.chrome.ChromeDriverRequester.buildBMProxy;
+import static one.rewind.io.requester.chrome.ChromeDriverDistributor.buildBMProxy;
 
 public class RemoteDriverTest {
 
@@ -65,7 +65,7 @@ public class RemoteDriverTest {
 			containers.add(host.createChromeDriverDockerContainer());
 		}
 
-		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
+		ChromeDriverDistributor requester = ChromeDriverDistributor.getInstance();
 
 		//
 		for(ChromeDriverDockerContainer container : containers) {
@@ -144,7 +144,7 @@ public class RemoteDriverTest {
 		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
 		host.delAllDockerContainers();
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
-		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
+		ChromeDriverDistributor requester = ChromeDriverDistributor.getInstance();
 		final Proxy proxy = new ProxyImpl("10.0.0.51", 59998, "tfelab", "TfeLAB2@15");
 		final URL remoteAddress = container.getRemoteAddress();
 
@@ -168,7 +168,7 @@ public class RemoteDriverTest {
 
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
 
-		ChromeDriverRequester requester = ChromeDriverRequester.getInstance();
+		ChromeDriverDistributor requester = ChromeDriverDistributor.getInstance();
 
 		// final Proxy proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
 

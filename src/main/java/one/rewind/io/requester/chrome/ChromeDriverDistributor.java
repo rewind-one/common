@@ -9,6 +9,8 @@ import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.exception.AccountException;
+import one.rewind.io.requester.task.ChromeTask;
+import one.rewind.io.requester.task.ChromeTaskHolder;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.util.Configs;
@@ -21,11 +23,11 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-public class ChromeDriverRequester {
+public class ChromeDriverDistributor {
 
-	public static ChromeDriverRequester instance;
+	public static ChromeDriverDistributor instance;
 
-	public static final Logger logger = LogManager.getLogger(ChromeDriverRequester.class.getName());
+	public static final Logger logger = LogManager.getLogger(ChromeDriverDistributor.class.getName());
 
 	// 连接超时时间
 	public static int CONNECT_TIMEOUT;
@@ -33,8 +35,7 @@ public class ChromeDriverRequester {
 	// 读取超时时间
 	public static int READ_TIMEOUT;
 
-	public static int AGENT_NUM = 4;
-
+	// 本地IP
 	public static String REQUESTER_LOCAL_IP;
 
 	// 配置设定
@@ -44,7 +45,6 @@ public class ChromeDriverRequester {
 
 		CONNECT_TIMEOUT = ioConfig.getInt("connectTimeout");
 		READ_TIMEOUT = ioConfig.getInt("readTimeout");
-		AGENT_NUM = ioConfig.getInt("chromeDriverAgentNum");
 		REQUESTER_LOCAL_IP = ioConfig.getString("requesterLocalIp");
 	}
 
@@ -52,12 +52,12 @@ public class ChromeDriverRequester {
 	 *
 	 * @return
 	 */
-	public static ChromeDriverRequester getInstance() {
+	public static ChromeDriverDistributor getInstance() {
 
 		if (instance == null) {
-			synchronized (ChromeDriverRequester.class) {
+			synchronized (ChromeDriverDistributor.class) {
 				if (instance == null) {
-					instance = new ChromeDriverRequester();
+					instance = new ChromeDriverDistributor();
 				}
 			}
 		}
@@ -65,10 +65,13 @@ public class ChromeDriverRequester {
 		return instance;
 	}
 
-	private ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<Task>> queues = new ConcurrentHashMap<>();
+	// 任务队列
+	private ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<ChromeTaskHolder>> queues = new ConcurrentHashMap<>();
 
+	// 域名-账户 Agent 映射
 	private Map<String, ChromeDriverAgent> domain_account_agent_map = new HashMap<>();
 
+	// 域名 Agent列表 映射
 	private Map<String, List<ChromeDriverAgent>> domain_agent_map = new HashMap<>();
 
 	// 任务 Wrapper 线程池
@@ -93,15 +96,15 @@ public class ChromeDriverRequester {
 	/**
 	 * 初始化
 	 */
-	public ChromeDriverRequester() {
+	public ChromeDriverDistributor() {
 
 		executor.setThreadFactory(new ThreadFactoryBuilder()
-				.setNameFormat("ChromeDriverRequester-Worker-%d").build());
+				.setNameFormat("ChromeDriverDistributor-Worker-%d").build());
 
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
 		post_executor.setThreadFactory(new ThreadFactoryBuilder()
-				.setNameFormat("ChromeDriverRequester-PostWorker-%d").build());
+				.setNameFormat("ChromeDriverDistributor-PostWorker-%d").build());
 
 	}
 
@@ -119,36 +122,49 @@ public class ChromeDriverRequester {
 	 * @return
 	 * @throws InterruptedException
 	 */
-	public Task getTask(ChromeDriverAgent agent) throws InterruptedException {
+	public ChromeTask getTask(ChromeDriverAgent agent) throws InterruptedException {
 
-		Task task = queues.get(agent).take();
+		ChromeTaskHolder holder = queues.get(agent).take();
 
-		// 任务失败重试逻辑
-		task.addDoneCallback((t) -> {
+		ChromeTask task = null;
 
-			if(t.needRetry()) {
+		try {
 
-				// 重试逻辑
-				if( t.getRetryCount() < 3 ) {
+			task = holder.build();
 
-					t.addRetryCount();
-					submit(t);
+			// 任务失败重试逻辑
+			task.addDoneCallback((t) -> {
 
-				}
-				// 失败任务保存到数据库
-				else {
+				if(t.needRetry()) {
 
-					try {
-						t.insert();
-					} catch (Exception e) {
-						logger.error(e);
+					// 重试逻辑
+					if( t.getRetryCount() < 3 ) {
+
+						t.addRetryCount();
+						submit(t);
+
+					}
+					// 失败任务保存到数据库
+					else {
+
+						try {
+							t.insert();
+						} catch (Exception e) {
+							logger.error(e);
+						}
 					}
 				}
-			}
-		});
+			});
 
-		logger.info("Task:{} Assign {}.", task.getUrl(), agent.name);
-		return task;
+			logger.info("Task:{} Assign {}.", task.getUrl(), agent.name);
+			return task;
+
+		} catch (Exception e) {
+
+			// Recursive call to get task
+			logger.error("Task build failed. {} ", holder, e);
+			return getTask(agent);
+		}
 	}
 
 	/**
@@ -172,7 +188,6 @@ public class ChromeDriverRequester {
 
 			// 解锁同步
 			down.countDown();
-
 			a.submit(getTask(a));
 
 		})
@@ -279,12 +294,11 @@ public class ChromeDriverRequester {
 	 * 提交任务
 	 * @param task
 	 */
-	public Map<String, Object> submit(Task task)
+	public Map<String, Object> submit(ChromeTaskHolder holder)
 			throws ChromeDriverException.NotFoundException, AccountException.NotFound
 	{
-
-		String domain = task.getDomain();
-		String username = task.getUsername();
+		String domain = holder.domain;
+		String username = holder.username;
 
 		ChromeDriverAgent agent;
 
@@ -294,8 +308,6 @@ public class ChromeDriverRequester {
 			String account_key = domain + "-" + username;
 
 			agent = domain_account_agent_map.get(account_key);
-
-			task.setPriority(Task.Priority.HIGHER);
 
 		}
 		// 需要登录采集的任务
@@ -333,7 +345,7 @@ public class ChromeDriverRequester {
 		if(agent != null) {
 
 			logger.info("Assign task:{}-{} to Agent:{}.", domain, username, agent.name);
-			queues.get(agent).put(task);
+			queues.get(agent).put(task.buildHolder());
 
 			Map<String, Object> assignInfo = new HashMap<>();
 			assignInfo.put("requester_host", REQUESTER_LOCAL_IP);
@@ -348,6 +360,7 @@ public class ChromeDriverRequester {
 		}
 
 		logger.warn("Agent not found for {}-{}.", domain, username);
+
 		throw new ChromeDriverException.NotFoundException();
 	}
 

@@ -1,6 +1,7 @@
 package one.rewind.io.requester.task;
 
 import one.rewind.io.requester.exception.TaskException;
+import one.rewind.txt.URLUtil;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -14,7 +15,7 @@ import java.util.regex.Pattern;
 /**
  *
  */
-public class SemiSerializableChromeTask extends Task {
+public class ChromeTask extends Task {
 
 	public static String varPattern = "[\\w\\W][\\w\\W\\d\\_]*";
 
@@ -138,11 +139,15 @@ public class SemiSerializableChromeTask extends Task {
 	}
 
 	/**
-	 * 创建一个任务
+	 * 通过TaskHolder build Task
 	 * @param init_map
+	 * @param username
+	 * @param step
+	 * @param priority
 	 * @return
+	 * @throws Exception
 	 */
-	public static SemiSerializableChromeTask build(Map<String, Object> init_map, int step) throws Exception {
+	public static ChromeTask build(Map<String, Object> init_map, String username, int step, Priority priority) throws Exception {
 
 		staticValidate();
 
@@ -153,10 +158,22 @@ public class SemiSerializableChromeTask extends Task {
 			url = url.replace("{{" + key + "}}", String.valueOf(vars.get(key)));
 		}
 
-		SemiSerializableChromeTask task = new SemiSerializableChromeTask(url);
+		ChromeTask task = new ChromeTask(url);
+		task.setUsername(username);
 		task.setStep(step);
+		task.setPriority(priority);
 
 		return task;
+	}
+
+	/**
+	 *
+	 * @return
+	 * @throws MalformedURLException
+	 * @throws URISyntaxException
+	 */
+	public static String domain() throws MalformedURLException, URISyntaxException {
+		return URLUtil.getDomainName(url_template);
 	}
 
 	/**
@@ -165,7 +182,7 @@ public class SemiSerializableChromeTask extends Task {
 	 * @throws MalformedURLException
 	 * @throws URISyntaxException
 	 */
-	public SemiSerializableChromeTask(String url) throws MalformedURLException, URISyntaxException {
+	public ChromeTask(String url) throws MalformedURLException, URISyntaxException {
 		super(url);
 	}
 
@@ -173,17 +190,29 @@ public class SemiSerializableChromeTask extends Task {
 	 *
 	 * @param init_map
 	 * @return
-	 * @throws TaskException.NoMoreStepException
 	 */
-	public TaskHolder getHolder(Map<String, Object> init_map) throws TaskException.NoMoreStepException {
+	public ChromeTaskHolder buildHolder(Map<String, Object> init_map) throws TaskException.NoMoreStepException {
 
-		if(this.getStep() == 1) {
-			throw new TaskException.NoMoreStepException();
-		}
-
-		int step = this.getStep() <= 0? 0 : this.getStep() - 1;
-
-		return new TaskHolder(this.getClass().getName(), init_map, step);
+		return buildHolder(init_map, getPriority());
 	}
 
+	/**
+	 *
+	 * @param init_map
+	 * @param priority
+	 * @return
+	 * @throws TaskException.NoMoreStepException
+	 */
+	public ChromeTaskHolder buildHolder(Map<String, Object> init_map, Priority priority) throws TaskException.NoMoreStepException {
+
+		int step = 0;
+
+		if(getStep() == 1 || getStep() < 0) {
+			throw new TaskException.NoMoreStepException();
+		} else {
+			step = getStep() - 1;
+		}
+
+		return new ChromeTaskHolder(this.getClass().getName(), getDomain(), isLoginTask(), getUsername(), init_map, step, priority);
+	}
 }

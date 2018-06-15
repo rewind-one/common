@@ -7,6 +7,7 @@ import net.lightbody.bmp.client.ClientUtil;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.callback.AccountCallback;
@@ -57,7 +58,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static one.rewind.io.requester.chrome.ChromeDriverRequester.REQUESTER_LOCAL_IP;
+import static one.rewind.io.requester.chrome.ChromeDriverDistributor.REQUESTER_LOCAL_IP;
 
 /**
  * Chrome请求器
@@ -310,7 +311,7 @@ public class ChromeDriverAgent {
 				bmProxy.stop();
 			}
 
-			bmProxy = ChromeDriverRequester.buildBMProxy(bmProxy_port, proxy);
+			bmProxy = ChromeDriverDistributor.buildBMProxy(bmProxy_port, proxy);
 
 			logger.info("Change to {}:{}", proxy.host, proxy.port);
 
@@ -352,7 +353,7 @@ public class ChromeDriverAgent {
 
 				bmProxy.stop();
 
-				bmProxy = ChromeDriverRequester.buildBMProxy(bmProxy_port, proxy);
+				bmProxy = ChromeDriverDistributor.buildBMProxy(bmProxy_port, proxy);
 
 				logger.info("Restart BMProxy done.");
 			}
@@ -632,7 +633,7 @@ public class ChromeDriverAgent {
 
 			Proxy seleniumProxy;
 
-			bmProxy = ChromeDriverRequester.buildBMProxy(proxy);
+			bmProxy = ChromeDriverDistributor.buildBMProxy(proxy);
 			bmProxy_port = bmProxy.getPort();
 
 			// 重载 本地代理服务器网络地址 InetAddress.getLocalHost()
@@ -953,9 +954,9 @@ public class ChromeDriverAgent {
 	 * 同步执行任务
 	 * @param task
 	 */
-	public synchronized void submit(Task task) throws ChromeDriverException.IllegalStatusException, InterruptedException {
+	public synchronized void submit(ChromeTask task) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
-		submit(task, ChromeDriverRequester.CONNECT_TIMEOUT + ChromeDriverRequester.READ_TIMEOUT);
+		submit(task, ChromeDriverDistributor.CONNECT_TIMEOUT + ChromeDriverDistributor.READ_TIMEOUT);
 	}
 
 	/**
@@ -963,7 +964,7 @@ public class ChromeDriverAgent {
 	 * @param task
 	 * @param timeout
 	 */
-	public synchronized void submit(Task task, long timeout) throws ChromeDriverException.IllegalStatusException, InterruptedException {
+	public synchronized void submit(ChromeTask task, long timeout) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		// 状态时间切分可能存在问题
 		if(status != Status.NEW && status != Status.IDLE) {
@@ -980,7 +981,7 @@ public class ChromeDriverAgent {
 			status = Status.IDLE;
 
 			for(TaskCallback callback : task.doneCallbacks) {
-				ChromeDriverRequester.getInstance().post_executor.submit(()->{
+				ChromeDriverDistributor.getInstance().post_executor.submit(()->{
 					try {
 						callback.run(task);
 					} catch (Exception e) {

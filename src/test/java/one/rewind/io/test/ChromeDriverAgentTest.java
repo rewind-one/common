@@ -1,11 +1,11 @@
 package one.rewind.io.test;
 
 import net.lightbody.bmp.BrowserMobProxyServer;
+import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverRequester;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
@@ -50,7 +50,7 @@ public class ChromeDriverAgentTest {
 	@Test
 	public void testBuildProxy() {
 
-		BrowserMobProxyServer ps = ChromeDriverRequester.buildBMProxy(null);
+		BrowserMobProxyServer ps = ChromeDriverDistributor.buildBMProxy(null);
 
 		System.err.println(ps.getPort());
 
