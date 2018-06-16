@@ -9,7 +9,7 @@ import org.openqa.selenium.WebElement;
 * @author karajan@tfelab.org
 * 2017年3月21日 下午8:47:18
 */
-public class ClickAction extends BasicAction {
+public class ClickAction extends Action {
 
 	public String elementPath;
 

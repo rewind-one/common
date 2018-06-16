@@ -8,7 +8,7 @@ import org.openqa.selenium.WebElement;
 * @author karajan@tfelab.org
 * 2017年3月21日 下午8:47:31
 */
-public class SetValueAction extends BasicAction {
+public class SetValueAction extends Action {
 
    public String inputCssPath;
    public String value;

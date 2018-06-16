@@ -8,7 +8,7 @@ import one.rewind.io.requester.chrome.ChromeDriverAgent;
  * @author karajan@tfelab.org
  * 2017年3月21日 下午8:48:13
  */
-public class ExecAction extends BasicAction {
+public class ExecAction extends Action {
 
 	public String script;
 

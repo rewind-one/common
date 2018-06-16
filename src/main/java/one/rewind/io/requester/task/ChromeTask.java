@@ -28,6 +28,12 @@ public class ChromeTask extends Task {
 	// URL模板
 	public static String url_template;
 
+	// 该任务是否需要登录
+	public static boolean need_login = false;
+
+	// 任务的优先级
+	public static Priority base_priority = Priority.MEDIUM;
+
 	// 变量表
 	public Map<String, Object> vars;
 
@@ -178,6 +184,22 @@ public class ChromeTask extends Task {
 
 	/**
 	 *
+	 * @return
+	 */
+	public static boolean needLogin() {
+		return need_login;
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public static Priority getBasePriority() {
+		return base_priority;
+	}
+
+	/**
+	 *
 	 * @param url
 	 * @throws MalformedURLException
 	 * @throws URISyntaxException
@@ -191,7 +213,7 @@ public class ChromeTask extends Task {
 	 * @param init_map
 	 * @return
 	 */
-	public ChromeTaskHolder buildHolder(Map<String, Object> init_map) throws TaskException.NoMoreStepException {
+	public ChromeTaskHolder buildHolder(Map<String, Object> init_map) throws TaskException.NoMoreStepException, MalformedURLException, URISyntaxException {
 
 		return buildHolder(init_map, getPriority());
 	}
@@ -203,7 +225,7 @@ public class ChromeTask extends Task {
 	 * @return
 	 * @throws TaskException.NoMoreStepException
 	 */
-	public ChromeTaskHolder buildHolder(Map<String, Object> init_map, Priority priority) throws TaskException.NoMoreStepException {
+	public ChromeTaskHolder buildHolder(Map<String, Object> init_map, Priority priority) throws TaskException.NoMoreStepException, MalformedURLException, URISyntaxException {
 
 		int step = 0;
 
@@ -213,6 +235,6 @@ public class ChromeTask extends Task {
 			step = getStep() - 1;
 		}
 
-		return new ChromeTaskHolder(this.getClass().getName(), getDomain(), isLoginTask(), getUsername(), init_map, step, priority);
+		return new ChromeTaskHolder(this.getClass().getName(), domain(), isLoginTask(), getUsername(), init_map, step, priority);
 	}
 }

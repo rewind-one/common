@@ -5,7 +5,7 @@ import one.rewind.io.requester.chrome.ChromeDriverAgent;
 /**
  * 滚轮事件
  */
-public class ScrollAction extends BasicAction {
+public class ScrollAction extends Action {
 
 	public String value;
 

@@ -7,5 +7,5 @@ import java.lang.reflect.InvocationTargetException;
 
 public interface ChromeDriverAgentCallback {
 
-	void run(ChromeDriverAgent agent) throws InterruptedException, ChromeDriverException.IllegalStatusException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException;
+	void run(ChromeDriverAgent agent) throws InterruptedException, ChromeDriverException.IllegalStatusException;
 }

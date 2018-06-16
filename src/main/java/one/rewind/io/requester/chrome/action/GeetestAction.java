@@ -3,7 +3,6 @@ package one.rewind.io.requester.chrome.action;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.RemoteMouseEventSimulator;
 import one.rewind.opencv.OpenCVUtil;
-import one.rewind.simulator.mouse.Action;
 import one.rewind.simulator.mouse.MouseEventModeler;
 import one.rewind.simulator.mouse.MouseEventSimulator;
 import one.rewind.txt.StringUtil;
@@ -20,7 +19,7 @@ import java.util.Random;
 /**
  * GeeTest bypass
  */
-public class GeetestAction extends BasicAction {
+public class GeetestAction extends Action {
 
 	// 点击验证
 	public String geetestContentCssPath = ".geetest_radar_tip";
@@ -100,7 +99,7 @@ public class GeetestAction extends BasicAction {
 			logger.info("x_init:{}, y_init:{}, offset:{}", x_init, y_init, offset);
 
 			// Build Actions
-			List<Action> actions = MouseEventModeler.getInstance().getActions(x_init, y_init, offset + sys_error_x);
+			List<one.rewind.simulator.mouse.Action> actions = MouseEventModeler.getInstance().getActions(x_init, y_init, offset + sys_error_x);
 
 			// 初始化 RemoteMouseEventSimulator
 			MouseEventSimulator simulator;

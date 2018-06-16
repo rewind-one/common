@@ -26,39 +26,51 @@ public class ChromeTaskRoute {
 
 		try {
 
+			// 任务类名
 			String class_name = request.params(":class_name");
 
 			// 用户名
 			String username = request.params(":username");
 
+			// 初始参数
 			String init_map_str = request.params(":init_map");
-
-			int step = Integer.valueOf(request.params(":step"));
 
 			ObjectMapper mapper = new ObjectMapper();
 			TypeReference<HashMap<String, Object>> typeRef
 					= new TypeReference<HashMap<String, Object>>() {};
 
-			HashMap<String, Object> init_map = mapper.readValue(init_map_str, typeRef);
+			Map<String, Object> init_map = mapper.readValue(init_map_str, typeRef);
+
+			// 步骤数
+			int step = 0;
+			if(request.params(":step") != null) {
+				step = Integer.valueOf(request.params(":step"));
+			}
 
 			// 获取 domain
 			Class<?> threadClazz = Class.forName(class_name);
-
 			Method method = threadClazz.getMethod("domain");
-
 			String domain = (String) method.invoke(null);
 
+			// 获取 是否需要登录
+			method = threadClazz.getMethod("needLogin");
+			boolean need_login = (boolean) method.invoke(null);
+
 			// 优先级
-			Task.Priority priority = Task.Priority.valueOf(request.params(":priority"));
+			method = threadClazz.getMethod("getBasePriority");
+			Task.Priority priority = (Task.Priority) method.invoke(null);
 
 			// Create Holder
-			ChromeTaskHolder holder = new ChromeTaskHolder(class_name, domain, username, init_map, step, priority);
+			ChromeTaskHolder holder = new ChromeTaskHolder(class_name, domain, need_login, username, init_map, step, priority);
 
+			// Submit Holder
 			Map<String, Object> info = ChromeDriverDistributor.getInstance().submit(holder);
 
+			// Return info
 			return new Msg<Map<String, Object>>(Msg.SUCCESS, info);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 
 			logger.error("Error create/assign task. ", e);
 			return new Msg<>(Msg.ILLGEAL_PARAMETERS);

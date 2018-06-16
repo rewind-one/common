@@ -10,8 +10,11 @@ import java.util.Map;
 
 /**
  * Hold the door
+ * 序列化ChromeTask
  */
 public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<ChromeTaskHolder> {
+
+	public String id;
 
 	// 类名
 	public String class_name;
@@ -37,19 +40,6 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	// 创建时间
 	public Date create_time = new Date();
 
-	/**
-	 *
-	 * @param class_name
-	 * @param domain
-	 * @param init_map
-	 * @param step
-	 */
-	public ChromeTaskHolder(String class_name, String domain, Map<String, Object> init_map, int step) {
-		this.class_name = class_name;
-		this.domain = domain;
-		this.init_map = init_map;
-		this.step = step;
-	}
 
 	/**
 	 *
@@ -59,10 +49,11 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	 * @param init_map
 	 * @param step
 	 */
-	public ChromeTaskHolder(String class_name, String domain, String username, Map<String, Object> init_map, int step) {
+	public ChromeTaskHolder(String class_name, String domain, boolean login_task, String username, Map<String, Object> init_map, int step) {
 		this.class_name = class_name;
 		this.domain = domain;
 		this.username = username;
+		this.login_task = login_task;
 		if(username != null || username.length() > 0) {
 			this.login_task = true;
 		}
@@ -79,9 +70,10 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	 * @param step
 	 * @param priority
 	 */
-	public ChromeTaskHolder(String class_name, String domain, String username, Map<String, Object> init_map, int step, Task.Priority priority) {
+	public ChromeTaskHolder(String class_name, String domain, boolean login_task, String username, Map<String, Object> init_map, int step, Task.Priority priority) {
 		this.class_name = class_name;
 		this.domain = domain;
+		this.login_task = login_task;
 		this.username = username;
 		if(username != null || username.length() > 0) {
 			this.login_task = true;
@@ -103,10 +95,10 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 
 		Class<?> threadClazz = Class.forName(class_name);
 
-		Method method = threadClazz.getMethod("build", Map.class, int.class, Task.Priority.class);
+		Method method = threadClazz.getMethod("build", Map.class, boolean.class, String.class, int.class, Task.Priority.class);
 
 		ChromeTask task =
-				(ChromeTask) method.invoke(null, init_map, step, priority);
+				(ChromeTask) method.invoke(null, init_map, login_task, username, step, priority);
 
 		return task;
 	}

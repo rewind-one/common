@@ -2,7 +2,7 @@ package one.rewind.io.requester.chrome.action;
 
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 
-public class RedirectAction extends BasicAction {
+public class RedirectAction extends Action {
 
 	String url;
 

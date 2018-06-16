@@ -11,7 +11,6 @@ import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.ChromeTaskHolder;
-import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
@@ -117,12 +116,12 @@ public class ChromeDriverDistributor {
 	}
 
 	/**
-	 * 获取任务
+	 * 从阻塞队列中 获取任务
 	 * @param agent
 	 * @return
 	 * @throws InterruptedException
 	 */
-	public ChromeTask getTask(ChromeDriverAgent agent) throws InterruptedException {
+	public ChromeTask distribute(ChromeDriverAgent agent) throws InterruptedException {
 
 		ChromeTaskHolder holder = queues.get(agent).take();
 
@@ -141,7 +140,7 @@ public class ChromeDriverDistributor {
 					if( t.getRetryCount() < 3 ) {
 
 						t.addRetryCount();
-						submit(t);
+						submit(holder);
 
 					}
 					// 失败任务保存到数据库
@@ -163,7 +162,7 @@ public class ChromeDriverDistributor {
 
 			// Recursive call to get task
 			logger.error("Task build failed. {} ", holder, e);
-			return getTask(agent);
+			return distribute(agent);
 		}
 	}
 
@@ -180,7 +179,7 @@ public class ChromeDriverDistributor {
 		// 空闲回调
 		agent.addIdleCallback((a) -> {
 
-			a.submit(getTask(a));
+			a.submit(distribute(a));
 
 		})
 		// 启动回调
@@ -188,7 +187,7 @@ public class ChromeDriverDistributor {
 
 			// 解锁同步
 			down.countDown();
-			a.submit(getTask(a));
+			a.submit(distribute(a));
 
 		})
 		// 失败回调
@@ -291,30 +290,40 @@ public class ChromeDriverDistributor {
 	}
 
 	/**
-	 * 提交任务
-	 * @param task
+	 * 提交任务到特定队列
+	 * @param holder
+	 * @return
+	 * @throws ChromeDriverException.NotFoundException
+	 * @throws AccountException.NotFound
 	 */
 	public Map<String, Object> submit(ChromeTaskHolder holder)
 			throws ChromeDriverException.NotFoundException, AccountException.NotFound
 	{
+
 		String domain = holder.domain;
 		String username = holder.username;
 
 		ChromeDriverAgent agent;
 
 		// 特定用户的采集任务
-		if(username != null) {
+		if(holder.username != null && holder.username.length() > 0) {
 
 			String account_key = domain + "-" + username;
 
 			agent = domain_account_agent_map.get(account_key);
 
+			if(agent == null) {
+
+				logger.warn("No agent hold account {}.", account_key);
+				throw new AccountException.NotFound();
+			}
+
 		}
-		// 需要登录采集的任务
-		else if(task.isLoginTask()){
+		// 需要登录采集的任务 或 没有找到加载指定账户的Agent
+		else if(holder.login_task){
 
 			if(!domain_agent_map.keySet().contains(domain)) {
-				logger.warn("No agent has {} login accounts.", domain);
+				logger.warn("No agent hold {} accounts.", domain);
 				throw new AccountException.NotFound();
 			}
 
@@ -342,10 +351,12 @@ public class ChromeDriverDistributor {
 			.get(0);
 		}
 
+		// 生成指派信息
 		if(agent != null) {
 
-			logger.info("Assign task:{}-{} to Agent:{}.", domain, username, agent.name);
-			queues.get(agent).put(task.buildHolder());
+			logger.info("Assign task:{}-{} to agent:{}.", domain, username, agent.name);
+
+			queues.get(agent).put(holder);
 
 			Map<String, Object> assignInfo = new HashMap<>();
 			assignInfo.put("requester_host", REQUESTER_LOCAL_IP);
@@ -356,10 +367,9 @@ public class ChromeDriverDistributor {
 			assignInfo.put("account", username);
 
 			return assignInfo;
-
 		}
 
-		logger.warn("Agent not found for {}-{}.", domain, username);
+		logger.warn("Agent not found for task:{}-{}.", domain, username);
 
 		throw new ChromeDriverException.NotFoundException();
 	}

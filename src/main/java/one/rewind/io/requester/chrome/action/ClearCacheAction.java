@@ -2,7 +2,7 @@ package one.rewind.io.requester.chrome.action;
 
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 
-public class ClearCacheAction extends BasicAction {
+public class ClearCacheAction extends Action {
 
 	public ClearCacheAction() {}
 

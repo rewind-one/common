@@ -7,7 +7,7 @@ import org.openqa.selenium.WebElement;
 /**
  * 登录脚本
  */
-public class LoginAction extends BasicAction {
+public class LoginAction extends Action {
 
 	ChromeDriverAgent agent;
 
