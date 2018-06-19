@@ -1,18 +1,19 @@
-package one.rewind.io.test;
+package one.rewind.io.requester.test;
 
+import com.google.common.collect.ImmutableMap;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.docker.model.DockerHost;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
-import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
+import one.rewind.io.requester.task.ChromeTask;
+import one.rewind.io.requester.task.ChromeTaskHolder;
 import org.junit.Test;
-import org.openqa.selenium.remote.UnreachableBrowserException;
 
 import java.net.*;
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public class RemoteDriverTest {
 
 		agent.start();
 
-		agent.submit(new Task("http://www.baidu.com"));
+		agent.submit(new ChromeTask("http://www.baidu.com"));
 
 	}
 
@@ -81,7 +82,7 @@ public class RemoteDriverTest {
 					ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy);
 					//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
 
-					Task task = new Task("http://zbj.com");
+					ChromeTask task = new ChromeTask("http://zbj.com");
 					AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
 					task.addAction(new LoginWithGeetestAction(account));
 
@@ -154,7 +155,7 @@ public class RemoteDriverTest {
 		agent.start();
 
 		while (true) {
-			Task task = new Task("http://zbj.com");
+			ChromeTask task = new ChromeTask("http://zbj.com");
 			agent.submit(task);
 		}
 
@@ -168,23 +169,29 @@ public class RemoteDriverTest {
 
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
 
-		ChromeDriverDistributor requester = ChromeDriverDistributor.getInstance();
+		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
 
 		// final Proxy proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
 
 		final URL remoteAddress = container.getRemoteAddress();
 		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container);
-		requester.addAgent(agent);
+		distributor.addAgent(agent);
 
 		agent.start();
 
 		for(int i=0; i<10; i++) {
 
-			Task task = new Task("http://www.baidu.com/s?wd=ip");
-			task.setValidator((t)->{
-				throw new UnreachableBrowserException("Failed task.");
-			});
-			requester.submit(task);
+			ChromeTaskHolder holder = new ChromeTaskHolder(
+					TestChromeTask.class.getName(),
+					TestChromeTask.domain(),
+					TestChromeTask.need_login,
+					null,
+					ImmutableMap.of("q", (1950 + i)),
+					0,
+					TestChromeTask.base_priority
+			);
+
+			distributor.submit(holder);
 		}
 
 		Thread.sleep(1000000);

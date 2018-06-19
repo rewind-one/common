@@ -2,6 +2,7 @@ package one.rewind.io.requester.task;
 
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
+import one.rewind.txt.StringUtil;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -50,15 +51,7 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	 * @param step
 	 */
 	public ChromeTaskHolder(String class_name, String domain, boolean login_task, String username, Map<String, Object> init_map, int step) {
-		this.class_name = class_name;
-		this.domain = domain;
-		this.username = username;
-		this.login_task = login_task;
-		if(username != null || username.length() > 0) {
-			this.login_task = true;
-		}
-		this.init_map = init_map;
-		this.step = step;
+		new ChromeTaskHolder(class_name, domain, login_task, username, init_map, step, Task.Priority.MEDIUM);
 	}
 
 	/**
@@ -71,16 +64,24 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	 * @param priority
 	 */
 	public ChromeTaskHolder(String class_name, String domain, boolean login_task, String username, Map<String, Object> init_map, int step, Task.Priority priority) {
+
 		this.class_name = class_name;
 		this.domain = domain;
 		this.login_task = login_task;
+
 		this.username = username;
-		if(username != null || username.length() > 0) {
+		if(username != null && username.length() > 0) {
 			this.login_task = true;
 		}
+
 		this.init_map = init_map;
 		this.step = step;
 		this.priority = priority;
+
+		String init_map_json = JSON.toJson(init_map);
+
+		// 定义Map
+		this.id = StringUtil.MD5(class_name + "-" + init_map_json);
 	}
 
 	/**
@@ -93,12 +94,19 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	 */
 	public ChromeTask build() throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
-		Class<?> threadClazz = Class.forName(class_name);
+		Class<?> clazz = Class.forName(class_name);
 
-		Method method = threadClazz.getMethod("build", Map.class, boolean.class, String.class, int.class, Task.Priority.class);
+		/*for(Method m : threadClazz.getMethods()) {
+			System.err.println(m.getName());
+			for(Class<?> tc : m.getParameterTypes()) {
+				System.err.println("\t" + tc.getName());
+			}
+		}*/
+
+		Method method = clazz.getMethod("build", Class.class, Map.class, String.class, int.class, Task.Priority.class);
 
 		ChromeTask task =
-				(ChromeTask) method.invoke(null, init_map, login_task, username, step, priority);
+				(ChromeTask) method.invoke(null, clazz, init_map, username, step, priority);
 
 		return task;
 	}
@@ -127,4 +135,6 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	public String toJSON() {
 		return JSON.toJson(this);
 	}
+
+
 }

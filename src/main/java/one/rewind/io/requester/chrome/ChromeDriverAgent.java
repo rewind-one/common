@@ -58,7 +58,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static one.rewind.io.requester.chrome.ChromeDriverDistributor.REQUESTER_LOCAL_IP;
+import static one.rewind.io.requester.chrome.ChromeDriverDistributor.LOCAL_IP;
 
 /**
  * Chrome请求器
@@ -637,7 +637,7 @@ public class ChromeDriverAgent {
 			bmProxy_port = bmProxy.getPort();
 
 			// 重载 本地代理服务器网络地址 InetAddress.getLocalHost()
-			seleniumProxy = ClientUtil.createSeleniumProxy(bmProxy, InetAddress.getByName(REQUESTER_LOCAL_IP));
+			seleniumProxy = ClientUtil.createSeleniumProxy(bmProxy, InetAddress.getByName(LOCAL_IP));
 
 
 			capabilities.setCapability("proxy", seleniumProxy);
@@ -1287,5 +1287,23 @@ public class ChromeDriverAgent {
 
 		proxyTimeoutCallbacks.add(callback);
 		return this;
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public Map<String, Object> getInfo() {
+
+		Map<String, Object> info = new HashMap<>();
+
+		info.put("name", name);
+		info.put("remoteAddress", remoteAddress);
+		info.put("proxy", proxy);
+		info.put("localProxy", ChromeDriverDistributor.LOCAL_IP + ":" + bmProxy_port);
+		info.put("status", status);
+		info.put("accountInfo", accounts);
+
+		return info;
 	}
 }

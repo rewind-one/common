@@ -42,7 +42,7 @@ public abstract class Account implements JSONable<Account> {
 
 	// 密码
 	@DatabaseField(dataType = DataType.STRING, width = 1024)
-	public String password;
+	public transient String password;
 
 	// 手机号
 	@DatabaseField(dataType = DataType.STRING, width = 16)
@@ -76,6 +76,7 @@ public abstract class Account implements JSONable<Account> {
 
 	public Account(String domain, String username, String password) {
 		this.id = hash();
+		this.domain = domain;
 		this.username = username;
 		this.password = password;
 	}

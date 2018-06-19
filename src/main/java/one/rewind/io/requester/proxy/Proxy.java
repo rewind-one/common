@@ -21,7 +21,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	private static final Logger logger = LogManager.getLogger(Proxy.class.getName());
 
 	@DatabaseField(dataType = DataType.INTEGER, canBeNull = false, generatedId = true)
-	public transient int id;
+	public int id;
 
 	@DatabaseField(dataType = DataType.STRING, width = 39, index = true)
 	public String group;

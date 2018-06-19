@@ -3,12 +3,7 @@
  */
 package one.rewind.txt;
 
-import com.google.common.net.InternetDomainName;
-
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -260,5 +255,21 @@ public class StringUtil {
 		}
 
 		return hexValue.toString();
+	}
+
+	public static String cronPattern = "(\\*|((\\*\\/)?[1-5]?[0-9])) (\\*|((\\*\\/)?(1?[0-9]|2[0-3]))) (\\*|((\\*\\/)?([1-9]|[12][0-9]|3[0-1]))) (\\*|((\\*\\/)?([1-9]|1[0-2]))) (\\*|((\\*\\/)?[0-6]))";
+
+	/**
+	 * Validate cron pattern
+	 * @param cron
+	 * @return
+	 */
+	public static boolean validCron(String cron) {
+
+		if(cron.matches(cronPattern)) {
+			return true;
+		}
+
+		return false;
 	}
 }

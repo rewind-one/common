@@ -3,6 +3,7 @@ package one.rewind.io.requester.task;
 import one.rewind.io.requester.exception.TaskException;
 import one.rewind.txt.URLUtil;
 
+import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -33,16 +34,6 @@ public class ChromeTask extends Task {
 
 	// 任务的优先级
 	public static Priority base_priority = Priority.MEDIUM;
-
-	// 变量表
-	public Map<String, Object> vars;
-
-	// TODO 静态变量赋值
-	static {
-		// init_map_class
-		// init_map_defaults
-		// url_template
-	}
 
 	/**
 	 * 静态验证
@@ -78,7 +69,7 @@ public class ChromeTask extends Task {
 		Matcher m = p.matcher(url_template);
 		Set<String> vars = new HashSet<>();
 		while (m.find()) {
-			vars.add(m.group());
+			vars.add(m.group().replaceAll("\\{\\{|\\}\\}", ""));
 		}
 
 		if(vars.containsAll(init_map_class.keySet()) && init_map_class.keySet().containsAll(vars)) {
@@ -145,6 +136,39 @@ public class ChromeTask extends Task {
 	}
 
 	/**
+	 *
+	 * @param init_map
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTask build(Class<?> clazz, Map<String, Object> init_map) throws Exception {
+		return build(clazz, init_map, null, 0, getBasePriority());
+	}
+
+	/**
+	 *
+	 * @param init_map
+	 * @param username
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTask build(Class<?> clazz, Map<String, Object> init_map, String username) throws Exception {
+		return build(clazz, init_map, username, 0, getBasePriority());
+	}
+
+	/**
+	 *
+	 * @param init_map
+	 * @param username
+	 * @param step
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTask build(Class<?> clazz, Map<String, Object> init_map, String username, int step) throws Exception {
+		return build(clazz, init_map, username, step, getBasePriority());
+	}
+
+	/**
 	 * 通过TaskHolder build Task
 	 * @param init_map
 	 * @param username
@@ -153,7 +177,7 @@ public class ChromeTask extends Task {
 	 * @return
 	 * @throws Exception
 	 */
-	public static ChromeTask build(Map<String, Object> init_map, String username, int step, Priority priority) throws Exception {
+	public static ChromeTask build(Class<?> clazz, Map<String, Object> init_map, String username, int step, Priority priority) throws Exception {
 
 		staticValidate();
 
@@ -164,7 +188,10 @@ public class ChromeTask extends Task {
 			url = url.replace("{{" + key + "}}", String.valueOf(vars.get(key)));
 		}
 
-		ChromeTask task = new ChromeTask(url);
+		Constructor<?> cons = clazz.getConstructor(String.class);
+
+		ChromeTask task = (ChromeTask) cons.newInstance(url);
+		if(needLogin()) task.setLoginTask();
 		task.setUsername(username);
 		task.setStep(step);
 		task.setPriority(priority);
@@ -179,7 +206,7 @@ public class ChromeTask extends Task {
 	 * @throws URISyntaxException
 	 */
 	public static String domain() throws MalformedURLException, URISyntaxException {
-		return URLUtil.getDomainName(url_template);
+		return URLUtil.getDomainName(url_template.replaceAll("\\{\\{|\\}\\}", ""));
 	}
 
 	/**
@@ -206,6 +233,7 @@ public class ChromeTask extends Task {
 	 */
 	public ChromeTask(String url) throws MalformedURLException, URISyntaxException {
 		super(url);
+
 	}
 
 	/**

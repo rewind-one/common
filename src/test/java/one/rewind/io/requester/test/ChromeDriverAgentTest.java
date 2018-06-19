@@ -1,16 +1,16 @@
-package one.rewind.io.test;
+package one.rewind.io.requester.test;
 
 import net.lightbody.bmp.BrowserMobProxyServer;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
-import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
+import one.rewind.io.requester.task.ChromeTask;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -24,7 +24,7 @@ public class ChromeDriverAgentTest {
 	@Test
 	public void test() throws Exception {
 
-		Task t = new Task("https://www.zbj.com/");
+		ChromeTask t = new ChromeTask("https://www.zbj.com/");
 
 		Proxy proxy = new ProxyImpl("scisaga.net", 60103, null, null);
 		//Proxy proxy = new ProxyImpl("tpda.cc", 60202, "sdyk", "sdyk");
@@ -66,7 +66,7 @@ public class ChromeDriverAgentTest {
 			ChromeDriverAgent agent = new ChromeDriverAgent();
 			agent.start();
 
-			Task task = new Task("http://www.zbj.com");
+			ChromeTask task = new ChromeTask("http://www.zbj.com");
 			ChromeAction action = new LoginWithGeetestAction(account);
 			task.addAction(action);
 			agent.submit(task);
@@ -81,7 +81,7 @@ public class ChromeDriverAgentTest {
 	@Test
 	public void requesterFilterTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException {
 
-		final Task t = new Task("https://www.baidu.com/");
+		final ChromeTask t = new ChromeTask("https://www.baidu.com/");
 		t.addDoneCallback((task)->{
 			System.err.println("Done!");
 			System.err.println(task.getResponse().getVar("test"));

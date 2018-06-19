@@ -1,4 +1,4 @@
-package one.rewind.io.test;
+package one.rewind.io.requester.test;
 
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;

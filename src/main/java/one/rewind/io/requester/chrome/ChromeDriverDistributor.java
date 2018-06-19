@@ -9,9 +9,12 @@ import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.exception.AccountException;
+import one.rewind.io.requester.route.ChromeTaskRoute;
+import one.rewind.io.requester.route.DistributorRoute;
 import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.ChromeTaskHolder;
 import one.rewind.io.requester.exception.ChromeDriverException;
+import one.rewind.io.server.MsgTransformer;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,6 +24,9 @@ import org.openqa.selenium.Point;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
+
+import static spark.Spark.*;
+import static spark.Spark.get;
 
 public class ChromeDriverDistributor {
 
@@ -35,7 +41,10 @@ public class ChromeDriverDistributor {
 	public static int READ_TIMEOUT;
 
 	// 本地IP
-	public static String REQUESTER_LOCAL_IP;
+	public static String LOCAL_IP;
+
+	// Web服务端口号
+	public static int WEB_PORT = 80;
 
 	// 配置设定
 	static {
@@ -44,7 +53,7 @@ public class ChromeDriverDistributor {
 
 		CONNECT_TIMEOUT = ioConfig.getInt("connectTimeout");
 		READ_TIMEOUT = ioConfig.getInt("readTimeout");
-		REQUESTER_LOCAL_IP = ioConfig.getString("requesterLocalIp");
+		LOCAL_IP = ioConfig.getString("requesterLocalIp");
 	}
 
 	/**
@@ -65,7 +74,8 @@ public class ChromeDriverDistributor {
 	}
 
 	// 任务队列
-	private ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<ChromeTaskHolder>> queues = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<ChromeTaskHolder>> queues
+			= new ConcurrentHashMap<>();
 
 	// 域名-账户 Agent 映射
 	private Map<String, ChromeDriverAgent> domain_account_agent_map = new HashMap<>();
@@ -92,6 +102,10 @@ public class ChromeDriverDistributor {
 
 	private volatile boolean done = false;
 
+	private Date startTime = new Date();
+
+	private volatile int taskCount = 0;
+
 	/**
 	 * 初始化
 	 */
@@ -105,6 +119,38 @@ public class ChromeDriverDistributor {
 		post_executor.setThreadFactory(new ThreadFactoryBuilder()
 				.setNameFormat("ChromeDriverDistributor-PostWorker-%d").build());
 
+		buildHttpApiServer();
+
+	}
+
+	/**
+	 *
+	 */
+	public void buildHttpApiServer() {
+
+		port(WEB_PORT);
+
+		before("/*", (q, a) -> logger.info("Received api call"));
+
+		get("/distributor", DistributorRoute.getInfo, new MsgTransformer());
+
+		path("/task", () -> {
+
+			post("", ChromeTaskRoute.submit, new MsgTransformer());
+
+			post("/unschedule/:id", ChromeTaskRoute.unschedule, new MsgTransformer());
+
+		});
+
+		// 适用于跨域调用
+		after((request, response) -> {
+
+			response.header("Access-Control-Allow-Origin", "*");
+			response.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+			response.header("Access-Control-Allow-Headers", "X-Custom-Header");
+			response.header("Access-Control-Max-Age", "1000");
+
+		});
 	}
 
 	/**
@@ -113,57 +159,6 @@ public class ChromeDriverDistributor {
 	 */
 	public ChromeDriverDockerContainer getChromeDriverDockerContainer() {
 		return null;
-	}
-
-	/**
-	 * 从阻塞队列中 获取任务
-	 * @param agent
-	 * @return
-	 * @throws InterruptedException
-	 */
-	public ChromeTask distribute(ChromeDriverAgent agent) throws InterruptedException {
-
-		ChromeTaskHolder holder = queues.get(agent).take();
-
-		ChromeTask task = null;
-
-		try {
-
-			task = holder.build();
-
-			// 任务失败重试逻辑
-			task.addDoneCallback((t) -> {
-
-				if(t.needRetry()) {
-
-					// 重试逻辑
-					if( t.getRetryCount() < 3 ) {
-
-						t.addRetryCount();
-						submit(holder);
-
-					}
-					// 失败任务保存到数据库
-					else {
-
-						try {
-							t.insert();
-						} catch (Exception e) {
-							logger.error(e);
-						}
-					}
-				}
-			});
-
-			logger.info("Task:{} Assign {}.", task.getUrl(), agent.name);
-			return task;
-
-		} catch (Exception e) {
-
-			// Recursive call to get task
-			logger.error("Task build failed. {} ", holder, e);
-			return distribute(agent);
-		}
 	}
 
 	/**
@@ -274,7 +269,7 @@ public class ChromeDriverDistributor {
 
 		if(localAgentCount < 2) return;
 
-		int gap = 600 / (localAgentCount/2);
+		int gap = 600 / (int) Math.ceil(localAgentCount/4);
 		int i = 0;
 		for(ChromeDriverAgent agent : queues.keySet()) {
 
@@ -354,24 +349,105 @@ public class ChromeDriverDistributor {
 		// 生成指派信息
 		if(agent != null) {
 
-			logger.info("Assign task:{}-{} to agent:{}.", domain, username, agent.name);
+			logger.info("Assign {} {} {} to agent:{}.", holder.class_name, domain, username!=null?username:"", agent.name);
 
 			queues.get(agent).put(holder);
 
-			Map<String, Object> assignInfo = new HashMap<>();
-			assignInfo.put("requester_host", REQUESTER_LOCAL_IP);
-			assignInfo.put("agent_name", agent.name);
-			assignInfo.put("agent_address", agent.remoteAddress.toString());
-			assignInfo.put("exe_sequence", queues.get(agent).size());
-			assignInfo.put("domain", domain);
-			assignInfo.put("account", username);
+			Map<String, Object> info = new HashMap<>();
+			info.put("localIp", LOCAL_IP);
+			info.put("agent", agent.getInfo());
+			info.put("domain", domain);
+			info.put("account", username);
 
-			return assignInfo;
+			return info;
 		}
 
 		logger.warn("Agent not found for task:{}-{}.", domain, username);
 
 		throw new ChromeDriverException.NotFoundException();
+	}
+
+	/**
+	 * 从阻塞队列中 获取任务
+	 * @param agent
+	 * @return
+	 * @throws InterruptedException
+	 */
+	public ChromeTask distribute(ChromeDriverAgent agent) throws InterruptedException {
+
+		ChromeTaskHolder holder = queues.get(agent).take();
+
+		ChromeTask task = null;
+
+		try {
+
+			task = holder.build();
+
+			// 任务失败重试逻辑
+			task.addDoneCallback((t) -> {
+
+				if(t.needRetry()) {
+
+					// 重试逻辑
+					if( t.getRetryCount() < 3 ) {
+
+						t.addRetryCount();
+						submit(holder);
+
+					}
+					// 失败任务保存到数据库
+					else {
+
+						try {
+							t.insert();
+						} catch (Exception e) {
+							logger.error(e);
+						}
+					}
+				}
+			});
+
+			logger.info("Task:{} Assign {}.", task.getUrl(), agent.name);
+
+			taskCount++;
+
+			return task;
+
+		} catch (Exception e) {
+
+			// Recursive call to get task
+			logger.error("Task build failed. {} ", holder, e);
+			return distribute(agent);
+		}
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public Map<String, Object> getInfo() {
+
+		Map<String, Object> info = new TreeMap<>();
+
+		List<Map<String, Object>> agent_info_list = new ArrayList<>();
+
+		for(ChromeDriverAgent agent : queues.keySet()) {
+
+			Map<String, Object> agent_info = agent.getInfo();
+			agent_info.put("queueSize", queues.get(agent).size());
+
+			agent_info_list.add(agent_info);
+		}
+
+		info.put("agents", agent_info_list);
+
+		info.put("taskCount", taskCount);
+
+		info.put("runTime", new Date().getTime() - startTime.getTime());
+
+		info.put("localIp", LOCAL_IP);
+
+		return info;
 	}
 
 	/**
@@ -412,7 +488,7 @@ public class ChromeDriverDistributor {
 
 		bmProxy.start(localPort);
 //		try {
-//			InetAddress address = InetAddress.getByName(REQUESTER_LOCAL_IP);
+//			InetAddress address = InetAddress.getByName(LOCAL_IP);
 //			bmProxy.start(localPort, address);
 //		} catch (UnknownHostException e) {
 //			bmProxy.start(localPort); // Use any free port

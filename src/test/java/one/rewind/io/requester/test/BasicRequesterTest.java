@@ -1,4 +1,4 @@
-package one.rewind.io.test;
+package one.rewind.io.requester.test;
 
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.task.Task;

@@ -1,8 +1,12 @@
-package one.rewind.io.requester.task;
+package one.rewind.io.requester.route;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.chrome.ChromeTaskScheduler;
+import one.rewind.io.requester.task.ChromeTaskHolder;
+import one.rewind.io.requester.task.ScheduledChromeTask;
+import one.rewind.io.requester.task.Task;
 import one.rewind.io.server.Msg;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,18 +26,18 @@ public class ChromeTaskRoute {
 	private static final Logger logger = LogManager.getLogger(ChromeTaskRoute.class.getName());
 
 	// 执行任务，返回任务分派信息
-	public static Route runTask = (Request request, Response response) -> {
+	public static Route submit = (Request request, Response response) -> {
 
 		try {
 
 			// 任务类名
-			String class_name = request.params(":class_name");
+			String class_name = request.queryParams("class_name");
 
 			// 用户名
-			String username = request.params(":username");
+			String username = request.queryParams("username");
 
 			// 初始参数
-			String init_map_str = request.params(":init_map");
+			String init_map_str = request.queryParams("init_map");
 
 			ObjectMapper mapper = new ObjectMapper();
 			TypeReference<HashMap<String, Object>> typeRef
@@ -43,8 +47,8 @@ public class ChromeTaskRoute {
 
 			// 步骤数
 			int step = 0;
-			if(request.params(":step") != null) {
-				step = Integer.valueOf(request.params(":step"));
+			if(request.queryParams("step") != null) {
+				step = Integer.valueOf(request.queryParams("step"));
 			}
 
 			// 获取 domain
@@ -63,12 +67,43 @@ public class ChromeTaskRoute {
 			// Create Holder
 			ChromeTaskHolder holder = new ChromeTaskHolder(class_name, domain, need_login, username, init_map, step, priority);
 
+			String cron = request.queryParams("cron");
+
+			Map<String, Object> info;
+
+			// 周期性任务
+			// 加载到Scheduler
+			if(cron != null) {
+				ScheduledChromeTask st = new ScheduledChromeTask(holder, cron);
+				info = ChromeTaskScheduler.getInstance().schedule(st);
+			}
 			// Submit Holder
-			Map<String, Object> info = ChromeDriverDistributor.getInstance().submit(holder);
+			else {
+				info = ChromeDriverDistributor.getInstance().submit(holder);
+			}
 
 			// Return info
 			return new Msg<Map<String, Object>>(Msg.SUCCESS, info);
 
+		}
+		catch (Exception e) {
+
+			logger.error("Error create/assign task. ", e);
+			return new Msg<>(Msg.ILLGEAL_PARAMETERS);
+		}
+	};
+
+	// 取消已经schedule的任务
+	public static Route unschedule = (Request request, Response response) -> {
+
+		try {
+
+			// 任务类名
+			String id = request.params(":id");
+
+			ChromeTaskScheduler.getInstance().unschedule(id);
+
+			return new Msg<>(Msg.SUCCESS);
 		}
 		catch (Exception e) {
 
