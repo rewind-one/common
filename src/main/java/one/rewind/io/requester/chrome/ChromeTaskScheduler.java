@@ -2,8 +2,6 @@ package one.rewind.io.requester.chrome;
 
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.task.ScheduledChromeTask;
-import one.rewind.json.JSON;
-import one.rewind.json.JSONable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -16,7 +14,7 @@ import static one.rewind.io.requester.chrome.ChromeDriverDistributor.LOCAL_IP;
 /**
  * 调度器
  */
-public class ChromeTaskScheduler implements JSONable<ChromeTaskScheduler> {
+public class ChromeTaskScheduler {
 
 	private static final Logger logger = LogManager.getLogger(BasicRequester.class.getName());
 
@@ -79,7 +77,7 @@ public class ChromeTaskScheduler implements JSONable<ChromeTaskScheduler> {
 	 *
 	 * @return
 	 */
-	public String toJSON() {
-		return JSON.toJson(scheduledTasks);
+	public Map<String, ?> getInfo() {
+		return scheduledTasks;
 	}
 }

@@ -134,6 +134,8 @@ public class ChromeDriverDistributor {
 
 		get("/distributor", DistributorRoute.getInfo, new MsgTransformer());
 
+		get("/scheduler", DistributorRoute.getSchedulerInfo, new MsgTransformer());
+
 		path("/task", () -> {
 
 			post("", ChromeTaskRoute.submit, new MsgTransformer());
