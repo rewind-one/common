@@ -8,20 +8,43 @@ import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
+import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.ChromeTaskHolder;
+import one.rewind.json.JSON;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static one.rewind.io.requester.chrome.ChromeDriverDistributor.buildBMProxy;
 
 public class RemoteDriverTest {
+
+	@Before
+	public void loadClass() throws Exception {
+
+		Class.forName(TestChromeTask.class.getName());
+
+		/*ChromeTaskHolder holder = new ChromeTaskHolder(
+
+				TestChromeTask.class.getName(),
+				TestChromeTask.domain(),
+				TestChromeTask.need_login,
+				null,
+				ImmutableMap.of("q", "ip"),
+				0,
+				TestChromeTask.base_priority
+		);
+
+		ChromeTask task = holder.build();*/
+	}
 
 	@Test
 	public void test() {
@@ -37,19 +60,36 @@ public class RemoteDriverTest {
 	}
 
 	@Test
-	public void simpleTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException {
+	public void simpleTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException, ChromeDriverException.NotFoundException, AccountException.NotFound {
 
-		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
+		DockerHost host = new DockerHost("10.0.0.51", 22, "root");
 
 		ChromeDriverDockerContainer container =
 				new ChromeDriverDockerContainer(host, "ChromeContainer-10.0.0.62-2", 31002, 32002);
 
+		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
 
 		ChromeDriverAgent agent = new ChromeDriverAgent(container.getRemoteAddress(), container);
 
-		agent.start();
+		distributor.addAgent(agent);
 
-		agent.submit(new ChromeTask("http://www.baidu.com"));
+		for(int i=0; i<1000; i++) {
+
+			ChromeTaskHolder holder = new ChromeTaskHolder(
+					TestChromeTask.class.getName(),
+					TestChromeTask.domain(),
+					TestChromeTask.need_login,
+					null,
+					ImmutableMap.of("q", String.valueOf(1950 + i)),
+					0,
+					TestChromeTask.base_priority
+			);
+
+			Map<String, Object> info = distributor.submit(holder);
+			System.err.println(JSON.toPrettyJson(info));
+		}
+
+		Thread.sleep(1000000);
 
 	}
 

@@ -14,7 +14,8 @@ public class TestChromeTask extends ChromeTask {
 		// init_map_defaults
 		init_map_defaults = ImmutableMap.of("q", "ip");
 		// url_template
-		url_template = "http://www.baidu.com/s?word={{q}}";
+		url_template = "http://www.b" +
+				"  aidu.com/s?word={{q}}";
 	}
 
 	/**

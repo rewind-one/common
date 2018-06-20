@@ -69,8 +69,9 @@ public class DockerHost {
 	public String exec(String cmd) {
 
 		// 秘钥登录
-		SshManager.Host sshHost = new SshManager.Host(ip, port, username, DockerHost.PEM_FILE);
+		//SshManager.Host sshHost = new SshManager.Host(ip, port, username, DockerHost.PEM_FILE);
 
+		SshManager.Host sshHost = new SshManager.Host(ip, port, username, "sdyk");
 		String output = null;
 
 		try {
