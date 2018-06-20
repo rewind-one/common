@@ -11,7 +11,6 @@ public class NetworkUtilTest {
 
 	@Test
 	public void testGetIP() throws UnknownHostException {
-		System.err.println(NetworkUtil.getLocalIp());
-		System.err.println(InetAddress.getLocalHost());
+		System.err.println(NetworkUtil.getAllInetIpString());
 	}
 }

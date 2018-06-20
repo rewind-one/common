@@ -9,6 +9,7 @@ import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
+import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.ChromeTask;
@@ -21,6 +22,8 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static one.rewind.io.requester.chrome.ChromeDriverDistributor.logger;
 
 public class ChromeDriverDistributorRemoteTest {
 
@@ -150,14 +153,6 @@ public class ChromeDriverDistributorRemoteTest {
 			}
 		}
 
-		/*for(int i=0; i<100; i++) {
-
-			// Task task = new Task("https://www.google.com.sg/search?q=1" + (1050 + i));
-
-			Task task = new Task("https://zbj.com");
-			distributor.submit(task);
-		}*/
-
 		Thread.sleep(600000);
 
 		//distributor.close();
@@ -202,5 +197,66 @@ public class ChromeDriverDistributorRemoteTest {
 		}
 
 		Thread.sleep(1000000);
+	}
+
+	/**
+	 * docker 代理更换
+	 * @throws Exception
+	 */
+	@Test
+	public void RremoteProxyFiledTest() throws Exception {
+
+		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
+
+		host.delAllDockerContainers();
+
+		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
+
+		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+
+		Proxy proxy1 = new ProxyImpl("47.106.89.236", 59998, "tfelab", "TfeLAB2@15");
+
+		proxy1.validate();
+
+		Proxy proxy2 = new ProxyImpl("39.108.178.54", 59998, "tfelab", "TfeLAB2@15");
+
+		proxy2.validate();
+
+		final URL remoteAddress = container.getRemoteAddress();
+
+		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy1);
+
+		agent.addProxyFailedCallback((a, p) -> {
+
+			a.changeProxy(proxy2);
+		});
+
+		distributor.addAgent(agent);
+
+		ChromeTaskHolder holder = new ChromeTaskHolder(
+				TestProxyFailedChromeTask.class.getName(),
+				TestProxyFailedChromeTask.domain(),
+				TestProxyFailedChromeTask.need_login,
+				null,
+				ImmutableMap.of("q", "ip"),
+				0,
+				TestFailedChromeTask.base_priority
+		);
+
+		//
+		/*agent.addIdleCallback((a)->{
+			try {
+				a.submit(task);
+			} catch (ChromeDriverException.IllegalStatusException e) {
+				e.printStackTrace();
+			}
+		});*/
+
+		distributor.submit(holder);
+
+		Thread.sleep(6000000);
+
+		distributor.close();
+
 	}
 }

@@ -53,8 +53,8 @@ public class ChromeDriverDistributor {
 
 		CONNECT_TIMEOUT = ioConfig.getInt("connectTimeout");
 		READ_TIMEOUT = ioConfig.getInt("readTimeout");
-		// LOCAL_IP = ioConfig.getString("requesterLocalIp");
-		LOCAL_IP = NetworkUtil.getLocalIp();
+		LOCAL_IP = ioConfig.getString("requesterLocalIp");
+		// LOCAL_IP = NetworkUtil.getLocalIp();
 	}
 
 	/**

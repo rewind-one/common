@@ -404,7 +404,7 @@ public class ChromeDriverAgent {
 
 				// 对内容进行验证
 				if(task.validator != null)
-					task.validator.run(task);
+					task.validator.run(ChromeDriverAgent.this, task);
 
 				if(task.shootScreen()) {
 					task.getResponse().setScreenshot(driver.getScreenshotAs(OutputType.BYTES));
@@ -1078,29 +1078,35 @@ public class ChromeDriverAgent {
 
 				logger.error("{}, Account {}::{} failed, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				updateLoginInfo(e.account.domain, null);
+				logger.error("{}", accountFailedCallbacks.size());
 
-				if(accountFailedCallbacks == null) return;
-				for(AccountCallback callback : accountFailedCallbacks) {
+				updateLoginInfo(e.account.domain, e.account);
+
+				status = Status.IDLE;
+
+				if (accountFailedCallbacks == null) return;
+				for (AccountCallback callback : accountFailedCallbacks) {
 					callback.run(this, e.account);
 				}
 
-				status = Status.IDLE;
+				//status = Status.IDLE;
 
 				return;
 			}
 			// 代理失效
 			catch (ProxyException.Failed e) {
 
-				logger.error("{}, Proxy {}:{} failed, ", name, e.proxy.host, e.proxy.port, e);
+				if(e.proxy != null) {
 
-				if(proxyFailedCallbacks == null) return;
-				for(ProxyCallBack callback : proxyFailedCallbacks) {
-					callback.run(this, e.proxy);
+					logger.error("{}, Proxy {}:{} failed, ", name, e.proxy.host, e.proxy.port, e);
+
+					if (proxyFailedCallbacks == null) return;
+					for (ProxyCallBack callback : proxyFailedCallbacks) {
+						callback.run(this, e.proxy);
+					}
 				}
 
 				status = Status.IDLE;
-
 				return;
 			}
 			// 其他异常 TODO 待验证
