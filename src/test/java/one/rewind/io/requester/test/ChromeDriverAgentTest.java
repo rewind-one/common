@@ -97,22 +97,11 @@ public class ChromeDriverAgentTest {
 		ChromeDriverAgent agent = new ChromeDriverAgent(ChromeDriverAgent.Flag.MITM);
 		agent.start();
 
-		/*agent.setIdleCallback(()->{
-			System.err.println("IDLE");
-		});*/
-
 		agent.addTerminatedCallback((a)->{
 			System.err.println("TERMINATED");
 		});
 
 		agent.submit(t);
-
-		/*Task t1 = new Task("https://www.jd.com/");
-		t1.setResponseFilter((response, contents, messageInfo) -> {
-			System.out.println("R2");
-		});
-
-		agent.submit(t);*/
 
 		Thread.sleep(10000);
 

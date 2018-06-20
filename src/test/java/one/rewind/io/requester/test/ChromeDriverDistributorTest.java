@@ -20,7 +20,7 @@ import java.util.Map;
 
 import static one.rewind.io.requester.chrome.ChromeDriverDistributor.buildBMProxy;
 
-public class ChromeDriverRequesterTest {
+public class ChromeDriverDistributorTest {
 
 	@Before
 	public void loadClass() throws Exception {
@@ -160,6 +160,11 @@ public class ChromeDriverRequesterTest {
 		distributor.close();
 	}
 
+	/**
+	 * 手动抛出异常
+	 * 查看ChromeDriverAgent重启情况
+	 * @throws Exception
+	 */
 	@Test
 	public void ExceptionTest() throws Exception {
 
@@ -173,16 +178,16 @@ public class ChromeDriverRequesterTest {
 
 		distributor.layout();
 
-		for(int i=0; i<1; i++) {
+		for(int i=0; i<10; i++) {
 
 			ChromeTaskHolder holder = new ChromeTaskHolder(
-					TestChromeTask.class.getName(),
-					TestChromeTask.domain(),
-					TestChromeTask.need_login,
+					TestFailedChromeTask.class.getName(),
+					TestFailedChromeTask.domain(),
+					TestFailedChromeTask.need_login,
 					null,
 					ImmutableMap.of("q", String.valueOf(1950 + i)),
 					0,
-					TestChromeTask.base_priority
+					TestFailedChromeTask.base_priority
 			);
 
 			distributor.submit(holder);
@@ -191,6 +196,16 @@ public class ChromeDriverRequesterTest {
 		Thread.sleep(60000);
 
 		distributor.close();
+	}
+
+	@Test
+	public void testProxyFailed() {
+
+	}
+
+	@Test
+	public void testAccountFailed() {
+
 	}
 
 	@Test

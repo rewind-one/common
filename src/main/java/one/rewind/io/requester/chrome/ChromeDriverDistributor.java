@@ -9,13 +9,14 @@ import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.exception.AccountException;
+import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.route.ChromeTaskRoute;
 import one.rewind.io.requester.route.DistributorRoute;
 import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.ChromeTaskHolder;
-import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.server.MsgTransformer;
 import one.rewind.util.Configs;
+import one.rewind.util.NetworkUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.Dimension;
@@ -26,7 +27,6 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static spark.Spark.*;
-import static spark.Spark.get;
 
 public class ChromeDriverDistributor {
 
@@ -53,7 +53,8 @@ public class ChromeDriverDistributor {
 
 		CONNECT_TIMEOUT = ioConfig.getInt("connectTimeout");
 		READ_TIMEOUT = ioConfig.getInt("readTimeout");
-		LOCAL_IP = ioConfig.getString("requesterLocalIp");
+		// LOCAL_IP = ioConfig.getString("requesterLocalIp");
+		LOCAL_IP = NetworkUtil.getLocalIp();
 	}
 
 	/**

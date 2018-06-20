@@ -66,9 +66,13 @@ public class ChromeDriverDockerContainer extends DockerContainer {
 		this.host = host;
 		this.ip = host.ip;
 		this.name = name;
-		this.imageName = imageName; // selenium/standalone-chrome-debug
+		this.imageName = imageName;
 		this.seleniumPort = seleniumPort;
 		this.vncPort = vncPort;
+	}
+
+	public int getVncPort() {
+		return this.vncPort;
 	}
 
 	/**
@@ -85,12 +89,17 @@ public class ChromeDriverDockerContainer extends DockerContainer {
 		if (host != null) {
 
 			String output = host.exec(cmd);
-			// TODO 根据output 判断是否执行成功
-			DockerHost.logger.info(output);
 
-			status = Status.IDLE;
+			DockerHost.logger.info(output);
+			// TODO 根据output 判断是否执行成功
+			if(output == null) {
+				throw new Exception("DockerHost is not accessible.");
+			} else {
+				status = Status.IDLE;
+			}
+
 		} else {
-			throw new Exception("DockerHost is null");
+			throw new Exception("DockerHost is null.");
 		}
 	}
 

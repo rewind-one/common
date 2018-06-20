@@ -16,7 +16,9 @@ public class RestfulRequestManagerTest {
 			q.put("user", "user");
 			String src = RestfulRequester.getInstance().request("http://tetra-data.com:59020/echo", RestfulRequester.RequestType.GET, "");
 			System.err.println(src);
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

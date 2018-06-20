@@ -1,7 +1,6 @@
 package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
-import net.lightbody.bmp.BrowserMobProxyServer;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.docker.model.DockerHost;
 import one.rewind.io.requester.account.AccountImpl;
@@ -23,9 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static one.rewind.io.requester.chrome.ChromeDriverDistributor.buildBMProxy;
-
-public class RemoteDriverTest {
+public class ChromeDriverDistributorRemoteTest {
 
 	@Before
 	public void loadClass() throws Exception {
@@ -46,26 +43,32 @@ public class RemoteDriverTest {
 		ChromeTask task = holder.build();*/
 	}
 
-	@Test
-	public void test() {
-		System.err.println(System.nanoTime());
-		System.err.println(System.currentTimeMillis());
-	}
 
 	@Test
 	public void batchTest() throws Exception {
 		for(int i=0; i<20; i++) {
-			remoteTest();
+			loginTest();
 		}
 	}
 
+	/**
+	 * 远程服务器手动创建容器后
+	 * 执行简单调用测试
+	 *
+	 * @throws MalformedURLException
+	 * @throws URISyntaxException
+	 * @throws ChromeDriverException.IllegalStatusException
+	 * @throws InterruptedException
+	 * @throws ChromeDriverException.NotFoundException
+	 * @throws AccountException.NotFound
+	 */
 	@Test
 	public void simpleTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException, ChromeDriverException.NotFoundException, AccountException.NotFound {
 
-		DockerHost host = new DockerHost("10.0.0.51", 22, "root");
+		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
 
 		ChromeDriverDockerContainer container =
-				new ChromeDriverDockerContainer(host, "ChromeContainer-10.0.0.62-2", 31002, 32002);
+				new ChromeDriverDockerContainer(host, "ChromeContainer-10.0.0.50-1", 31001, 32001);
 
 		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
 
@@ -73,7 +76,7 @@ public class RemoteDriverTest {
 
 		distributor.addAgent(agent);
 
-		for(int i=0; i<1000; i++) {
+		for(int i=0; i<100; i++) {
 
 			ChromeTaskHolder holder = new ChromeTaskHolder(
 					TestChromeTask.class.getName(),
@@ -86,6 +89,7 @@ public class RemoteDriverTest {
 			);
 
 			Map<String, Object> info = distributor.submit(holder);
+
 			System.err.println(JSON.toPrettyJson(info));
 		}
 
@@ -95,60 +99,55 @@ public class RemoteDriverTest {
 
 
 	@Test
-	public void remoteTest() throws Exception {
+	public void loginTest() throws Exception {
 
-		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
+		int containerNum = 1;
+
+		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
 		host.delAllDockerContainers();
 
 		//
 		List<ChromeDriverDockerContainer> containers = new ArrayList<>();
-		for(int i=0; i<1; i++) {
+		for(int i=0; i<containerNum; i++) {
 			containers.add(host.createChromeDriverDockerContainer());
 		}
 
-		ChromeDriverDistributor requester = ChromeDriverDistributor.getInstance();
+		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+
+		final Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
 
 		//
 		for(ChromeDriverDockerContainer container : containers) {
 
-			final Proxy proxy = new ProxyImpl("10.0.0.51", 59998, "tfelab", "TfeLAB2@15");
 			final URL remoteAddress = container.getRemoteAddress();
 
-			new Thread(() -> {
-				try {
+			try {
 
-					proxy.validate();
+				proxy.validate();
 
-					ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy);
-					//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
+				ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy);
+				//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
 
-					ChromeTask task = new ChromeTask("http://zbj.com");
-					AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
-					task.addAction(new LoginWithGeetestAction(account));
+				ChromeTask task = new ChromeTask("http://zbj.com");
 
-					agent.addNewCallback((a)->{
-						try {
-							a.submit(task);
-						} catch (ChromeDriverException.IllegalStatusException e) {
-							e.printStackTrace();
-						}
-					});
+				AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
 
-					requester.addAgent(agent);
+				task.addAction(new LoginWithGeetestAction(account));
 
-					agent.start();
+				//
+				agent.addNewCallback((a)->{
+					try {
+						a.submit(task);
+					} catch (ChromeDriverException.IllegalStatusException e) {
+						e.printStackTrace();
+					}
+				});
 
-				} catch (ChromeDriverException.IllegalStatusException e) {
-					e.printStackTrace();
-				} catch (URISyntaxException e) {
-					e.printStackTrace();
-				} catch (MalformedURLException e) {
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}).start();
+				distributor.addAgent(agent);
 
+			} catch (ChromeDriverException.IllegalStatusException | URISyntaxException | InterruptedException | MalformedURLException e) {
+				e.printStackTrace();
+			}
 		}
 
 		/*for(int i=0; i<100; i++) {
@@ -156,55 +155,23 @@ public class RemoteDriverTest {
 			// Task task = new Task("https://www.google.com.sg/search?q=1" + (1050 + i));
 
 			Task task = new Task("https://zbj.com");
-			requester.submit(task);
+			distributor.submit(task);
 		}*/
 
 		Thread.sleep(600000);
 
-		//requester.close();
+		//distributor.close();
 	}
 
+	/**
+	 *
+	 * @throws Exception
+	 */
 	@Test
-	public void testBuildProxyServer() throws InterruptedException, UnknownHostException {
+	public void restartContainer() throws Exception {
 
-		Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
-		BrowserMobProxyServer ps = buildBMProxy(proxy);
-		System.err.println(ps.getClientBindAddress());
-		System.err.println(ps.getPort());
-		Thread.sleep(100000);
-	}
+		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
 
-	@Test
-	public void testGetLocalAddress() throws UnknownHostException {
-		System.err.println(InetAddress.getLocalHost());
-	}
-
-	@Test
-	public void ContainerTest() throws Exception {
-
-		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
-		host.delAllDockerContainers();
-		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
-		ChromeDriverDistributor requester = ChromeDriverDistributor.getInstance();
-		final Proxy proxy = new ProxyImpl("10.0.0.51", 59998, "tfelab", "TfeLAB2@15");
-		final URL remoteAddress = container.getRemoteAddress();
-
-		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy);
-		requester.addAgent(agent);
-
-		agent.start();
-
-		while (true) {
-			ChromeTask task = new ChromeTask("http://zbj.com");
-			agent.submit(task);
-		}
-
-	}
-
-	@Test
-	public void RestartContainer() throws Exception {
-
-		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
 		host.delAllDockerContainers();
 
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
@@ -214,21 +181,21 @@ public class RemoteDriverTest {
 		// final Proxy proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
 
 		final URL remoteAddress = container.getRemoteAddress();
-		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container);
-		distributor.addAgent(agent);
 
-		agent.start();
+		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container);
+
+		distributor.addAgent(agent);
 
 		for(int i=0; i<10; i++) {
 
 			ChromeTaskHolder holder = new ChromeTaskHolder(
-					TestChromeTask.class.getName(),
-					TestChromeTask.domain(),
-					TestChromeTask.need_login,
+					TestFailedChromeTask.class.getName(),
+					TestFailedChromeTask.domain(),
+					TestFailedChromeTask.need_login,
 					null,
-					ImmutableMap.of("q", (1950 + i)),
+					ImmutableMap.of("q", String.valueOf(1950 + i)),
 					0,
-					TestChromeTask.base_priority
+					TestFailedChromeTask.base_priority
 			);
 
 			distributor.submit(holder);

@@ -3,9 +3,7 @@ package one.rewind.io.docker.model;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.table.DatabaseTable;
 import com.typesafe.config.Config;
-import one.rewind.db.DBName;
 import one.rewind.db.DaoManager;
 import one.rewind.io.ssh.SshManager;
 import one.rewind.util.Configs;
@@ -69,9 +67,8 @@ public class DockerHost {
 	public String exec(String cmd) {
 
 		// 秘钥登录
-		//SshManager.Host sshHost = new SshManager.Host(ip, port, username, DockerHost.PEM_FILE);
-
-		SshManager.Host sshHost = new SshManager.Host(ip, port, username, "sdyk");
+		SshManager.Host sshHost = new SshManager.Host(ip, port, username, DockerHost.PEM_FILE);
+		// SshManager.Host sshHost = new SshManager.Host(ip, port, username, "sdyk");
 		String output = null;
 
 		try {

@@ -189,6 +189,18 @@ public class SshManager {
 
 		/**
 		 *
+		 * @return
+		 */
+		public String getHost() {
+			return this.ip;
+		}
+
+		public int getVncPort() {
+			return 0;
+		}
+
+		/**
+		 *
 		 * @param localFilePath
 		 * @param remoteDirectoryPath
 		 * @throws Exception

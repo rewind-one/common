@@ -1220,7 +1220,7 @@ public class ChromeDriverAgent {
 		if(status != Status.INIT) throw new ChromeDriverException.IllegalStatusException();
 
 		// TODO
-		newCallbacks.add(0, callback);
+		newCallbacks.add(callback);
 		return this;
 	}
 
@@ -1298,9 +1298,15 @@ public class ChromeDriverAgent {
 		Map<String, Object> info = new HashMap<>();
 
 		info.put("name", name);
-		info.put("remoteAddress", remoteAddress);
-		info.put("proxy", proxy);
-		info.put("localProxy", ChromeDriverDistributor.LOCAL_IP + ":" + bmProxy_port);
+
+		if(remoteAddress != null) info.put("remoteAddress", remoteAddress);
+
+		if(proxy != null) info.put("proxy", proxy);
+
+		if(bmProxy_port != 0) info.put("localProxy", ChromeDriverDistributor.LOCAL_IP + ":" + bmProxy_port);
+
+		if(remoteShell != null && remoteShell.getVncPort() != 0)
+			info.put("vncAddress", remoteShell.getHost() + ":" + remoteShell.getVncPort());
 		info.put("status", status);
 		info.put("accountInfo", accounts);
 

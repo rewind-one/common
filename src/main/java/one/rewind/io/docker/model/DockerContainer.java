@@ -64,6 +64,10 @@ public abstract class DockerContainer implements RemoteShell {
 		return output;
 	}
 
+	public String getHost() {
+		return this.host.ip;
+	}
+
 	public void setIdle() throws Exception {
 		this.status = Status.IDLE;
 		this.update();
