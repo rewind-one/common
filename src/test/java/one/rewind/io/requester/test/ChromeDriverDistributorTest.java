@@ -1,16 +1,15 @@
 package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
-import com.j256.ormlite.dao.Dao;
 import net.lightbody.bmp.BrowserMobProxyServer;
-import one.rewind.db.DaoManager;
+import one.rewind.io.docker.model.ChromeDriverDockerContainer;
+import one.rewind.io.docker.model.DockerHost;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
-import one.rewind.io.requester.callback.ProxyCallBack;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.ChromeTaskScheduler;
-import one.rewind.io.requester.chrome.action.ChromeAction;
+import one.rewind.io.requester.chrome.action.ClickAction;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
@@ -20,7 +19,6 @@ import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.ChromeTaskHolder;
 import one.rewind.io.requester.task.ScheduledChromeTask;
-import one.rewind.io.requester.task.Task;
 import one.rewind.json.JSON;
 import org.junit.Before;
 import org.junit.Test;
@@ -211,6 +209,24 @@ public class ChromeDriverDistributorTest {
 		distributor.close();
 	}
 
+	@Test
+	public void test() throws MalformedURLException, URISyntaxException, ClassNotFoundException {
+
+		Class.forName(TestFailedChromeTask.class.getName());
+
+		ChromeTaskHolder holder = new ChromeTaskHolder(
+				TestFailedChromeTask.class.getName(),
+				TestFailedChromeTask.domain(),
+				TestFailedChromeTask.need_login,
+				"17600668061",
+				ImmutableMap.of("q", "ip"),
+				0,
+				TestFailedChromeTask.base_priority
+		);
+
+		System.err.println(TestFailedChromeTask.domain());
+	}
+
 	/**
 	 * 账户异常回调
 	 * @throws ChromeDriverException.IllegalStatusException
@@ -221,27 +237,44 @@ public class ChromeDriverDistributorTest {
 	 * @throws AccountException.NotFound
 	 */
 	@Test
-	public void testAccountFailed() throws ChromeDriverException.IllegalStatusException, InterruptedException, MalformedURLException, URISyntaxException, ChromeDriverException.NotFoundException, AccountException.NotFound {
+	public void testAccountFailed() throws Exception {
+
+		Class.forName(TestFailedChromeTask.class.getName());
+
+		int containerNum = 1;
+
+		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
+		host.delAllDockerContainers();
+
+		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
 
 		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
 
-		ChromeDriverAgent agent = new ChromeDriverAgent();
+		ChromeDriverAgent agent = new ChromeDriverAgent(container.getRemoteAddress(), container);
+
+		distributor.addAgent(agent);
 		//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
 
-		AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
+		AccountImpl account_1 = new AccountImpl("zbj.com", "17600668061", "gcy116149");
+		AccountImpl account_2 = new AccountImpl("zbj.com", "15284809626", "123456");
 
-		AccountImpl account2 = new AccountImpl("zbj.com", "15284809626", "123456");
+		ChromeTask task = new ChromeTask("http://www.zbj.com")
+				.addAction(new LoginWithGeetestAction(account_1));
 
-		ChromeTask task = new ChromeTask("http://www.zbj.com");
-		task.addAction(new LoginWithGeetestAction(account));
-		agent.submit(task);
+		//
+		agent.submit(task, true);
 
 		agent.addAccountFailedCallback((a, acc) -> {
 
 			try {
-				ChromeTask task1 = new ChromeTask("http://www.zbj.com");
-				task1.addAction(new LoginWithGeetestAction(account2));
-				a.submit(task1);
+
+				ChromeTask task1 = new ChromeTask("http://www.zbj.com")
+						.addAction(new ClickAction("")) // 用于退出当前账户的操作
+						.addAction(new ClickAction(""))
+						.addAction(new LoginWithGeetestAction(account_2));
+
+				a.submit(task1, true);
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -253,7 +286,7 @@ public class ChromeDriverDistributorTest {
 				TestFailedChromeTask.domain(),
 				TestFailedChromeTask.need_login,
 				"17600668061",
-				ImmutableMap.of("q", "zbj.com"),
+				ImmutableMap.of("q", "ip"),
 				0,
 				TestFailedChromeTask.base_priority
 		);

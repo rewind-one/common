@@ -16,7 +16,6 @@ import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.ChromeTaskHolder;
 import one.rewind.io.server.MsgTransformer;
 import one.rewind.util.Configs;
-import one.rewind.util.NetworkUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.Dimension;
@@ -223,6 +222,8 @@ public class ChromeDriverDistributor {
 		// 账户登录回调
 		agent.accountAddCallback = (a, account) -> {
 
+			logger.info("{} {} {}", a.name, account.getDomain(), account.getUsername());
+
 			domain_agent_map.computeIfAbsent(account.getDomain(), k -> new ArrayList<>());
 
 			domain_agent_map.get(account.getDomain()).add(a);
@@ -371,6 +372,27 @@ public class ChromeDriverDistributor {
 	}
 
 	/**
+	 *
+	 * @param holder
+	 * @param agent
+	 */
+	public void submit(ChromeTaskHolder holder, ChromeDriverAgent agent) {
+
+		// 生成指派信息
+		if(agent != null) {
+
+			logger.info("Assign {} to agent:{}.", holder.class_name, agent.name);
+
+			queues.get(agent).put(holder);
+
+			return;
+
+		} else {
+			logger.warn("Agent is null.");
+		}
+	}
+
+	/**
 	 * 从阻塞队列中 获取任务
 	 * @param agent
 	 * @return
@@ -416,7 +438,8 @@ public class ChromeDriverDistributor {
 
 			return task;
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 
 			// Recursive call to get task
 			logger.error("Task build failed. {} ", holder, e);

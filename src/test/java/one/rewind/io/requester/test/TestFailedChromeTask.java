@@ -2,13 +2,8 @@ package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
 import one.rewind.io.requester.account.Account;
-import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.AccountException;
-import one.rewind.io.requester.exception.ProxyException;
-import one.rewind.io.requester.proxy.Proxy;
-import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.ChromeTask;
-import org.openqa.selenium.remote.UnreachableBrowserException;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -21,7 +16,7 @@ public class TestFailedChromeTask extends ChromeTask {
 		// init_map_defaults
 		init_map_defaults = ImmutableMap.of("q", "ip");
 		// url_template
-		url_template = "http://{{q}}";
+		url_template = "http://www.zbj.com/{{q}}";
 	}
 
 	/**
@@ -45,7 +40,5 @@ public class TestFailedChromeTask extends ChromeTask {
 		this.addDoneCallback((t) -> {
 			System.err.println(t.getResponse().getText().length());
 		});
-
-		this.addAction(new LoginWithGeetestAction());
 	}
 }

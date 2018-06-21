@@ -101,10 +101,6 @@ public class Task implements Comparable<Task> {
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 	private one.rewind.io.requester.proxy.Proxy proxy;
 
-	// 执行动作列表
-	@DatabaseField(dataType = DataType.SERIALIZABLE)
-	private List<ChromeAction> actions = new ArrayList<>();
-
 	// 参数
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 	private List<Flag> flags = new ArrayList<>();
@@ -432,25 +428,7 @@ public class Task implements Comparable<Task> {
 		return this;
 	}
 
-	/**
-	 * 获取前置操作
-	 * ChromeDriverAgent 专用
-	 * @return
-	 */
-	public List<ChromeAction> getActions() {
-		return actions;
-	}
 
-	/**
-	 * 添加前置操作
-	 * ChromeDriverAgent 专用
-	 * @param action
-	 * @return
-	 */
-	public Task addAction(ChromeAction action) {
-		this.actions.add(action);
-		return this;
-	}
 
 	/**
 	 * 设定请求过滤器

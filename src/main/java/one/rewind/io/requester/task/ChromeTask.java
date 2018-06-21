@@ -1,15 +1,15 @@
 package one.rewind.io.requester.task;
 
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
 import one.rewind.txt.URLUtil;
 
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -225,6 +225,11 @@ public class ChromeTask extends Task {
 		return base_priority;
 	}
 
+
+	// 执行动作列表
+	@DatabaseField(dataType = DataType.SERIALIZABLE)
+	private List<ChromeAction> actions = new ArrayList<>();
+
 	/**
 	 *
 	 * @param url
@@ -233,7 +238,26 @@ public class ChromeTask extends Task {
 	 */
 	public ChromeTask(String url) throws MalformedURLException, URISyntaxException {
 		super(url);
+	}
 
+	/**
+	 * 获取前置操作
+	 * ChromeDriverAgent 专用
+	 * @return
+	 */
+	public List<ChromeAction> getActions() {
+		return actions;
+	}
+
+	/**
+	 * 添加前置操作
+	 * ChromeDriverAgent 专用
+	 * @param action
+	 * @return
+	 */
+	public ChromeTask addAction(ChromeAction action) {
+		this.actions.add(action);
+		return this;
 	}
 
 	/**

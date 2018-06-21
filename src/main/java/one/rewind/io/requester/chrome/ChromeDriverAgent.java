@@ -7,8 +7,6 @@ import net.lightbody.bmp.client.ClientUtil;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.BasicRequester;
-import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.callback.AccountCallback;
 import one.rewind.io.requester.callback.ChromeDriverAgentCallback;
@@ -19,6 +17,7 @@ import one.rewind.io.requester.chrome.action.LoginAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
+import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.util.DocumentSettleCondition;
 import one.rewind.io.ssh.RemoteShell;
 import one.rewind.util.Configs;
@@ -328,12 +327,12 @@ public class ChromeDriverAgent {
 	 */
 	class Wrapper implements Callable<Void> {
 
-		Task task;
+		ChromeTask task;
 
 		/**
 		 * @param task 采集任务
 		 */
-		Wrapper(Task task) {
+		Wrapper(ChromeTask task) {
 			this.task = task;
 			this.task.setStartTime();
 		}
@@ -388,7 +387,7 @@ public class ChromeDriverAgent {
 						LoginAction action_ = (LoginAction) action;
 
 						// 更新账户信息
-						updateLoginInfo(action_.getAccount().domain, action_.getAccount());
+						addLoginInfo(action_.getAccount().domain, action_.getAccount());
 					}
 
 					actionSuccess = actionSuccess && currentActionSuccess;
@@ -949,14 +948,24 @@ public class ChromeDriverAgent {
 		return src;
 	}
 
+	/**
+	 *
+	 * @param task
+	 * @throws ChromeDriverException.IllegalStatusException
+	 * @throws InterruptedException
+	 */
+	public void submit(ChromeTask task) throws ChromeDriverException.IllegalStatusException, InterruptedException {
+
+		submit(task, ChromeDriverDistributor.CONNECT_TIMEOUT + ChromeDriverDistributor.READ_TIMEOUT, false);
+	}
 
 	/**
 	 * 同步执行任务
 	 * @param task
 	 */
-	public synchronized void submit(ChromeTask task) throws ChromeDriverException.IllegalStatusException, InterruptedException {
+	public void submit(ChromeTask task, boolean ignoreIdleCallback) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
-		submit(task, ChromeDriverDistributor.CONNECT_TIMEOUT + ChromeDriverDistributor.READ_TIMEOUT);
+		submit(task, ChromeDriverDistributor.CONNECT_TIMEOUT + ChromeDriverDistributor.READ_TIMEOUT, ignoreIdleCallback);
 	}
 
 	/**
@@ -964,7 +973,7 @@ public class ChromeDriverAgent {
 	 * @param task
 	 * @param timeout
 	 */
-	public synchronized void submit(ChromeTask task, long timeout) throws ChromeDriverException.IllegalStatusException, InterruptedException {
+	public void submit(ChromeTask task, long timeout, boolean ignoreIdleCallback) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		// 状态时间切分可能存在问题
 		if(status != Status.NEW && status != Status.IDLE) {
@@ -1062,7 +1071,7 @@ public class ChromeDriverAgent {
 
 				logger.error("{}, Account {}::{} frozen, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				updateLoginInfo(e.account.domain, null);
+				removeLoginInfo(e.account.domain, e.account);
 
 				if(accountFrozenCallbacks == null) return;
 				for(AccountCallback callback : accountFrozenCallbacks) {
@@ -1078,18 +1087,17 @@ public class ChromeDriverAgent {
 
 				logger.error("{}, Account {}::{} failed, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				logger.error("{}", accountFailedCallbacks.size());
-
-				updateLoginInfo(e.account.domain, e.account);
+				// 删除账户登录信息
+				removeLoginInfo(e.account.getDomain(), e.account);
 
 				status = Status.IDLE;
 
 				if (accountFailedCallbacks == null) return;
 				for (AccountCallback callback : accountFailedCallbacks) {
+
+					// 通常AccountFailedCallback对应的都是重登陆任务
 					callback.run(this, e.account);
 				}
-
-				//status = Status.IDLE;
 
 				return;
 			}
@@ -1134,8 +1142,8 @@ public class ChromeDriverAgent {
 		}
 
 		// Set idle callback
-		// TODO 为什么要Check queue.size
-		if(status == Status.IDLE && queue.size() == 0) {
+		// TODO 为什么要check queue.size
+		if(status == Status.IDLE && queue.size() == 0 && !ignoreIdleCallback) {
 
 			runCallbacks(idleCallbacks);
 		}
@@ -1144,22 +1152,21 @@ public class ChromeDriverAgent {
 	/**
 	 * 更新加载账户信息
 	 */
-	private void updateLoginInfo(String domain, Account account) {
+	private void addLoginInfo(String domain, Account account) {
 
-		if(account == null) {
-			accounts.remove(domain);
+		accounts.put(domain, account);
 
-			if(accountRemoveCallback != null)
-				accountRemoveCallback.run(this, account);
+		if(accountAddCallback != null)
+			accountAddCallback.run(this, account);
+	}
 
-		} else {
-			accounts.put(domain, account);
+	private void removeLoginInfo(String domain, Account account) {
 
-			if(accountRemoveCallback != null)
-				accountRemoveCallback.run(this, account);
+		accounts.remove(domain);
+
+		if(accountRemoveCallback != null) {
+			accountRemoveCallback.run(this, account);
 		}
-
-
 	}
 
 	/**
