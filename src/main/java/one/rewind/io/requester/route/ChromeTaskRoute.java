@@ -8,6 +8,7 @@ import one.rewind.io.requester.task.ChromeTaskHolder;
 import one.rewind.io.requester.task.ScheduledChromeTask;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.server.Msg;
+import one.rewind.json.JSON;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import spark.Request;

@@ -7,6 +7,7 @@ import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
+import one.rewind.io.requester.chrome.action.RedirectAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
@@ -200,7 +201,7 @@ public class ChromeDriverDistributorRemoteTest {
 	}
 
 	/**
-	 * docker 代理更换
+	 * docker 代理更换测试
 	 * @throws Exception
 	 */
 	@Test
@@ -258,5 +259,68 @@ public class ChromeDriverDistributorRemoteTest {
 
 		distributor.close();
 
+	}
+
+	/**
+	 * docker Account更换测试
+	 */
+	@Test
+	public void RemoteAccountFiledTest() throws Exception {
+
+		Class.forName(TestFailedChromeTask.class.getName());
+
+		int containerNum = 1;
+
+		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
+		host.delAllDockerContainers();
+
+		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
+
+		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+
+		ChromeDriverAgent agent = new ChromeDriverAgent(container.getRemoteAddress(), container);
+
+		distributor.addAgent(agent);
+		//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
+
+		AccountImpl account_1 = new AccountImpl("zbj.com", "17600668061", "gcy116149");
+		AccountImpl account_2 = new AccountImpl("zbj.com", "15284809626", "123456");
+
+		ChromeTask task = new ChromeTask("http://www.zbj.com")
+				.addAction(new LoginWithGeetestAction(account_1));
+
+		//
+		agent.submit(task, true);
+
+		agent.addAccountFailedCallback((a, acc) -> {
+
+			try {
+				ChromeTask task1 = new ChromeTask("http://www.zbj.com")
+						.addAction(new RedirectAction("https://login.zbj.com/login/dologout"))
+						.addAction(new LoginWithGeetestAction(account_2));
+
+				a.submit(task1, true);
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		});
+
+		ChromeTaskHolder holder = new ChromeTaskHolder(
+				TestFailedChromeTask.class.getName(),
+				TestFailedChromeTask.domain(),
+				TestFailedChromeTask.need_login,
+				"17600668061",
+				ImmutableMap.of("q", ""),
+				0,
+				TestFailedChromeTask.base_priority
+		);
+
+		distributor.submit(holder);
+
+		Thread.sleep(6000000);
+
+		distributor.close();
 	}
 }

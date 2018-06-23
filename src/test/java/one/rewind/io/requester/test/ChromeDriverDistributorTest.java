@@ -11,6 +11,7 @@ import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.ChromeTaskScheduler;
 import one.rewind.io.requester.chrome.action.ClickAction;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
+import one.rewind.io.requester.chrome.action.RedirectAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
@@ -267,11 +268,10 @@ public class ChromeDriverDistributorTest {
 		agent.addAccountFailedCallback((a, acc) -> {
 
 			try {
-
 				ChromeTask task1 = new ChromeTask("http://www.zbj.com")
-						.addAction(new ClickAction("")) // 用于退出当前账户的操作
-						.addAction(new ClickAction(""))
+						.addAction(new RedirectAction("https://login.zbj.com/login/dologout"))
 						.addAction(new LoginWithGeetestAction(account_2));
+
 
 				a.submit(task1, true);
 
@@ -286,7 +286,7 @@ public class ChromeDriverDistributorTest {
 				TestFailedChromeTask.domain(),
 				TestFailedChromeTask.need_login,
 				"17600668061",
-				ImmutableMap.of("q", "ip"),
+				ImmutableMap.of("q", ""),
 				0,
 				TestFailedChromeTask.base_priority
 		);
@@ -335,13 +335,13 @@ public class ChromeDriverDistributorTest {
 		agent.addNewCallback((a)->{
 			try {
 				a.submit(task);
-				a.submit(task1);
 			} catch (ChromeDriverException.IllegalStatusException e) {
 				e.printStackTrace();
 			}
 		});
 
 		distributor.addAgent(agent);
+
 
 		Thread.sleep(6000000);
 

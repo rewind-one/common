@@ -285,7 +285,6 @@ public class ChromeDriverDistributor {
 				agent.setSize(new Dimension(800, 400));
 			}
 		}
-
 	}
 
 	/**

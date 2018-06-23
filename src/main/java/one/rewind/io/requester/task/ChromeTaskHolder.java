@@ -41,7 +41,6 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	// 创建时间
 	public Date create_time = new Date();
 
-
 	/**
 	 *
 	 * @param class_name

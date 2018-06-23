@@ -20,6 +20,12 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 
 	public ChromeTaskHolder holder;
 
+	/**
+	 *
+	 * @param holder
+	 * @param cron
+	 * @throws Exception
+	 */
 	public ScheduledChromeTask(ChromeTaskHolder holder, String cron) throws Exception {
 
 		this.id = holder.id;

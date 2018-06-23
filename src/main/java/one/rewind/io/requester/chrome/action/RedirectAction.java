@@ -14,6 +14,12 @@ public class RedirectAction extends Action {
 
 		agent.getDriver().navigate().to(url);
 
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
 		return true;
 	}
 }

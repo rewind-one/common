@@ -12,7 +12,7 @@ public class DockerHostTest {
 	@Test
 	public void testCreateContainer() throws Exception {
 
-		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
+		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
 
 		host.delAllDockerContainers();
 

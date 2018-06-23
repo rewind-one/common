@@ -45,7 +45,7 @@ public class ChromeTaskScheduler {
 	 */
 	public Map<String, Object> schedule(ScheduledChromeTask task) throws Exception {
 
-		if(scheduledTasks.contains(task.id)) throw new Exception("Task:" + task.id + " already scheduled.");
+		if(scheduledTasks.containsKey(task.id)) throw new Exception("Task:" + task.id + " already scheduled.");
 
 		scheduledTasks.put(task.id, task);
 		task.start();
@@ -54,6 +54,7 @@ public class ChromeTaskScheduler {
 		assignInfo.put("localIp", LOCAL_IP);
 		assignInfo.put("domain", task.holder.domain);
 		assignInfo.put("account", task.holder.username);
+		assignInfo.put("id", task.id);
 
 		return assignInfo;
 	}
@@ -65,7 +66,8 @@ public class ChromeTaskScheduler {
 	 */
 	public void unschedule(String id) throws Exception {
 
-		if(!scheduledTasks.contains(id)) {
+		if(!scheduledTasks.containsKey(id)) {
+
 			throw new Exception("No such id:" + id + ".");
 		}
 

@@ -50,6 +50,7 @@ public class LoginAction extends Action {
 
 			// 输入账号
 			WebElement usernameInput = agent.getElementWait(usernameCssPath);
+			usernameInput.clear();
 			usernameInput.sendKeys(account.getUsername());
 
 			// 输入密码
