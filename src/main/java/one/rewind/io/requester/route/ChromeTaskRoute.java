@@ -71,9 +71,10 @@ public class ChromeTaskRoute {
 
 			String cron = request.queryParams("cron");
 
-			String crons[] = cron.split(",");
-
-			System.err.println(crons.length);
+			String crons[] = null;
+			if (cron != null) {
+				crons = cron.split(",");
+			}
 
 			Map<String, Object> info = null;
 

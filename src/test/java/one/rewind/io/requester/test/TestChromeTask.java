@@ -59,7 +59,7 @@ public class TestChromeTask extends ChromeTask {
 	public static void main(String[] args) throws Exception {
 
 
-		String url = getPostURL(TestChromeTask.class, "","question","11656226",0,"",true,null,"*/1 * * * *,*/2 * * * *,*/3 * * * *");
+		String url = getPostURL(TestChromeTask.class, "","question","11656226",0,"",true,null,"* * * * *,*/2 * * * *,*/3 * * * *");
 
 		System.err.println(url);
 
@@ -77,7 +77,7 @@ public class TestChromeTask extends ChromeTask {
 
 		BasicRequester.getInstance().submit(task);
 
-		ResponseBody responseBody = JSON.fromJson(task.getResponse().getText(), ResponseBody.class);
+		/*ResponseBody responseBody = JSON.fromJson(task.getResponse().getText(), ResponseBody.class);*/
 
 
 
