@@ -75,6 +75,7 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 		int index = crons.indexOf(cron);
 		if(index > -1 && index < crons.size() - 1) {
 			cron = crons.get(index + 1);
+			System.err.println(cron);
 		}
 
 		ChromeTaskScheduler.getInstance().scheduler.reschedule(scheduleId, cron);

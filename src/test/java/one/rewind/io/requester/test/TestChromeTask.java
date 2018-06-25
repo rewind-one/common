@@ -46,30 +46,8 @@ public class TestChromeTask extends ChromeTask {
 
 			ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t).scheduledTaskId);
 
-			if (map_index.containsKey(getUrl())) {
-				map_index.put(getUrl(), map_index.get(getUrl()) + 1);
-			} else {
-				map_index.put(getUrl(), 0);
-			}
-
 			System.err.println(t.getResponse().getText().length());
 
-			if (map_index.get(getUrl()) == 2) {
-
-				System.err.println("22222222222222222222");
-				ChromeTask task1 = new ChromeTask("http://localhost/task/unschedule/" + map_id.get(this.getUrl()));
-				System.err.println(task1.getUrl());
-				task1.setPost();
-				BasicRequester.getInstance().submit(task1);
-
-				Thread.sleep(10000);
-
-				String url1 = getPostURL(TestChromeTask.class, "","question","11656226",0,"",true,null,"*/2 * * * *");
-				task1 = new ChromeTask(url1);
-				task1.setPost();
-				BasicRequester.getInstance().submit(task1);
-
-			}
 
 		});
 
@@ -81,8 +59,7 @@ public class TestChromeTask extends ChromeTask {
 	public static void main(String[] args) throws Exception {
 
 
-
-		String url = getPostURL(TestChromeTask.class, "","question","11656226",0,"",true,null,"* * * * *");
+		String url = getPostURL(TestChromeTask.class, "","question","11656226",0,"",true,null,"*/1 * * * *,*/2 * * * *,*/3 * * * *");
 
 		System.err.println(url);
 
@@ -100,14 +77,9 @@ public class TestChromeTask extends ChromeTask {
 
 		BasicRequester.getInstance().submit(task);
 
-		System.err.println(task.getResponse().getText());
-
 		ResponseBody responseBody = JSON.fromJson(task.getResponse().getText(), ResponseBody.class);
 
-		ChromeTask.map_id.put(TestChromeTask.url_template.replace("{{question}}","11656226"), responseBody.data.get("id"));
 
-		System.err.println(TestChromeTask.url_template.replace("{{question}}","11656226"));
-		System.err.println(responseBody.data.get("id"));
 
 	}
 

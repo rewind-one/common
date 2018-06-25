@@ -16,6 +16,7 @@ import spark.Response;
 import spark.Route;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,13 +71,23 @@ public class ChromeTaskRoute {
 
 			String cron = request.queryParams("cron");
 
-			Map<String, Object> info;
+			String crons[] = cron.split(",");
+
+			System.err.println(crons.length);
+
+			Map<String, Object> info = null;
 
 			// 周期性任务
 			// 加载到Scheduler
 			if(cron != null) {
-				ScheduledChromeTask st = new ScheduledChromeTask(holder, cron);
-				info = ChromeTaskScheduler.getInstance().schedule(st);
+				if (crons.length ==1) {
+					ScheduledChromeTask st = new ScheduledChromeTask(holder, cron);
+					info = ChromeTaskScheduler.getInstance().schedule(st);
+				}
+				else if (crons.length > 1) {
+					ScheduledChromeTask st =  new ScheduledChromeTask(holder, Arrays.asList(crons));
+					info = ChromeTaskScheduler.getInstance().schedule(st);
+				}
 			}
 			// Submit Holder
 			else {
