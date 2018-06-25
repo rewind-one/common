@@ -5,7 +5,6 @@ import com.j256.ormlite.field.DatabaseField;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
 import one.rewind.txt.URLUtil;
-import org.omg.PortableInterceptor.INACTIVE;
 
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -36,11 +35,7 @@ public class ChromeTask extends Task {
 	// 任务的优先级
 	public static Priority base_priority = Priority.MEDIUM;
 
-	// 记录url与ScheduledChromeTask的id
-	public static Map<String, String> map_id = new HashMap<>();
-
-	// 记录url与ScheduledChromeTask的id
-	public static Map<String, Integer> map_index = new HashMap<>();
+	public String scheduledTaskId;
 
 	/**
 	 * 静态验证

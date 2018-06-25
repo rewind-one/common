@@ -1,12 +1,13 @@
 package one.rewind.io.requester.task;
 
-import it.sauronsoftware.cron4j.Scheduler;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.chrome.ChromeTaskScheduler;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.List;
 
 public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 
@@ -14,9 +15,11 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 
 	public String id;
 
+	public String scheduleId;
+
 	public String cron;
 
-	public transient Scheduler scheduler;
+	public List<String> crons;
 
 	public ChromeTaskHolder holder;
 
@@ -37,30 +40,50 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 		}
 
 		this.holder = holder;
+	}
 
-		scheduler = new Scheduler();
+	/**
+	 *
+	 * @param holder
+	 * @param crons
+	 * @throws Exception
+	 */
+	public ScheduledChromeTask(ChromeTaskHolder holder, List<String> crons) throws Exception {
 
-		scheduler.schedule(cron, ()->{
+		this.id = holder.id;
 
-			try {
-
-				ChromeDriverDistributor.getInstance().submit(holder);
-			} catch (Exception e) {
-				logger.error("Error submit scheduled task to distributor. ", e);
+		for (String cron_ : crons) {
+			if (!StringUtil.validCron(cron_)) {
+				throw new Exception("Cron pattern invaild.");
 			}
-		});
+		}
+
+		if (crons.size() == 0) throw new Exception("Cron pattern invaild.");
+
+		cron = crons.get(0);
+
+		this.crons = crons;
+
+		this.holder = holder;
 	}
 
-	public void start() {
-		scheduler.start();
-	}
+	/**
+	 *
+	 */
+	public void degenerate() {
 
-	public void stop() {
-		scheduler.stop();
+		int index = crons.indexOf(cron);
+		if(index > -1 && index < crons.size() - 1) {
+			cron = crons.get(index + 1);
+		}
+
+		ChromeTaskScheduler.getInstance().scheduler.reschedule(scheduleId, cron);
 	}
 
 	@Override
 	public String toJSON() {
 		return JSON.toJson(this);
 	}
+
+
 }

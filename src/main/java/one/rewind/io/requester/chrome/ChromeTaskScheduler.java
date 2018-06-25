@@ -1,5 +1,6 @@
 package one.rewind.io.requester.chrome;
 
+import it.sauronsoftware.cron4j.Scheduler;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.task.ScheduledChromeTask;
 import org.apache.logging.log4j.LogManager;
@@ -33,10 +34,20 @@ public class ChromeTaskScheduler {
 		return instance;
 	}
 
+	public Scheduler scheduler;
+
 	/**
 	 *
 	 */
 	public ConcurrentHashMap<String, ScheduledChromeTask> scheduledTasks = new ConcurrentHashMap<>();
+
+	/**
+	 *
+	 */
+	public ChromeTaskScheduler() {
+		this.scheduler = new Scheduler();
+		scheduler.start();
+	}
 
 	/**
 	 *
@@ -47,8 +58,16 @@ public class ChromeTaskScheduler {
 
 		if(scheduledTasks.containsKey(task.id)) throw new Exception("Task:" + task.id + " already scheduled.");
 
+		task.scheduleId = scheduler.schedule(task.cron, ()->{
+
+			try {
+				ChromeDriverDistributor.getInstance().submit(task.holder);
+			} catch (Exception e) {
+				logger.error("Error submit scheduled task to distributor. ", e);
+			}
+		});
+
 		scheduledTasks.put(task.id, task);
-		task.start();
 
 		Map<String, Object> assignInfo = new HashMap<>();
 		assignInfo.put("localIp", LOCAL_IP);
@@ -57,6 +76,22 @@ public class ChromeTaskScheduler {
 		assignInfo.put("id", task.id);
 
 		return assignInfo;
+	}
+
+	/**
+	 *
+	 * @param id
+	 * @throws Exception
+	 */
+	public void degenerate(String id) throws Exception {
+
+		if(!scheduledTasks.containsKey(id)) {
+
+			throw new Exception("No such id:" + id + ".");
+		}
+
+		ScheduledChromeTask task = scheduledTasks.get(id);
+		task.degenerate();
 	}
 
 	/**
@@ -71,7 +106,10 @@ public class ChromeTaskScheduler {
 			throw new Exception("No such id:" + id + ".");
 		}
 
-		scheduledTasks.get(id).stop();
+		ScheduledChromeTask task = scheduledTasks.get(id);
+
+		scheduler.deschedule(task.scheduleId);
+
 		scheduledTasks.remove(id);
 	}
 

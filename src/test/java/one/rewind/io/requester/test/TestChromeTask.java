@@ -5,6 +5,7 @@ import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.chrome.ChromeTaskScheduler;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.task.ChromeTask;
@@ -38,9 +39,12 @@ public class TestChromeTask extends ChromeTask {
 	 * @throws URISyntaxException
 	 */
 	public TestChromeTask(String url) throws MalformedURLException, URISyntaxException {
+
 		super(url);
 
 		this.addDoneCallback((t) -> {
+
+			ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t).scheduledTaskId);
 
 			if (map_index.containsKey(getUrl())) {
 				map_index.put(getUrl(), map_index.get(getUrl()) + 1);

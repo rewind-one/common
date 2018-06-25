@@ -107,6 +107,8 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 		ChromeTask task =
 				(ChromeTask) method.invoke(null, clazz, init_map, username, step, priority);
 
+		task.scheduledTaskId = id;
+
 		return task;
 	}
 

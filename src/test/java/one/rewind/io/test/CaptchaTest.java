@@ -23,7 +23,7 @@ public class CaptchaTest {
 
 		List<String> captchas = new ArrayList<>();
 
-		while(captchas.size() < 100000) {
+		while(captchas.size() < 448000) {
 
 			List<Integer> pool = new ArrayList<>();
 
@@ -52,8 +52,8 @@ public class CaptchaTest {
 		}
 
 		ThreadPoolExecutor executor = new ThreadPoolExecutor(
-				20,
-				20,
+				40,
+				40,
 				0, TimeUnit.MICROSECONDS,
 				new LinkedBlockingQueue<>()
 		);
