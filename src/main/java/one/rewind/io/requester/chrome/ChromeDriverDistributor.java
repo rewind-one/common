@@ -74,7 +74,7 @@ public class ChromeDriverDistributor {
 	}
 
 	// 任务队列
-	private ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<ChromeTaskHolder>> queues
+	public ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<ChromeTaskHolder>> queues
 			= new ConcurrentHashMap<>();
 
 	// 域名-账户 Agent 映射

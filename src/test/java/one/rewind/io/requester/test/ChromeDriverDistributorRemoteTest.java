@@ -21,8 +21,10 @@ import org.junit.Test;
 
 import java.net.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import static one.rewind.io.requester.chrome.ChromeDriverDistributor.logger;
 
@@ -120,39 +122,62 @@ public class ChromeDriverDistributorRemoteTest {
 
 		final Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
 
+		CountDownLatch downLatch = new CountDownLatch(containerNum);
 		//
 		for(ChromeDriverDockerContainer container : containers) {
 
-			final URL remoteAddress = container.getRemoteAddress();
+			new Thread(()->{
 
-			try {
+				try {
 
-				proxy.validate();
+					final URL remoteAddress = container.getRemoteAddress();
 
-				ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy);
-				//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
+					proxy.validate();
 
-				ChromeTask task = new ChromeTask("http://zbj.com");
+					/*CountDownLatch latch = new CountDownLatch(1);*/
 
-				AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
+					ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy);
+					//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
 
-				task.addAction(new LoginWithGeetestAction(account));
+					ChromeTask task = new ChromeTask("http://zbj.com");
 
-				//
-				agent.addNewCallback((a)->{
-					try {
-						a.submit(task);
-					} catch (ChromeDriverException.IllegalStatusException e) {
-						e.printStackTrace();
-					}
-				});
+					/*AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
 
-				distributor.addAgent(agent);
+					task.addAction(new LoginWithGeetestAction(account));*/
 
-			} catch (ChromeDriverException.IllegalStatusException | URISyntaxException | InterruptedException | MalformedURLException e) {
-				e.printStackTrace();
-			}
+					agent.addNewCallback((a) -> {
+						try {
+							a.submit(task);
+						} catch (ChromeDriverException.IllegalStatusException e) {
+							e.printStackTrace();
+						}
+
+					});
+
+					distributor.addAgent(agent);
+
+					downLatch.countDown();
+
+				} catch (ChromeDriverException.IllegalStatusException | URISyntaxException | InterruptedException | MalformedURLException e) {
+					e.printStackTrace();
+				}
+
+			}).start();
 		}
+
+		downLatch.await();
+
+		ChromeTask task = new ChromeTask("https://www.baidu.com");
+
+		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
+		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
+		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
+		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
+		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
+		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
+		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
+		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
+
 
 		Thread.sleep(600000);
 

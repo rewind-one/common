@@ -69,24 +69,19 @@ public class ChromeTaskRoute {
 			// Create Holder
 			ChromeTaskHolder holder = new ChromeTaskHolder(class_name, domain, need_login, username, init_map, step, priority);
 
-			String cron = request.queryParams("cron");
-
-			String crons[] = null;
-			if (cron != null) {
-				crons = cron.split(",");
-			}
+			String[] cron = request.queryParamsValues("cron");
 
 			Map<String, Object> info = null;
 
 			// 周期性任务
 			// 加载到Scheduler
 			if(cron != null) {
-				if (crons.length ==1) {
-					ScheduledChromeTask st = new ScheduledChromeTask(holder, cron);
+				if (cron.length ==1) {
+					ScheduledChromeTask st = new ScheduledChromeTask(holder, cron[0]);
 					info = ChromeTaskScheduler.getInstance().schedule(st);
 				}
-				else if (crons.length > 1) {
-					ScheduledChromeTask st =  new ScheduledChromeTask(holder, Arrays.asList(crons));
+				else if (cron.length > 1) {
+					ScheduledChromeTask st =  new ScheduledChromeTask(holder, Arrays.asList(cron));
 					info = ChromeTaskScheduler.getInstance().schedule(st);
 				}
 			}
