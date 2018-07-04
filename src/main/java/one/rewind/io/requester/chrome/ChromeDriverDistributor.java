@@ -176,6 +176,7 @@ public class ChromeDriverDistributor {
 		// 空闲回调
 		agent.addIdleCallback((a) -> {
 
+			down.countDown();
 			a.submit(distribute(a));
 
 		})

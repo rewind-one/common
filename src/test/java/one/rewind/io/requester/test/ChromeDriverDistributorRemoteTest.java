@@ -123,7 +123,7 @@ public class ChromeDriverDistributorRemoteTest {
 		final Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
 
 		CountDownLatch downLatch = new CountDownLatch(containerNum);
-		//
+
 		for(ChromeDriverDockerContainer container : containers) {
 
 			new Thread(()->{
@@ -145,13 +145,9 @@ public class ChromeDriverDistributorRemoteTest {
 
 					task.addAction(new LoginWithGeetestAction(account));*/
 
+					// TODO 如果在NewCallback中调用了agent.submit方法，任务执行成功后会调用IdleCallbacks，而不是继续执行后续的NewCallback
 					agent.addNewCallback((a) -> {
-						try {
-							a.submit(task);
-						} catch (ChromeDriverException.IllegalStatusException e) {
-							e.printStackTrace();
-						}
-
+						a.submit(task);
 					});
 
 					distributor.addAgent(agent);
