@@ -568,7 +568,6 @@ public class AndroidAgent {
 		wait.until(ExpectedConditions.presenceOfElementLocated(
 				By.id("abl")
 		));
-
 		Exception e = null;
 
 		while(running && e == null) {

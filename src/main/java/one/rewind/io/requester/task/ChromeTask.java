@@ -66,8 +66,8 @@ public class ChromeTask extends Task {
 			}
 		}
 
-		// 验证url_template
-		Pattern p = Pattern.compile("\\{\\{[\\w\\W][\\w\\W\\d\\_]*\\}\\}");
+		// 验证url_template  \{\{[\w\W][\w\W\d\_]*\}\}
+		Pattern p = Pattern.compile("\\{\\{.*?\\}\\}");
 		Matcher m = p.matcher(url_template);
 		Set<String> vars = new HashSet<>();
 		while (m.find()) {

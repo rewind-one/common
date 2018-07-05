@@ -1,6 +1,7 @@
 package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
@@ -13,6 +14,7 @@ import one.rewind.io.requester.task.ChromeTaskHolder;
 import one.rewind.io.requester.task.Task;
 import one.rewind.json.JSON;
 import one.rewind.txt.StringUtil;
+import one.rewind.txt.URLUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -26,12 +28,21 @@ public class TestChromeTask extends ChromeTask {
 
 	static {
 		// init_map_class
-		init_map_class = ImmutableMap.of("question", String.class);
+		init_map_class = ImmutableMap.of("admain", String.class);
 		// init_map_defaults
-		init_map_defaults = ImmutableMap.of("question", "ip");
+		init_map_defaults = ImmutableMap.of("admain", "baidu");
 		// url_template
-		url_template = "https://shop.zbj.com/{{question}}/";
+		url_template = "https://www.{{admain}}.com";
+
+		need_login = true;
+
+		base_priority = Priority.HIGH;
 	}
+
+	/*public static String domain() throws MalformedURLException, URISyntaxException {
+		return "zbj.com";
+	}*/
+
 
 	/**
 	 * @param url
@@ -44,22 +55,24 @@ public class TestChromeTask extends ChromeTask {
 
 		this.addDoneCallback((t) -> {
 
-			ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t).scheduledTaskId);
+			/*ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t).scheduledTaskId);*/
 
 			System.err.println(t.getResponse().getText().length());
 
+			System.err.println(this.getDomain());
 
 		});
 
-		/*this.addAction(new LoginWithGeetestAction(new AccountImpl("zbj.com","17600668061","gcy116149")));*/
+		this.addAction(new LoginWithGeetestAction(new AccountImpl("zbj.com","17600668061","gcy116149")));
+
 	}
-
-
 
 	public static void main(String[] args) throws Exception {
 
+		Map<String, String> map = new HashMap<>();
+		map = ImmutableMap.of("admain","zbj");
 
-		String url = getPostURL(TestChromeTask.class, "","question","11656226",0,"",true,null,"*/1 * * * *,*/2 * * * *,*/3 * * * *");
+		String url = getPostURL(TestChromeTask.class, "", map,0,"",true,null,null);
 
 		System.err.println(url);
 
@@ -76,10 +89,7 @@ public class TestChromeTask extends ChromeTask {
 		task.setPost();
 
 		BasicRequester.getInstance().submit(task);
-
-		ResponseBody responseBody = JSON.fromJson(task.getResponse().getText(), ResponseBody.class);
-
-
+		/*ResponseBody responseBody = JSON.fromJson(task.getResponse().getText(), ResponseBody.class);*/
 
 	}
 
@@ -87,8 +97,7 @@ public class TestChromeTask extends ChromeTask {
 	 * 生成task的url地址
 	 * @param clazz
 	 * @param username
-	 * @param key
-	 * @param value
+
 	 * @param step
 	 * @param domain
 	 * @param needLogin
@@ -96,36 +105,39 @@ public class TestChromeTask extends ChromeTask {
 	 * @param cron
 	 * @return
 	 */
-	public static String getPostURL(Class clazz, String username, String key, String value, Integer step, String domain, Boolean needLogin, String getBasePriority, String cron) {
+	public static String getPostURL(Class clazz, String username, Map<String, String> map, Integer step, String domain, Boolean needLogin, String getBasePriority, String cron) {
 
 		String classname_ = "class_name="+clazz.getName();
 
 		String init_map = "";
-		if (key !=null && value!= null) {
-			if (key != "") {
-				init_map = "&init_map={\"" + key + "\":\"" + value + "\"}";
+
+		String json =new Gson().toJson(map);
+		System.err.println(json);
+
+		init_map ="&init_map=" + json;
+
+		/*if (key != null && value != null && key.length > 0) {
+			String start = "&init_map={";
+			String end = "}";
+			String s="";
+			for (int i = 0; i< key.length; i++ ) {
+				if (key[i] != null) {
+					if (i>0) {
+						s = s +","+ "\"" + key[i] + "\":\"" + value[i] + "\"";
+					} else {
+						s = "\"" + key[i] + "\":\"" + value[i] + "\"";
+					}
+				}
+
 			}
-		}
+			init_map = start + s + end;
+		}*/
 
 		String step_ = "";
 		if (step!=null) {
 			step_ = "&step=" + step;
 		}
 
-		String needLogin_ = "";
-		if (needLogin != null) {
-			needLogin_ = "&needLogin=" + needLogin;
-		}
-		if (domain !=null && domain!="") {
-			domain = "&domain=" + domain;
-		} else {
-			domain ="";
-		}
-		if (getBasePriority != null && getBasePriority != "") {
-			getBasePriority = "&getBasePriority=" + getBasePriority;
-		} else {
-			getBasePriority = "";
-		}
 		if (cron != null && cron!= "") {
 			try {
 				cron = URLEncoder.encode(cron,"utf-8");
@@ -141,7 +153,7 @@ public class TestChromeTask extends ChromeTask {
 		} else {
 			username ="";
 		}
-		String url = "http://localhost/task?"+classname_+username+init_map+step_+domain+needLogin_+getBasePriority+cron;
+		String url = "http://localhost/task?"+classname_+username+init_map+step_+cron;
 
 		return url;
 	}

@@ -1,5 +1,5 @@
 group 'one.rewind'
-version '1.0.75-SNAPSHOT'
+version '1.0.87-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -46,24 +46,24 @@ repositories {
     }
 }
 
-/*uploadArchives {
+uploadArchives {
     repositories {
         mavenDeployer {
-            *//*repository(url: 'http://tfelab.org:60002/content/repositories/releases/') {
+            repository(url: 'http://tfelab.org:60002/content/repositories/releases/') {
                 authentication(userName: deployment, password: deployment_password)
             }
             snapshotRepository(url: 'http://tfelab.org:60002/content/repositories/snapshots/') {
                 authentication(userName: deployment, password: deployment_password)
-            }*//*
-            repository(url: 'http://10.0.0.51:8081/artifactory/libs-release-local/') {
+            }
+            /*repository(url: 'http://10.0.0.51:8081/artifactory/libs-release-local/') {
                 authentication(userName: artifactory_username, password: artifactory_password)
             }
             snapshotRepository(url: 'http://10.0.0.51:8081/artifactory/libs-snapshot-local/') {
                 authentication(userName: artifactory_username, password: artifactory_password)
-            }
+            }*/
         }
     }
-}*/
+}
 
 publishing {
     publications {
@@ -73,7 +73,7 @@ publishing {
     }
 }
 
-artifactory {
+/*artifactory {
 
     contextUrl = 'http://10.0.0.56:8081/artifactory'
     publish {
@@ -97,7 +97,7 @@ artifactory {
             publishPom = true
         }
     }
-}
+}*/
 
 [distZip, distTar].each { task -> configurations.archives.artifacts.removeAll
         { it.class.simpleName == "ArchivePublishArtifact" && it.archiveTask == task }
