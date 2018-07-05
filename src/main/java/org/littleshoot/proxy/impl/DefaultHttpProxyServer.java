@@ -511,6 +511,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 
 		ChannelInitializer<Channel> initializer = new ChannelInitializer<Channel>() {
 			protected void initChannel(Channel ch) throws Exception {
+
 				new ClientToProxyConnection(
 						DefaultHttpProxyServer.this,
 						sslEngineSource,
@@ -519,6 +520,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 						globalTrafficShapingHandler);
 			};
 		};
+
 		switch (transportProtocol) {
 			case TCP:
 				LOG.info("Proxy listening with TCP transport");
@@ -538,6 +540,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 			default:
 				throw new UnknownTransportProtocolException(transportProtocol);
 		}
+
 		serverBootstrap.childHandler(initializer);
 		ChannelFuture future = serverBootstrap.bind(requestedAddress)
 				.addListener(new ChannelFutureListener() {
@@ -558,6 +561,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 		this.boundAddress = ((InetSocketAddress) future.channel().localAddress());
 		LOG.info("Proxy started at address: " + this.boundAddress);
 
+		// TODO
 		Runtime.getRuntime().addShutdownHook(jvmShutdownHook);
 	}
 

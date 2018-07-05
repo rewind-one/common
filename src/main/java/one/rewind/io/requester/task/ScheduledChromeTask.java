@@ -59,7 +59,6 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 		}
 
 		if (crons.size() == 0) throw new Exception("Cron pattern invaild.");
-
 		cron = crons.get(0);
 
 		this.crons = crons;
