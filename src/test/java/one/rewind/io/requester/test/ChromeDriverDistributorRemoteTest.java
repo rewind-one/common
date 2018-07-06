@@ -10,7 +10,6 @@ import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.chrome.action.RedirectAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
-import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.ChromeTask;
@@ -19,14 +18,14 @@ import one.rewind.json.JSON;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.net.*;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-
-import static one.rewind.io.requester.chrome.ChromeDriverDistributor.logger;
 
 public class ChromeDriverDistributorRemoteTest {
 
@@ -69,7 +68,7 @@ public class ChromeDriverDistributorRemoteTest {
 	 * @throws AccountException.NotFound
 	 */
 	@Test
-	public void simpleTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException, ChromeDriverException.NotFoundException, AccountException.NotFound {
+	public void simpleTest() throws Exception {
 
 		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
 
@@ -84,15 +83,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		for(int i=0; i<100; i++) {
 
-			ChromeTaskHolder holder = new ChromeTaskHolder(
-					TestChromeTask.class.getName(),
-					TestChromeTask.domain(),
-					TestChromeTask.need_login,
-					null,
-					ImmutableMap.of("q", String.valueOf(1950 + i)),
-					0,
-					TestChromeTask.base_priority
-			);
+			ChromeTaskHolder holder = ChromeTask.buildHolder(TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
 
 			Map<String, Object> info = distributor.submit(holder);
 
@@ -205,15 +196,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		for(int i=0; i<10; i++) {
 
-			ChromeTaskHolder holder = new ChromeTaskHolder(
-					TestFailedChromeTask.class.getName(),
-					TestFailedChromeTask.domain(),
-					TestFailedChromeTask.need_login,
-					null,
-					ImmutableMap.of("q", String.valueOf(1950 + i)),
-					0,
-					TestFailedChromeTask.base_priority
-			);
+			ChromeTaskHolder holder = ChromeTask.buildHolder(TestFailedChromeTask.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
 
 			distributor.submit(holder);
 		}
@@ -255,15 +238,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		distributor.addAgent(agent);
 
-		ChromeTaskHolder holder = new ChromeTaskHolder(
-				TestProxyFailedChromeTask.class.getName(),
-				TestProxyFailedChromeTask.domain(),
-				TestProxyFailedChromeTask.need_login,
-				null,
-				ImmutableMap.of("q", "ip"),
-				0,
-				TestFailedChromeTask.base_priority
-		);
+		ChromeTaskHolder holder = ChromeTask.buildHolder(TestProxyFailedChromeTask.class, ImmutableMap.of("q", "ip"));
 
 		//
 		/*agent.addIdleCallback((a)->{
@@ -328,15 +303,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		});
 
-		ChromeTaskHolder holder = new ChromeTaskHolder(
-				TestFailedChromeTask.class.getName(),
-				TestFailedChromeTask.domain(),
-				TestFailedChromeTask.need_login,
-				"17600668061",
-				ImmutableMap.of("q", ""),
-				0,
-				TestFailedChromeTask.base_priority
-		);
+		ChromeTaskHolder holder = ChromeTask.buildHolder(TestFailedChromeTask.class, "17600668061", ImmutableMap.of("q", ""));
 
 		distributor.submit(holder);
 

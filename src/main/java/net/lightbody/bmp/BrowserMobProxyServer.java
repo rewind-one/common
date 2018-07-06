@@ -220,7 +220,7 @@ public class BrowserMobProxyServer implements BrowserMobProxy {
 	private volatile InetAddress serverBindAddress;
 
 	/**
-	 * The TrustSource that will be used to validate servers' certificates. If null, will not validate server certificates.
+	 * The TrustSource that will be used to staticValidate servers' certificates. If null, will not staticValidate server certificates.
 	 */
 	private volatile TrustSource trustSource = TrustSource.defaultTrustSource();
 

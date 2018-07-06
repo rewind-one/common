@@ -9,7 +9,6 @@ import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.ChromeTaskScheduler;
-import one.rewind.io.requester.chrome.action.ClickAction;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.chrome.action.RedirectAction;
 import one.rewind.io.requester.exception.AccountException;
@@ -38,19 +37,8 @@ public class ChromeDriverDistributorTest {
 	public void loadClass() throws Exception {
 
 		Class.forName(TestChromeTask.class.getName());
-
-		/*ChromeTaskHolder holder = new ChromeTaskHolder(
-
-				TestChromeTask.class.getName(),
-				TestChromeTask.domain(),
-				TestChromeTask.need_login,
-				null,
-				ImmutableMap.of("q", "ip"),
-				0,
-				TestChromeTask.base_priority
-		);
-
-		ChromeTask task = holder.build();*/
+		Class.forName(TestChromeTask.T1.class.getName());
+		Class.forName(TestChromeTask.T2.class.getName());
 	}
 
 	/**
@@ -72,18 +60,17 @@ public class ChromeDriverDistributorTest {
 
 		for(int i=0; i<1000; i++) {
 
-			ChromeTaskHolder holder = new ChromeTaskHolder(
-				TestChromeTask.class.getName(),
-				TestChromeTask.domain(),
-				TestChromeTask.need_login,
-				null,
-				ImmutableMap.of("q", String.valueOf(1950 + i)),
-				0,
-				TestChromeTask.base_priority
-			);
+			if(i%2 == 0) {
+				ChromeTaskHolder holder = ChromeTask.buildHolder(
+						TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
 
-			Map<String, Object> info = distributor.submit(holder);
-			System.err.println(JSON.toPrettyJson(info));
+				Map<String, Object> info = distributor.submit(holder);
+			} else {
+				ChromeTaskHolder holder = ChromeTask.buildHolder(
+						TestChromeTask.T2.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
+
+				Map<String, Object> info = distributor.submit(holder);
+			}
 		}
 
 		Thread.sleep(60000);
@@ -109,15 +96,8 @@ public class ChromeDriverDistributorTest {
 
 		distributor.layout();
 
-		ChromeTaskHolder holder = new ChromeTaskHolder(
-				TestChromeTask.class.getName(),
-				TestChromeTask.domain(),
-				TestChromeTask.need_login,
-				null,
-				ImmutableMap.of("q", "ip"),
-				0,
-				TestChromeTask.base_priority
-		);
+		ChromeTaskHolder holder = ChromeTask.buildHolder(
+				TestChromeTask.T1.class, ImmutableMap.of("q", "ip"));
 
 		Map<String, Object> info = ChromeTaskScheduler.getInstance().schedule(new ScheduledChromeTask(holder, "* * * * *"));
 
@@ -154,15 +134,8 @@ public class ChromeDriverDistributorTest {
 
 		for(int i=0; i<10000; i++) {
 
-			ChromeTaskHolder holder = new ChromeTaskHolder(
-					TestChromeTask.class.getName(),
-					TestChromeTask.domain(),
-					TestChromeTask.need_login,
-					null,
-					ImmutableMap.of("q", "ip"),
-					0,
-					TestChromeTask.base_priority
-			);
+			ChromeTaskHolder holder =
+					ChromeTask.buildHolder(TestChromeTask.T1.class, ImmutableMap.of("q", "ip"));
 
 			distributor.submit(holder);
 		}
@@ -192,15 +165,8 @@ public class ChromeDriverDistributorTest {
 
 		for(int i=0; i<10; i++) {
 
-			ChromeTaskHolder holder = new ChromeTaskHolder(
-					TestFailedChromeTask.class.getName(),
-					TestFailedChromeTask.domain(),
-					TestFailedChromeTask.need_login,
-					null,
-					ImmutableMap.of("q", "ip"),
-					0,
-					TestFailedChromeTask.base_priority
-			);
+			ChromeTaskHolder holder = ChromeTask.buildHolder(
+					TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
 
 			distributor.submit(holder);
 		}
@@ -211,21 +177,13 @@ public class ChromeDriverDistributorTest {
 	}
 
 	@Test
-	public void test() throws MalformedURLException, URISyntaxException, ClassNotFoundException {
+	public void test() throws Exception {
 
 		Class.forName(TestFailedChromeTask.class.getName());
 
-		ChromeTaskHolder holder = new ChromeTaskHolder(
-				TestFailedChromeTask.class.getName(),
-				TestFailedChromeTask.domain(),
-				TestFailedChromeTask.need_login,
-				"17600668061",
-				ImmutableMap.of("q", "ip"),
-				0,
-				TestFailedChromeTask.base_priority
-		);
+		ChromeTaskHolder holder = ChromeTask.buildHolder(
+				TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
 
-		System.err.println(TestFailedChromeTask.domain());
 	}
 
 	/**
@@ -281,15 +239,8 @@ public class ChromeDriverDistributorTest {
 
 		});
 
-		ChromeTaskHolder holder = new ChromeTaskHolder(
-				TestFailedChromeTask.class.getName(),
-				TestFailedChromeTask.domain(),
-				TestFailedChromeTask.need_login,
-				"17600668061",
-				ImmutableMap.of("q", ""),
-				0,
-				TestFailedChromeTask.base_priority
-		);
+		ChromeTaskHolder holder = ChromeTask.buildHolder(
+				TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
 
 		distributor.submit(holder);
 

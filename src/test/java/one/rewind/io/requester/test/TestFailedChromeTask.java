@@ -11,12 +11,13 @@ import java.net.URISyntaxException;
 public class TestFailedChromeTask extends ChromeTask {
 
 	static {
-		// init_map_class
-		init_map_class = ImmutableMap.of("q", String.class);
-		// init_map_defaults
-		init_map_defaults = ImmutableMap.of("q", "ip");
-		// url_template
-		url_template = "http://www.zbj.com/{{q}}";
+
+		registerBuilder(
+				TestFailedChromeTask.class,
+				"http://www.zbj.com/{{q}}",
+				ImmutableMap.of("q", String.class),
+				ImmutableMap.of("q", "ip")
+		);
 	}
 
 	/**

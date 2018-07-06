@@ -3,7 +3,6 @@ package one.rewind.io.requester.test;
 import com.google.common.collect.ImmutableMap;
 import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.task.ChromeTask;
-import org.openqa.selenium.remote.UnreachableBrowserException;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -11,12 +10,13 @@ import java.net.URISyntaxException;
 public class TestProxyFailedChromeTask extends ChromeTask {
 
 	static {
-		// init_map_class
-		init_map_class = ImmutableMap.of("q", String.class);
-		// init_map_defaults
-		init_map_defaults = ImmutableMap.of("q", "ip");
-		// url_template
-		url_template = "http://www.baidu.com/s?word={{q}}";
+
+		registerBuilder(
+				TestProxyFailedChromeTask.class,
+				"http://www.baidu.com/s?word={{q}}",
+				ImmutableMap.of("q", String.class),
+				ImmutableMap.of("q", "ip")
+		);
 	}
 	/**
 	 * @param url

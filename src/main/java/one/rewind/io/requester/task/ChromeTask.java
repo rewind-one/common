@@ -2,6 +2,7 @@ package one.rewind.io.requester.task;
 
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
 import one.rewind.txt.URLUtil;
@@ -18,66 +19,114 @@ import java.util.regex.Pattern;
  */
 public class ChromeTask extends Task {
 
-	public static String varPattern = "[\\w\\W][\\w\\W\\d\\_]*";
+	public static Map<Class<? extends ChromeTask>, Builder> Builders = new HashMap<>();
 
-	// 初始化参数类型
-	public static Map<String, Class> init_map_class;
+	/**
+	 *
+	 * @param clazz
+	 * @param url_template
+	 * @param init_map_class
+	 * @param init_map_defaults
+	 */
+	public static void registerBuilder(
+			Class<? extends ChromeTask> clazz,
+			String url_template,
+			Map<String, Class> init_map_class,
+			Map<String, Object> init_map_defaults){
 
-	// 初始化参数默认值
-	public static Map<String, Object> init_map_defaults;
+		try {
 
-	// URL模板
-	public static String url_template;
 
-	// 该任务是否需要登录
-	public static boolean need_login = false;
+			Builders.put(clazz, new Builder(
+					clazz,
+					url_template,
+					init_map_class,
+					init_map_defaults
+			));
 
-	// 任务的优先级
-	public static Priority base_priority = Priority.MEDIUM;
+		} catch (Exception e) {
+			ChromeDriverAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
+		}
+
+	}
+
+	// 执行动作列表
+	@DatabaseField(dataType = DataType.SERIALIZABLE)
+	private List<ChromeAction> actions = new ArrayList<>();
 
 	public String scheduledTaskId;
 
-	/**
-	 * 静态验证
-	 * @throws Exception
-	 */
-	public static void staticValidate() throws Exception {
+	private static class Builder {
 
-		// 验证class定义
-		for(String key : init_map_class.keySet()) {
-			if (!key.matches(varPattern)) {
-				throw new Exception("var name define error.");
+		// 变量表达式
+		public static String varPattern = "[\\w\\W][\\w\\W\\d\\_]*";
+
+		// 初始化参数类型
+		public Map<String, Class> init_map_class;
+
+		// 初始化参数默认值
+		public Map<String, Object> init_map_defaults;
+
+		// URL模板
+		public String url_template;
+
+		// domain
+		public String domain;
+
+		// 该任务是否需要登录
+		public boolean need_login = false;
+
+		// 任务的优先级
+		public Priority base_priority = Priority.MEDIUM;
+
+		public Builder(
+				Class<? extends ChromeTask> clazz,
+				String url_template,
+				Map<String, Class> init_map_class,
+				Map<String, Object> init_map_defaults
+		) throws Exception {
+
+			// 验证class定义
+			for(String key : init_map_class.keySet()) {
+				if (!key.matches(varPattern)) {
+					throw new Exception("var name define error.");
+				}
 			}
-		}
 
-		// 验证默认值合法性
-		for(String key : init_map_defaults.keySet()) {
+			// 验证默认值合法性
+			for(String key : init_map_defaults.keySet()) {
 
-			if(init_map_class.containsKey(key)) {
+				if(init_map_class.containsKey(key)) {
 
-				if(init_map_defaults.get(key).getClass().equals(init_map_class.get(key))){
+					if(init_map_defaults.get(key).getClass().equals(init_map_class.get(key))){
+
+					} else {
+						throw new Exception("init_map_defaults value type error.");
+					}
 
 				} else {
-					throw new Exception("init_map_defaults value type error.");
+					throw new Exception("init_map_defaults define error.");
 				}
+			}
+
+			// 验证url_template  \{\{[\w\W][\w\W\d\_]*\}\}
+			Pattern p = Pattern.compile("\\{\\{.*?\\}\\}");
+			Matcher m = p.matcher(url_template);
+			Set<String> vars = new HashSet<>();
+			while (m.find()) {
+				vars.add(m.group().replaceAll("\\{\\{|\\}\\}", ""));
+			}
+
+			if(vars.containsAll(init_map_class.keySet()) && init_map_class.keySet().containsAll(vars)) {
 
 			} else {
-				throw new Exception("init_map_defaults define error.");
+				throw new Exception("Illegal url_template.");
 			}
-		}
 
-		// 验证url_template  \{\{[\w\W][\w\W\d\_]*\}\}
-		Pattern p = Pattern.compile("\\{\\{.*?\\}\\}");
-		Matcher m = p.matcher(url_template);
-		Set<String> vars = new HashSet<>();
-		while (m.find()) {
-			vars.add(m.group().replaceAll("\\{\\{|\\}\\}", ""));
-		}
-
-		if(vars.containsAll(init_map_class.keySet()) && init_map_class.keySet().containsAll(vars)) {
-
-		} else {
-			throw new Exception("Illegal url_template.");
+			this.url_template = url_template;
+			this.init_map_class = init_map_class;
+			this.init_map_defaults = init_map_defaults;
+			this.domain = URLUtil.getDomainName(url_template.replaceAll("\\{\\{|\\}\\}", ""));
 		}
 	}
 
@@ -87,18 +136,18 @@ public class ChromeTask extends Task {
 	 * @return
 	 * @throws Exception
 	 */
-	public static Map<String, Object> validateInitMap(Map<String, Object> init_map) throws Exception {
+	public static Map<String, Object> validateInitMap(Builder builder, Map<String, Object> init_map) throws Exception {
 
 		Map<String, Object> init = new HashMap<>();
 
 		// 默认参数赋值
-		for(String key : init_map_defaults.keySet()) {
+		for(String key : builder.init_map_defaults.keySet()) {
 
-			if(init_map_class.containsKey(key)) {
+			if(builder.init_map_class.containsKey(key)) {
 
-				if(init_map_defaults.get(key).getClass().equals(init_map_class.get(key))){
+				if(builder.init_map_defaults.get(key).getClass().equals(builder.init_map_class.get(key))){
 
-					init.put(key, init_map_defaults.get(key));
+					init.put(key, builder.init_map_defaults.get(key));
 
 				} else {
 					throw new Exception("init_map_defaults value type error.");
@@ -113,9 +162,9 @@ public class ChromeTask extends Task {
 		// 使用初始化参数进行赋值
 		for(String key : init_map.keySet()) {
 
-			if(init_map_class.containsKey(key)) {
+			if(builder.init_map_class.containsKey(key)) {
 
-				if(init_map.get(key).getClass().equals(init_map_class.get(key))){
+				if(init_map.get(key).getClass().equals(builder.init_map_class.get(key))){
 
 					init.put(key, init_map.get(key));
 
@@ -129,7 +178,7 @@ public class ChromeTask extends Task {
 		}
 
 		// 验证生成参数是否包含所有变量
-		for(String key : init_map_class.keySet()) {
+		for(String key : builder.init_map_class.keySet()) {
 			if(!init.keySet().contains(key)) {
 				throw new Exception("init_map error, "+ key +" not defined.");
 			}
@@ -140,12 +189,27 @@ public class ChromeTask extends Task {
 
 	/**
 	 *
+	 * @param clazz
+	 * @return
+	 * @throws Exception
+	 */
+	public static Priority getBasePriority(Class<? extends ChromeTask> clazz) throws Exception {
+
+		Builder builder = Builders.get(clazz);
+
+		if(builder == null) throw new Exception("Builder not exist for " + clazz.getName());
+
+		return builder.base_priority;
+	}
+
+	/**
+	 *
 	 * @param init_map
 	 * @return
 	 * @throws Exception
 	 */
-	public static ChromeTask build(Class<?> clazz, Map<String, Object> init_map) throws Exception {
-		return build(clazz, init_map, null, 0, getBasePriority());
+	public static ChromeTask build(Class<? extends ChromeTask> clazz, Map<String, Object> init_map) throws Exception {
+		return build(clazz, init_map, null, 0, getBasePriority(clazz));
 	}
 
 	/**
@@ -155,8 +219,8 @@ public class ChromeTask extends Task {
 	 * @return
 	 * @throws Exception
 	 */
-	public static ChromeTask build(Class<?> clazz, Map<String, Object> init_map, String username) throws Exception {
-		return build(clazz, init_map, username, 0, getBasePriority());
+	public static ChromeTask build(Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username) throws Exception {
+		return build(clazz, init_map, username, 0, getBasePriority(clazz));
 	}
 
 	/**
@@ -167,8 +231,8 @@ public class ChromeTask extends Task {
 	 * @return
 	 * @throws Exception
 	 */
-	public static ChromeTask build(Class<?> clazz, Map<String, Object> init_map, String username, int step) throws Exception {
-		return build(clazz, init_map, username, step, getBasePriority());
+	public static ChromeTask build(Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username, int step) throws Exception {
+		return build(clazz, init_map, username, step, getBasePriority(clazz));
 	}
 
 	/**
@@ -180,13 +244,17 @@ public class ChromeTask extends Task {
 	 * @return
 	 * @throws Exception
 	 */
-	public static ChromeTask build(Class<?> clazz, Map<String, Object> init_map, String username, int step, Priority priority) throws Exception {
+	public static ChromeTask build(
+			Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username, int step, Priority priority) throws Exception {
 
-		staticValidate();
+		Builder builder = Builders.get(clazz);
 
-		Map<String, Object> vars = validateInitMap(init_map);
+		if(builder == null) throw new Exception("Builder not exist for " + clazz.getName());
 
-		String url = url_template;
+		// 重载后的初始化变量表
+		Map<String, Object> vars = validateInitMap(builder, init_map);
+
+		String url = builder.url_template;
 		for(String key : vars.keySet()) {
 			url = url.replace("{{" + key + "}}", String.valueOf(vars.get(key)));
 		}
@@ -194,44 +262,13 @@ public class ChromeTask extends Task {
 		Constructor<?> cons = clazz.getConstructor(String.class);
 
 		ChromeTask task = (ChromeTask) cons.newInstance(url);
-		if(needLogin()) task.setLoginTask();
+		if(builder.need_login) task.setLoginTask();
 		task.setUsername(username);
 		task.setStep(step);
 		task.setPriority(priority);
 
 		return task;
 	}
-
-	/**
-	 *
-	 * @return
-	 * @throws MalformedURLException
-	 * @throws URISyntaxException
-	 */
-	public static String domain() throws MalformedURLException, URISyntaxException {
-		return URLUtil.getDomainName(url_template.replaceAll("\\{\\{|\\}\\}", ""));
-	}
-
-	/**
-	 *
-	 * @return
-	 */
-	public static boolean needLogin() {
-		return need_login;
-	}
-
-	/**
-	 *
-	 * @return
-	 */
-	public static Priority getBasePriority() {
-		return base_priority;
-	}
-
-
-	// 执行动作列表
-	@DatabaseField(dataType = DataType.SERIALIZABLE)
-	private List<ChromeAction> actions = new ArrayList<>();
 
 	/**
 	 *
@@ -265,6 +302,59 @@ public class ChromeTask extends Task {
 
 	/**
 	 *
+	 * @param clazz
+	 * @param username
+	 * @param init_map
+	 * @param step
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTaskHolder buildHolder(
+			Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username, int step) throws Exception {
+
+		Builder builder = Builders.get(clazz);
+
+		if(builder == null) throw new Exception(clazz.getName() + " builder not exist.");
+
+		return new ChromeTaskHolder(clazz.getName(), builder.domain, builder.need_login, username, init_map, step, builder.base_priority);
+	}
+
+	public static ChromeTaskHolder buildHolder(
+			Class<? extends ChromeTask> clazz, String username, Map<String, Object> init_map) throws Exception {
+
+		return buildHolder(clazz, init_map, username,0);
+	}
+
+
+	/**
+	 *
+	 * @param clazz
+	 * @param init_map
+	 * @param step
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTaskHolder buildHolder(
+			Class<? extends ChromeTask> clazz, Map<String, Object> init_map, int step) throws Exception {
+
+		return buildHolder(clazz, init_map, null, step);
+	}
+
+	/**
+	 *
+	 * @param clazz
+	 * @param init_map
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTaskHolder buildHolder(
+			Class<? extends ChromeTask> clazz, Map<String, Object> init_map) throws Exception {
+
+		return buildHolder(clazz, init_map, null, 0);
+	}
+
+	/**
+	 *
 	 * @param init_map
 	 * @return
 	 */
@@ -290,6 +380,6 @@ public class ChromeTask extends Task {
 			step = getStep() - 1;
 		}
 
-		return new ChromeTaskHolder(this.getClass().getName(), domain(), isLoginTask(), getUsername(), init_map, step, priority);
+		return new ChromeTaskHolder(this.getClass().getName(), getDomain(), isLoginTask(), getUsername(), init_map, step, priority);
 	}
 }
