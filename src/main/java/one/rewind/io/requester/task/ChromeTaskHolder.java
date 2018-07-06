@@ -50,7 +50,7 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	 * @param step
 	 */
 	public ChromeTaskHolder(String class_name, String domain, boolean login_task, String username, Map<String, Object> init_map, int step) {
-		new ChromeTaskHolder(class_name, domain, login_task, username, init_map, step, Task.Priority.MEDIUM);
+		this(class_name, domain, login_task, username, init_map, step, Task.Priority.MEDIUM);
 	}
 
 	/**

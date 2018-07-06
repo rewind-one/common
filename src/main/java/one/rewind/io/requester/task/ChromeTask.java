@@ -36,7 +36,6 @@ public class ChromeTask extends Task {
 
 		try {
 
-
 			Builders.put(clazz, new Builder(
 					clazz,
 					url_template,
@@ -47,7 +46,32 @@ public class ChromeTask extends Task {
 		} catch (Exception e) {
 			ChromeDriverAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
 		}
+	}
 
+	public static void registerBuilder(
+			Class<? extends ChromeTask> clazz,
+			String url_template,
+			Map<String, Class> init_map_class,
+			Map<String, Object> init_map_defaults,
+			boolean need_login,
+			Priority base_priority
+	){
+
+		try {
+
+
+			Builders.put(clazz, new Builder(
+					clazz,
+					url_template,
+					init_map_class,
+					init_map_defaults,
+					need_login,
+					base_priority
+			));
+
+		} catch (Exception e) {
+			ChromeDriverAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
+		}
 	}
 
 	// 执行动作列表
@@ -84,6 +108,17 @@ public class ChromeTask extends Task {
 				String url_template,
 				Map<String, Class> init_map_class,
 				Map<String, Object> init_map_defaults
+		) throws Exception {
+			this(clazz, url_template, init_map_class, init_map_defaults, false, Priority.MEDIUM);
+		}
+
+		public Builder(
+				Class<? extends ChromeTask> clazz,
+				String url_template,
+				Map<String, Class> init_map_class,
+				Map<String, Object> init_map_defaults,
+				boolean need_login,
+				Priority base_priority
 		) throws Exception {
 
 			// 验证class定义
@@ -127,6 +162,8 @@ public class ChromeTask extends Task {
 			this.init_map_class = init_map_class;
 			this.init_map_defaults = init_map_defaults;
 			this.domain = URLUtil.getDomainName(url_template.replaceAll("\\{\\{|\\}\\}", ""));
+			this.need_login = need_login;
+			this.base_priority = base_priority;
 		}
 	}
 
@@ -301,7 +338,31 @@ public class ChromeTask extends Task {
 	}
 
 	/**
-	 *
+	 * 起始创建任务调用
+	 * @param clazz
+	 * @param init_map
+	 * @param username
+	 * @param step
+	 * @param priority
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTaskHolder buildHolder(
+			Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username, int step, Priority priority) throws Exception {
+
+		Builder builder = Builders.get(clazz);
+
+		if(builder == null) throw new Exception(clazz.getName() + " builder not exist.");
+
+		if(priority == null) {
+			priority = builder.base_priority;
+		}
+
+		return new ChromeTaskHolder(clazz.getName(), builder.domain, builder.need_login, username, init_map, step, priority);
+	}
+
+	/**
+	 * 起始创建任务调用
 	 * @param clazz
 	 * @param username
 	 * @param init_map
@@ -312,22 +373,26 @@ public class ChromeTask extends Task {
 	public static ChromeTaskHolder buildHolder(
 			Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username, int step) throws Exception {
 
-		Builder builder = Builders.get(clazz);
-
-		if(builder == null) throw new Exception(clazz.getName() + " builder not exist.");
-
-		return new ChromeTaskHolder(clazz.getName(), builder.domain, builder.need_login, username, init_map, step, builder.base_priority);
+		return buildHolder(clazz, init_map, username, step, null);
 	}
 
+	/**
+	 * 起始创建任务调用
+	 * @param clazz
+	 * @param username
+	 * @param init_map
+	 * @return
+	 * @throws Exception
+	 */
 	public static ChromeTaskHolder buildHolder(
 			Class<? extends ChromeTask> clazz, String username, Map<String, Object> init_map) throws Exception {
 
-		return buildHolder(clazz, init_map, username,0);
+		return buildHolder(clazz, init_map, username, 0);
 	}
 
 
 	/**
-	 *
+	 * 起始创建任务调用
 	 * @param clazz
 	 * @param init_map
 	 * @param step
@@ -341,7 +406,7 @@ public class ChromeTask extends Task {
 	}
 
 	/**
-	 *
+	 * 起始创建任务调用
 	 * @param clazz
 	 * @param init_map
 	 * @return
@@ -354,23 +419,26 @@ public class ChromeTask extends Task {
 	}
 
 	/**
-	 *
+	 * 任务执行过程中调用
+	 * @param clazz
 	 * @param init_map
 	 * @return
+	 * @throws Exception
 	 */
-	public ChromeTaskHolder buildHolder(Map<String, Object> init_map) throws TaskException.NoMoreStepException, MalformedURLException, URISyntaxException {
+	public ChromeTaskHolder getHolder(Class<? extends ChromeTask> clazz, Map<String, Object> init_map) throws Exception {
 
-		return buildHolder(init_map, getPriority());
+		return getHolder(clazz, init_map, getPriority());
 	}
 
 	/**
-	 *
+	 * 任务执行过程中调用
+	 * @param clazz
 	 * @param init_map
 	 * @param priority
 	 * @return
-	 * @throws TaskException.NoMoreStepException
+	 * @throws Exception
 	 */
-	public ChromeTaskHolder buildHolder(Map<String, Object> init_map, Priority priority) throws TaskException.NoMoreStepException, MalformedURLException, URISyntaxException {
+	public ChromeTaskHolder getHolder(Class<? extends ChromeTask> clazz, Map<String, Object> init_map, Priority priority) throws Exception {
 
 		int step = 0;
 
@@ -380,6 +448,6 @@ public class ChromeTask extends Task {
 			step = getStep() - 1;
 		}
 
-		return new ChromeTaskHolder(this.getClass().getName(), getDomain(), isLoginTask(), getUsername(), init_map, step, priority);
+		return buildHolder(clazz, init_map, getUsername(), step);
 	}
 }

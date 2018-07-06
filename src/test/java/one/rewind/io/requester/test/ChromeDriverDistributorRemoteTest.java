@@ -91,7 +91,6 @@ public class ChromeDriverDistributorRemoteTest {
 		}
 
 		Thread.sleep(1000000);
-
 	}
 
 
@@ -155,16 +154,6 @@ public class ChromeDriverDistributorRemoteTest {
 		downLatch.await();
 
 		ChromeTask task = new ChromeTask("https://www.baidu.com");
-
-		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
-		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
-		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
-		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
-		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
-		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
-		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
-		ChromeDriverDistributor.getInstance().submit(task.buildHolder(new HashMap<>()));
-
 
 		Thread.sleep(600000);
 

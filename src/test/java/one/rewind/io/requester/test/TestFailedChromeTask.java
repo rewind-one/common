@@ -3,7 +3,9 @@ package one.rewind.io.requester.test;
 import com.google.common.collect.ImmutableMap;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.exception.AccountException;
+import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.task.ChromeTask;
+import org.openqa.selenium.remote.UnreachableBrowserException;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -14,7 +16,7 @@ public class TestFailedChromeTask extends ChromeTask {
 
 		registerBuilder(
 				TestFailedChromeTask.class,
-				"http://www.zbj.com/{{q}}",
+				"http://www.baidu.com/s?wd={{q}}",
 				ImmutableMap.of("q", String.class),
 				ImmutableMap.of("q", "ip")
 		);
@@ -31,9 +33,9 @@ public class TestFailedChromeTask extends ChromeTask {
 		this.setValidator((a, t) -> {
 
 			//throw new UnreachableBrowserException("Test");
-			//throw new ProxyException();
-			Account account1 = a.accounts.get(t.getDomain());
-			throw new AccountException.Failed(account1);
+			throw new ProxyException.Failed(a.proxy);
+			/*Account account1 = a.accounts.get(t.getDomain());
+			throw new AccountException.Failed(account1);*/
 			//throw new AccountException.Failed(a.accounts.get(t.getDomain()));
 
 		});

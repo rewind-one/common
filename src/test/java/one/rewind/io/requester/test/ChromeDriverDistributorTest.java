@@ -39,6 +39,8 @@ public class ChromeDriverDistributorTest {
 		Class.forName(TestChromeTask.class.getName());
 		Class.forName(TestChromeTask.T1.class.getName());
 		Class.forName(TestChromeTask.T2.class.getName());
+		Class.forName(TestChromeTask.T3.class.getName());
+		Class.forName(TestFailedChromeTask.class.getName());
 	}
 
 	/**
@@ -67,7 +69,7 @@ public class ChromeDriverDistributorTest {
 				Map<String, Object> info = distributor.submit(holder);
 			} else {
 				ChromeTaskHolder holder = ChromeTask.buildHolder(
-						TestChromeTask.T2.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
+						TestChromeTask.T2.class, ImmutableMap.of("k", String.valueOf(1950 + i)));
 
 				Map<String, Object> info = distributor.submit(holder);
 			}
@@ -78,6 +80,32 @@ public class ChromeDriverDistributorTest {
 		distributor.close();
 	}
 
+	@Test
+	public void recursiveTest() throws Exception {
+
+		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+
+		for(int i=0; i<4; i++) {
+
+			ChromeDriverAgent agent = new ChromeDriverAgent();
+			distributor.addAgent(agent);
+		}
+
+		distributor.layout();
+
+		for(int i=0; i<10; i++) {
+
+			ChromeTaskHolder holder = ChromeTask.buildHolder(
+					TestChromeTask.T3.class,
+					ImmutableMap.of("k", String.valueOf(1950 + i)));
+
+			Map<String, Object> info = distributor.submit(holder);
+		}
+
+		Thread.sleep(60000);
+
+		distributor.close();
+	}
 
 	/**
 	 * 4浏览器 并发请求100个任务
@@ -97,7 +125,7 @@ public class ChromeDriverDistributorTest {
 		distributor.layout();
 
 		ChromeTaskHolder holder = ChromeTask.buildHolder(
-				TestChromeTask.T1.class, ImmutableMap.of("q", "ip"));
+				TestChromeTask.T3.class, ImmutableMap.of("k", String.valueOf(1950)));
 
 		Map<String, Object> info = ChromeTaskScheduler.getInstance().schedule(new ScheduledChromeTask(holder, "* * * * *"));
 
@@ -171,7 +199,7 @@ public class ChromeDriverDistributorTest {
 			distributor.submit(holder);
 		}
 
-		Thread.sleep(60000);
+		Thread.sleep(6000000);
 
 		distributor.close();
 	}
@@ -259,9 +287,9 @@ public class ChromeDriverDistributorTest {
 
 		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
 
-		Proxy proxy1 = new ProxyImpl("47.106.89.236", 59998, "tfelab", "TfeLAB2@15");
+		Proxy proxy1 = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
 
-		Proxy proxy2 = new ProxyImpl("39.108.178.54", 59998, "tfelab", "TfeLAB2@15");
+		Proxy proxy2 = new ProxyImpl("118.190.133.34", 59998, "tfelab", "TfeLAB2@15");
 
 		ChromeDriverAgent agent = new ChromeDriverAgent(proxy1);
 
@@ -270,7 +298,7 @@ public class ChromeDriverDistributorTest {
 			a.changeProxy(proxy2);
 		});
 
-		ChromeTask task = new ChromeTask("https://www.baidu.com/s?wd=ip");
+		/*ChromeTask task = new ChromeTask("https://www.baidu.com/s?wd=ip");
 
 		task.setValidator((a, t) -> {
 
@@ -285,14 +313,18 @@ public class ChromeDriverDistributorTest {
 		//
 		agent.addNewCallback((a)->{
 			try {
-				a.submit(task);
+				a.submit(task1);
 			} catch (ChromeDriverException.IllegalStatusException e) {
 				e.printStackTrace();
 			}
-		});
+		});*/
 
 		distributor.addAgent(agent);
 
+		ChromeTaskHolder holder = ChromeTask.buildHolder(
+				TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
+
+		distributor.submit(holder);
 
 		Thread.sleep(6000000);
 
