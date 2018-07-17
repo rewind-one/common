@@ -13,10 +13,17 @@ public class ClickAction extends Action {
 
 	public String elementPath;
 
+	public long sleepTime = 0;
+
 	public ClickAction() {}
 
 	public ClickAction(String elementPath) {
 		this.elementPath = elementPath;
+	}
+
+	public ClickAction(String elementPath, long sleepTime) {
+		this.elementPath = elementPath;
+		this.sleepTime = sleepTime;
 	}
 
 	public boolean run(ChromeDriverAgent agent) {
@@ -28,6 +35,11 @@ public class ClickAction extends Action {
 			if (el != null) {
 
 				el.click();
+
+				if(sleepTime > 0) {
+					agent.getDriver().wait(sleepTime);
+				}
+
 				return true;
 
 			} else {

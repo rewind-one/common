@@ -4,4 +4,5 @@ public class TaskException extends Exception {
 
 	public static class NoMoreStepException extends Exception {}
 
+	public static class LessThanMinIntervalException extends Exception {}
 }

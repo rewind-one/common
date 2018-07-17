@@ -11,6 +11,8 @@ public class TestChromeTask {
 
 	public static class T1 extends ChromeTask {
 
+		public static long MIN_INTERVAL = 60000;
+
 		static {
 			registerBuilder(
 					TestChromeTask.T1.class,
@@ -40,6 +42,9 @@ public class TestChromeTask {
 		}
 	}
 
+	/**
+	 *
+	 */
 	public static class T2 extends ChromeTask {
 
 		static {

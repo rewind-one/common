@@ -611,15 +611,15 @@ public class AndroidAgent {
 		AndroidAgent agent = new AndroidAgent();
 
 		//agent.generateCert();
-		agent.startProxy(0);
+		//agent.startProxy(0);
 		// agent.installApk(UDID, "wechat-6-5-23.apk");
-		// agent.removeWifiProxy(UDID);
-		agent.setupWifiProxy(UDID);
+		agent.removeWifiProxy(UDID);
+		//agent.setupWifiProxy(UDID);
 		//agent.stopProxy();
 
-		agent.startAppnium(UDID);
+		/*agent.startAppnium(UDID);
 		agent.startDriver(UDID, appPackage, appActivity, webViewAndroidProcessName);
-		agent.run();
+		agent.run();*/
 	}
 }
 

@@ -10,34 +10,46 @@ import org.openqa.selenium.WebElement;
 */
 public class SetValueAction extends Action {
 
-   public String inputCssPath;
-   public String value;
+	public String inputCssPath;
+	public String value;
+	public long sleepTime = 0;
 
-   public SetValueAction() {};
+	public SetValueAction() {};
 
-   public SetValueAction(String inputCssPath, String value) {
-	   this.inputCssPath = inputCssPath;
-	   this.value = value;
-   }
+	public SetValueAction(String inputCssPath, String value) {
+		this.inputCssPath = inputCssPath;
+		this.value = value;
+	}
 
-   public boolean run(ChromeDriverAgent agent) {
+	public SetValueAction(String inputCssPath, String value, long sleepTime) {
+		this.inputCssPath = inputCssPath;
+		this.value = value;
+		this.sleepTime = sleepTime;
+	}
 
-	   try {
+	public boolean run(ChromeDriverAgent agent) {
 
-		   WebElement el = agent.getElementWait(inputCssPath);
+		try {
 
-		   if(el == null) {
-			   logger.warn("{} not found.", inputCssPath);
-			   return false;
-		   }
+			WebElement el = agent.getElementWait(inputCssPath);
 
-		   el.clear();
-		   el.sendKeys(value);
-		   return true;
+			if(el == null) {
+				logger.warn("{} not found.", inputCssPath);
+				return false;
+			}
 
-	   } catch (Exception e) {
+			el.clear();
+			el.sendKeys(value);
+
+			if(sleepTime > 0) {
+				agent.getDriver().wait(sleepTime);
+			}
+
+			return true;
+
+		} catch (Exception e) {
 			logger.error("Set [{}]:[{}] error, ", inputCssPath, value, e);
 			return false;
-	   }
-   }
+		}
+	}
 }

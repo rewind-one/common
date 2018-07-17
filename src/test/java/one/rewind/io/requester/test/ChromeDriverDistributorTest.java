@@ -13,7 +13,6 @@ import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.chrome.action.RedirectAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
-import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.ChromeTask;
@@ -29,7 +28,6 @@ import java.net.UnknownHostException;
 import java.util.Map;
 
 import static one.rewind.io.requester.chrome.ChromeDriverDistributor.buildBMProxy;
-import static one.rewind.io.requester.chrome.ChromeDriverDistributor.logger;
 
 public class ChromeDriverDistributorTest {
 

@@ -4,18 +4,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.ChromeTaskScheduler;
+import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.ChromeTaskHolder;
 import one.rewind.io.requester.task.ScheduledChromeTask;
-import one.rewind.io.requester.task.Task;
 import one.rewind.io.server.Msg;
-import one.rewind.json.JSON;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import spark.Request;
 import spark.Response;
 import spark.Route;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,9 +32,7 @@ public class ChromeTaskRoute {
 
 			// 任务类名
 			String class_name = request.queryParams("class_name");
-
-			// 用户名
-			String username = request.queryParams("username");
+			Class<? extends ChromeTask> clazz = (Class<? extends ChromeTask>) Class.forName(class_name);
 
 			// 初始参数
 			String init_map_str = request.queryParams("init_map");
@@ -47,33 +43,25 @@ public class ChromeTaskRoute {
 
 			Map<String, Object> init_map = mapper.readValue(init_map_str, typeRef);
 
+			// 用户名
+			String username = request.queryParams("username");
+
 			// 步骤数
 			int step = 0;
 			if(request.queryParams("step") != null) {
 				step = Integer.valueOf(request.queryParams("step"));
 			}
 
-			// 获取 domain
-			Class<?> threadClazz = Class.forName(class_name);
-			Method method = threadClazz.getMethod("domain");
-			String domain = (String) method.invoke(null);
-
-			// 获取 是否需要登录
-			method = threadClazz.getMethod("needLogin");
-			boolean need_login = (boolean) method.invoke(null);
-
-			// 优先级
-			method = threadClazz.getMethod("getBasePriority");
-			Task.Priority priority = (Task.Priority) method.invoke(null);
+			ChromeTask.Builder builder = ChromeTask.Builders.get(class_name);
 
 			// Create Holder
-			ChromeTaskHolder holder = new ChromeTaskHolder(class_name, domain, need_login, username, init_map, step, priority);
+			ChromeTaskHolder holder = ChromeTask.buildHolder(clazz, init_map, username, step);
 
 			String[] cron = request.queryParamsValues("cron");
 
 			Map<String, Object> info = null;
 
-			// 周期性任务
+			// A 周期性任务
 			// 加载到Scheduler
 			if(cron != null) {
 				if (cron.length ==1) {
@@ -85,7 +73,7 @@ public class ChromeTaskRoute {
 					info = ChromeTaskScheduler.getInstance().schedule(st);
 				}
 			}
-			// Submit Holder
+			// B 单次任务 Submit Holder
 			else {
 				info = ChromeDriverDistributor.getInstance().submit(holder);
 			}
@@ -97,7 +85,7 @@ public class ChromeTaskRoute {
 		catch (Exception e) {
 
 			logger.error("Error create/assign task. ", e);
-			return new Msg<>(Msg.ILLGEAL_PARAMETERS);
+			return new Msg<>(Msg.FAILURE);
 		}
 	};
 

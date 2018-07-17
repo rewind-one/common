@@ -9,7 +9,6 @@ import one.rewind.db.DaoManager;
 import one.rewind.io.requester.BasicRequester;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.callback.TaskValidator;
-import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.json.JSON;
 import one.rewind.txt.ChineseChar;
 import one.rewind.txt.NumberFormatUtil;
@@ -137,6 +136,9 @@ public class Task implements Comparable<Task> {
 
 	// 采集后回调
 	public List<TaskCallback> doneCallbacks = new LinkedList<>();
+
+	// 采集异常回调
+	public List<TaskCallback> exceptionCallbacks = new LinkedList<>();
 
 	// 异常记录
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
@@ -731,6 +733,17 @@ public class Task implements Comparable<Task> {
 	public Task addDoneCallback(TaskCallback callback) {
 		if (this.doneCallbacks == null) this.doneCallbacks = new LinkedList<>();
 		this.doneCallbacks.add(callback);
+		return this;
+	}
+
+	/**
+	 * 添加采集异常回调
+	 * @param callback
+	 * @return
+	 */
+	public Task addExceptionCallback(TaskCallback callback) {
+		if (this.exceptionCallbacks == null) this.exceptionCallbacks = new LinkedList<>();
+		this.exceptionCallbacks.add(callback);
 		return this;
 	}
 

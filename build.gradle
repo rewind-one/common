@@ -1,5 +1,5 @@
 group 'one.rewind'
-version '1.0.89-SNAPSHOT'
+version '1.1.13-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -23,7 +23,6 @@ buildscript {
         classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.0.1"
     }
 }
-
 
 repositories {
 
@@ -49,18 +48,18 @@ repositories {
 uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: 'http://tfelab.org:60002/content/repositories/releases/') {
+            /*repository(url: 'http://tfelab.org:60002/content/repositories/releases/') {
                 authentication(userName: deployment, password: deployment_password)
             }
             snapshotRepository(url: 'http://tfelab.org:60002/content/repositories/snapshots/') {
                 authentication(userName: deployment, password: deployment_password)
-            }
-            /*repository(url: 'http://10.0.0.51:8081/artifactory/libs-release-local/') {
+            }*/
+            repository(url: 'http://10.0.0.51:8081/artifactory/libs-release-local/') {
                 authentication(userName: artifactory_username, password: artifactory_password)
             }
             snapshotRepository(url: 'http://10.0.0.51:8081/artifactory/libs-snapshot-local/') {
                 authentication(userName: artifactory_username, password: artifactory_password)
-            }*/
+            }
         }
     }
 }
@@ -73,7 +72,7 @@ publishing {
     }
 }
 
-/*artifactory {
+artifactory {
 
     contextUrl = 'http://10.0.0.56:8081/artifactory'
     publish {
@@ -97,7 +96,7 @@ publishing {
             publishPom = true
         }
     }
-}*/
+}
 
 [distZip, distTar].each { task -> configurations.archives.artifacts.removeAll
         { it.class.simpleName == "ArchivePublishArtifact" && it.archiveTask == task }

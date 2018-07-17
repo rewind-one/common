@@ -1,10 +1,10 @@
 package one.rewind.io.requester.callback;
 
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
+import one.rewind.io.requester.task.Task;
 
 public interface ProxyCallBack {
 
-	void run(ChromeDriverAgent agent, Proxy proxy) throws ChromeDriverException.IllegalStatusException, InterruptedException;
+	void run(ChromeDriverAgent agent, Proxy proxy, Task task);
 }

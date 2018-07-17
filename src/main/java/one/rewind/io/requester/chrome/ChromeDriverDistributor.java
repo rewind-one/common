@@ -78,10 +78,10 @@ public class ChromeDriverDistributor {
 			= new ConcurrentHashMap<>();
 
 	// 域名-账户 Agent 映射
-	private Map<String, ChromeDriverAgent> domain_account_agent_map = new HashMap<>();
+	public Map<String, ChromeDriverAgent> domain_account_agent_map = new HashMap<>();
 
 	// 域名 Agent列表 映射
-	private Map<String, List<ChromeDriverAgent>> domain_agent_map = new HashMap<>();
+	public Map<String, List<ChromeDriverAgent>> domain_agent_map = new HashMap<>();
 
 	// 任务 Wrapper 线程池
 	ThreadPoolExecutor executor = new ThreadPoolExecutor(
@@ -104,7 +104,7 @@ public class ChromeDriverDistributor {
 
 	private Date startTime = new Date();
 
-	private volatile int taskCount = 0;
+	public volatile int taskCount = 0;
 
 	/**
 	 * 初始化
@@ -295,8 +295,7 @@ public class ChromeDriverDistributor {
 	 * @throws ChromeDriverException.NotFoundException
 	 * @throws AccountException.NotFound
 	 */
-	public Map<String, Object> submit(ChromeTaskHolder holder)
-			throws ChromeDriverException.NotFoundException, AccountException.NotFound
+	public Map<String, Object> submit(ChromeTaskHolder holder) throws Exception
 	{
 
 		String domain = holder.domain;

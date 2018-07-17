@@ -18,6 +18,7 @@ import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.task.ChromeTask;
+import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.util.DocumentSettleCondition;
 import one.rewind.io.ssh.RemoteShell;
 import one.rewind.util.Configs;
@@ -1079,8 +1080,6 @@ public class ChromeDriverAgent {
 				}
 
 				status = Status.IDLE;
-
-				return;
 			}
 			// 帐号失效
 			catch (AccountException.Failed e) {
@@ -1098,8 +1097,6 @@ public class ChromeDriverAgent {
 					// 通常AccountFailedCallback对应的都是重登陆任务
 					callback.run(this, e.account);
 				}
-
-				return;
 			}
 			// 代理失效
 			catch (ProxyException.Failed e) {
@@ -1110,12 +1107,11 @@ public class ChromeDriverAgent {
 
 					if (proxyFailedCallbacks == null) return;
 					for (ProxyCallBack callback : proxyFailedCallbacks) {
-						callback.run(this, e.proxy);
+						callback.run(this, e.proxy, task);
 					}
 				}
 
 				status = Status.IDLE;
-				return;
 			}
 			// 其他异常 TODO 待验证
 			catch (Throwable e) {
@@ -1141,11 +1137,25 @@ public class ChromeDriverAgent {
 			task.setDuration();
 		}
 
+		runExceptionCallbacks(task);
+
 		// Set idle callback
 		// TODO 为什么要check queue.size
 		if(status == Status.IDLE && queue.size() == 0 && !ignoreIdleCallback) {
 
 			runCallbacks(idleCallbacks);
+		}
+	}
+
+	private void runExceptionCallbacks(Task t) {
+		for(TaskCallback callback : t.exceptionCallbacks) {
+			ChromeDriverDistributor.getInstance().post_executor.submit(()->{
+				try {
+					callback.run(t);
+				} catch (Exception e) {
+					logger.error("Error proc doneCallback, Task:{}. ", t.getUrl(), e);
+				}
+			});
 		}
 	}
 
@@ -1160,6 +1170,11 @@ public class ChromeDriverAgent {
 			accountAddCallback.run(this, account);
 	}
 
+	/**
+	 *
+	 * @param domain
+	 * @param account
+	 */
 	private void removeLoginInfo(String domain, Account account) {
 
 		accounts.remove(domain);

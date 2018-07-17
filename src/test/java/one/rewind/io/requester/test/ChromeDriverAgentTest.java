@@ -107,4 +107,14 @@ public class ChromeDriverAgentTest {
 
 		agent.stop();
 	}
+
+	@Test
+	public void testGetInterval() throws MalformedURLException, URISyntaxException, NoSuchFieldException, IllegalAccessException {
+
+		ChromeTask task = new TestChromeTask.T1("http://www.baidu.com");
+
+		long min_interval = task.getClass().getField("MIN_INTERVAL").getLong(task.getClass());
+
+		System.err.println(min_interval);
+	}
 }

@@ -9,7 +9,7 @@ import org.openqa.selenium.WebElement;
  */
 public class LoginAction extends Action {
 
-	ChromeDriverAgent agent;
+	public ChromeDriverAgent agent;
 
 	public String url = "https://login.zbj.com/login";
 
@@ -19,8 +19,8 @@ public class LoginAction extends Action {
 
 	public String errorMsgReg = "账号或密码错误";
 
-	transient boolean success = false;
-	transient Account account;
+	public transient boolean success = false;
+	public transient Account account;
 
 	public LoginAction() {}
 

@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
  */
 public class ChromeTask extends Task {
 
+	public static long MIN_INTERVAL = 10000;
+
 	public static Map<Class<? extends ChromeTask>, Builder> Builders = new HashMap<>();
 
 	/**
@@ -74,13 +76,15 @@ public class ChromeTask extends Task {
 		}
 	}
 
+	public Map<String, Object> init_map;
+
 	// 执行动作列表
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 	private List<ChromeAction> actions = new ArrayList<>();
 
 	public String scheduledTaskId;
 
-	private static class Builder {
+	public static class Builder {
 
 		// 变量表达式
 		public static String varPattern = "[\\w\\W][\\w\\W\\d\\_]*";
@@ -273,6 +277,26 @@ public class ChromeTask extends Task {
 	}
 
 	/**
+	 *
+	 * @param builder
+	 * @param init_map
+	 * @return
+	 * @throws Exception
+	 */
+	public static String generateURL(Builder builder, Map<String, Object> init_map) throws Exception {
+
+		// 重载后的初始化变量表
+		Map<String, Object> vars = validateInitMap(builder, init_map);
+
+		String url = builder.url_template;
+		for(String key : vars.keySet()) {
+			url = url.replace("{{" + key + "}}", String.valueOf(vars.get(key)));
+		}
+
+		return url;
+	}
+
+	/**
 	 * 通过TaskHolder build Task
 	 * @param init_map
 	 * @param username
@@ -288,17 +312,13 @@ public class ChromeTask extends Task {
 
 		if(builder == null) throw new Exception("Builder not exist for " + clazz.getName());
 
-		// 重载后的初始化变量表
-		Map<String, Object> vars = validateInitMap(builder, init_map);
-
-		String url = builder.url_template;
-		for(String key : vars.keySet()) {
-			url = url.replace("{{" + key + "}}", String.valueOf(vars.get(key)));
-		}
+		// 生成URL
+		String url = generateURL(builder, init_map);
 
 		Constructor<?> cons = clazz.getConstructor(String.class);
 
 		ChromeTask task = (ChromeTask) cons.newInstance(url);
+		task.init_map = init_map;
 		if(builder.need_login) task.setLoginTask();
 		task.setUsername(username);
 		task.setStep(step);
