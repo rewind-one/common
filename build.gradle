@@ -54,10 +54,10 @@ uploadArchives {
             snapshotRepository(url: 'http://tfelab.org:60002/content/repositories/snapshots/') {
                 authentication(userName: deployment, password: deployment_password)
             }*/
-            repository(url: 'http://10.0.0.51:8081/artifactory/libs-release-local/') {
+            repository(url: 'http://10.0.0.56:8081/artifactory/libs-release-local/') {
                 authentication(userName: artifactory_username, password: artifactory_password)
             }
-            snapshotRepository(url: 'http://10.0.0.51:8081/artifactory/libs-snapshot-local/') {
+            snapshotRepository(url: 'http://10.0.0.56:8081/artifactory/libs-snapshot-local/') {
                 authentication(userName: artifactory_username, password: artifactory_password)
             }
         }
