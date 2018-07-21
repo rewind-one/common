@@ -57,7 +57,7 @@ public class Task implements Comparable<Task> {
 	}
 
 	@DatabaseField(dataType = DataType.STRING, width = 32, id = true)
-	private String id;
+	public String id;
 
 	@DatabaseField(dataType = DataType.ENUM_INTEGER, width = 2, canBeNull = false)
 	private Priority priority = Priority.MEDIUM;

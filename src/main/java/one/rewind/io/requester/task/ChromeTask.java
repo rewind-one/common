@@ -82,6 +82,10 @@ public class ChromeTask extends Task {
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 	private List<ChromeAction> actions = new ArrayList<>();
 
+	public void setId(String id) {
+		this.id = id;
+	}
+
 	public String scheduledTaskId;
 
 	public static class Builder {

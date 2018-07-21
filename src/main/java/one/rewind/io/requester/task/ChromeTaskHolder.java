@@ -80,7 +80,7 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 		String init_map_json = JSON.toJson(init_map);
 
 		// 定义Map
-		this.id = StringUtil.MD5(class_name + "-" + init_map_json);
+		this.id = StringUtil.MD5(class_name + "-" + init_map_json + "-" + System.currentTimeMillis());
 	}
 
 	/**
@@ -107,7 +107,9 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 		ChromeTask task =
 				(ChromeTask) method.invoke(null, clazz, init_map, username, step, priority);
 
-		task.scheduledTaskId = id;
+		task.id = this.id;
+
+		task.scheduledTaskId = StringUtil.MD5(this.class_name + "-" + JSON.toJson(this.init_map));;
 
 		return task;
 	}

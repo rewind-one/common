@@ -11,7 +11,7 @@ public class LoginAction extends Action {
 
 	public ChromeDriverAgent agent;
 
-	public String url = "https://login.zbj.com/login";
+	//public String url = "https://login.zbj.com/login";
 
 	public String usernameCssPath = "#username";
 	public String passwordCssPath = "#password";
@@ -44,9 +44,9 @@ public class LoginAction extends Action {
 
 		try {
 
-			agent.getUrl(url);
+			/*agent.getUrl(url);
 
-			agent.waitPageLoad(url);
+			agent.waitPageLoad(url);*/
 
 			// 输入账号
 			WebElement usernameInput = agent.getElementWait(usernameCssPath);

@@ -361,6 +361,7 @@ public class ChromeDriverDistributor {
 			info.put("agent", agent.getInfo());
 			info.put("domain", domain);
 			info.put("account", username);
+			info.put("id", holder.id);
 
 			return info;
 		}

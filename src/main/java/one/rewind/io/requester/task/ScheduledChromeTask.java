@@ -31,7 +31,7 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 	 */
 	public ScheduledChromeTask(ChromeTaskHolder holder, String cron) throws Exception {
 
-		this.id = holder.id;
+		this.id = StringUtil.MD5(holder.class_name + "-" + JSON.toJson(holder.init_map));
 
 		if(StringUtil.validCron(cron)) {
 			this.cron = cron;
@@ -50,7 +50,7 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 	 */
 	public ScheduledChromeTask(ChromeTaskHolder holder, List<String> crons) throws Exception {
 
-		this.id = holder.id;
+		this.id = StringUtil.MD5(holder.class_name + "-" + JSON.toJson(holder.init_map));
 
 		for (String cron_ : crons) {
 			if (!StringUtil.validCron(cron_)) {
