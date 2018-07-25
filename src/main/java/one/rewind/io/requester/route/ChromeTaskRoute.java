@@ -73,8 +73,9 @@ public class ChromeTaskRoute {
 					info = ChromeTaskScheduler.getInstance().schedule(st);
 				}
 			}
-			// B 单次任务 Submit Holder
+			// B 单步任务 Submit Holder
 			else {
+				holder.step = 1;
 				info = ChromeDriverDistributor.getInstance().submit(holder);
 			}
 

@@ -2,6 +2,7 @@ package one.rewind.io.requester.chrome;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
+import io.netty.handler.codec.http.*;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.client.ClientUtil;
 import net.lightbody.bmp.filters.RequestFilter;
@@ -26,6 +27,10 @@ import one.rewind.util.EnvUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.littleshoot.proxy.HttpFilters;
+import org.littleshoot.proxy.HttpFiltersAdapter;
+import org.littleshoot.proxy.HttpFiltersSource;
+import org.littleshoot.proxy.HttpFiltersSourceAdapter;
 import org.openqa.selenium.*;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.NoSuchElementException;
@@ -128,10 +133,10 @@ public class ChromeDriverAgent {
 	public int bmProxy_port = 0;
 
 	// HTTP 请求过滤器
-	private RequestFilter requestFilter;
+	private boolean requestFilterEnabled;
 
 	// HTTP 返回过滤器
-	private ResponseFilter responseFilter;
+	private boolean responseFilterEnabled;
 
 	// Executor Queue
 	private LinkedBlockingQueue queue = new LinkedBlockingQueue<Runnable>();
@@ -204,7 +209,6 @@ public class ChromeDriverAgent {
 		REMOTE,
 		MITM // 设定MITM 未启用
 	}
-
 
 	/**
 	 * 初始化类
@@ -358,6 +362,10 @@ public class ChromeDriverAgent {
 				logger.info("Restart BMProxy done.");
 			}
 
+			if(task.noFetchImages) {
+				setImageBypassFilters();
+			}
+
 			// 设定ProxyRequestFilter
 			if(task.getRequestFilter() != null) {
 				setProxyRequestFilter(task.getRequestFilter());
@@ -416,14 +424,15 @@ public class ChromeDriverAgent {
 			// 停止页面加载
 			// driver.executeScript("window.stop()");
 
-			if(ChromeDriverAgent.this.requestFilter != null) {
+			if(ChromeDriverAgent.this.requestFilterEnabled) {
 				setProxyRequestFilter((request, contents, messageInfo) -> {
 					return null;
 				});
 			}
 
-			if(ChromeDriverAgent.this.responseFilter != null) {
+			if(ChromeDriverAgent.this.responseFilterEnabled) {
 				setProxyResponseFilter((response, contents, messageInfo) -> {
+
 				});
 			}
 
@@ -696,6 +705,69 @@ public class ChromeDriverAgent {
 	}
 
 	/**
+	 *
+	 */
+	public void setImageBypassFilters() throws Exception {
+
+		if(bmProxy == null) throw new Exception("BrowserMob Proxy is not set.");
+
+		// 通过请求uri 判断该资源是否请求过 是否直接bypass
+		HttpFiltersSource filter = new HttpFiltersSourceAdapter() {
+			@Override
+			public HttpFilters filterRequest(HttpRequest originalRequest) {
+
+				return new HttpFiltersAdapter(originalRequest) {
+
+					@Override
+					public HttpResponse clientToProxyRequest(HttpObject httpObject) {
+						if (httpObject instanceof HttpRequest) {
+
+							HttpRequest httpRequest = (HttpRequest) httpObject;
+
+							String type = ChromeDriverDistributor.getInstance().responseTypeCache.get(httpRequest.uri());
+
+							if(type != null &&
+								(
+									type.contains("image")
+									|| type.contains("application/octet-stream") &&
+											( httpRequest.uri().contains("jpg") || httpRequest.uri().contains("png") || httpRequest.uri().contains("gif"))
+								)
+							) {
+								HttpResponse httpResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+								return httpResponse;
+							}
+						}
+
+						return super.clientToProxyRequest(httpObject);
+					}
+				};
+			}
+		};
+
+		if(!this.requestFilterEnabled) {
+			this.requestFilterEnabled = true;
+			bmProxy.addFirstHttpFilterFactory(filter);
+		} else {
+			bmProxy.replaceFirstHttpFilterFactory(filter);
+		}
+
+		// 在ResponseFilter对返回的资源进行记录
+		// 使用uri的原因 https 的 httpRequest 无法获取完整 url
+		this.setProxyResponseFilter((response, contents, messageInfo) -> {
+
+			if(contents != null) {
+
+				String contentType = contents.getContentType();
+				String uri = messageInfo.getOriginalRequest().uri();
+
+				/*System.err.println(contentType + "\t" + uri);*/
+
+				ChromeDriverDistributor.getInstance().responseTypeCache.put(uri, contentType);
+			}
+		});
+	}
+
+	/**
 	 * MITM 监听
 	 * 对请求信息进行过滤监听
 	 * @param requestFilter 请求过滤器
@@ -705,14 +777,14 @@ public class ChromeDriverAgent {
 		if(bmProxy == null) throw new Exception("BrowserMob Proxy is not set.");
 
 		// 第1次设定
-		if(this.requestFilter == null) {
-			this.requestFilter = requestFilter;
-			bmProxy.addRequestFilter(this.requestFilter);
+		if(!this.requestFilterEnabled) {
+			this.requestFilterEnabled = true;
+			bmProxy.addRequestFilter(requestFilter);
+
 		}
 		// 第2 ~ n次设定
 		else {
-			this.requestFilter = requestFilter;
-			bmProxy.replaceFirstHttpFilter(this.requestFilter);
+			bmProxy.replaceFirstHttpFilter(requestFilter);
 		}
 	}
 
@@ -726,14 +798,13 @@ public class ChromeDriverAgent {
 		if(bmProxy == null) throw new Exception("BrowserMob Proxy is not set.");
 
 		// 第1次设定
-		if(this.responseFilter == null) {
-			this.responseFilter = responseFilter;
-			bmProxy.addResponseFilter(this.responseFilter);
+		if(!this.responseFilterEnabled) {
+			this.responseFilterEnabled = true;
+			bmProxy.addResponseFilter(responseFilter);
 		}
 		// 第2 ~ n次设定
 		else {
-			this.responseFilter = responseFilter;
-			bmProxy.replaceLastHttpFilter(this.responseFilter);
+			bmProxy.replaceLastHttpFilter(responseFilter);
 		}
 	}
 

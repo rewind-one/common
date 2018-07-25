@@ -106,6 +106,8 @@ public class ChromeDriverDistributor {
 
 	public volatile int taskCount = 0;
 
+	public ConcurrentHashMap<String, String> responseTypeCache = new ConcurrentHashMap<>();
+
 	/**
 	 * 初始化
 	 */

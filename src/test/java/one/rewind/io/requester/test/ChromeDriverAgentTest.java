@@ -81,19 +81,20 @@ public class ChromeDriverAgentTest {
 	@Test
 	public void requesterFilterTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException {
 
-		final ChromeTask t = new ChromeTask("https://www.baidu.com/");
-		t.addDoneCallback((task)->{
+		final ChromeTask t = new ChromeTask("https://beijing.zbj.com/").setNoFetchImages();
+		ChromeTask t2 = new ChromeTask("https://www.baidu.com/s?word=ip").setNoFetchImages();
+		/*t.addDoneCallback((task)->{
 			System.err.println("Done!");
 			System.err.println(task.getResponse().getVar("test"));
-		});
+		});*/
 
-		t.setResponseFilter((response, contents, messageInfo) -> {
+		/*t.setResponseFilter((response, contents, messageInfo) -> {
 			if(messageInfo.getOriginalUrl().contains("tu_329aca4.js")) {
 				t.getResponse().setVar("test", contents.getTextContents());
 			}
-		});
+		});*/
 
-		// Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
+		Proxy proxy = new ProxyImpl("scisaga.net", 60103, null, null);
 		ChromeDriverAgent agent = new ChromeDriverAgent(ChromeDriverAgent.Flag.MITM);
 		agent.start();
 
@@ -102,6 +103,12 @@ public class ChromeDriverAgentTest {
 		});
 
 		agent.submit(t);
+		agent.submit(t2);
+		agent.submit(t);
+		agent.submit(t2);
+		t.noFetchImages = false;
+		agent.submit(t);
+		agent.submit(t2);
 
 		Thread.sleep(10000);
 

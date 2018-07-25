@@ -435,6 +435,9 @@ public class Task implements Comparable<Task> {
 	/**
 	 * 设定请求过滤器
 	 * ChromeDriverAgent 专用
+	 * TODO 在使用MITM代理时，报错 io.netty.util.IllegalReferenceCountException: refCnt: 0, increment: 1
+	 * 使用 HttpFiltersSourceAdapter 则没有报错
+	 * 有可能是littleproxy自身问题
 	 * @param filter
 	 * @return
 	 */

@@ -22,7 +22,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -220,9 +219,13 @@ public class ChromeDriverDistributorRemoteTest {
 
 		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy1);
 
-		agent.addProxyFailedCallback((a, p) -> {
+		agent.addProxyFailedCallback((a, p, t) -> {
 
-			a.changeProxy(proxy2);
+			try {
+				a.changeProxy(proxy2);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		});
 
 		distributor.addAgent(agent);

@@ -922,6 +922,11 @@ public class BrowserMobProxyServer implements BrowserMobProxy {
 		filterFactories.add(0, filterFactory);
 	}
 
+	public void replaceFirstHttpFilterFactory(HttpFiltersSource filterFactory) {
+		filterFactories.remove(0);
+		filterFactories.add(0, filterFactory);
+	}
+
 	@Override
 	public void addLastHttpFilterFactory(HttpFiltersSource filterFactory) {
 		filterFactories.add(filterFactory);

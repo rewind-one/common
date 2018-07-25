@@ -76,18 +76,6 @@ public class ChromeTask extends Task {
 		}
 	}
 
-	public Map<String, Object> init_map;
-
-	// 执行动作列表
-	@DatabaseField(dataType = DataType.SERIALIZABLE)
-	private List<ChromeAction> actions = new ArrayList<>();
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String scheduledTaskId;
-
 	public static class Builder {
 
 		// 变量表达式
@@ -331,6 +319,21 @@ public class ChromeTask extends Task {
 		return task;
 	}
 
+
+	public Map<String, Object> init_map;
+
+	// 执行动作列表
+	@DatabaseField(dataType = DataType.SERIALIZABLE)
+	private List<ChromeAction> actions = new ArrayList<>();
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String scheduledTaskId;
+
+	public boolean noFetchImages = false;
+
 	/**
 	 *
 	 * @param url
@@ -348,6 +351,16 @@ public class ChromeTask extends Task {
 	 */
 	public List<ChromeAction> getActions() {
 		return actions;
+	}
+
+	/**
+	 * TODO 与 setRequestFilter 和 setResponseFilter 方法冲突
+	 * 对图片请求进行过滤，图片只请求第一次
+	 * @return
+	 */
+	public ChromeTask setNoFetchImages() {
+		noFetchImages = true;
+		return this;
 	}
 
 	/**
