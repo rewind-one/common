@@ -15,6 +15,7 @@ import one.rewind.io.requester.route.DistributorRoute;
 import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.ChromeTaskHolder;
 import one.rewind.io.server.MsgTransformer;
+import one.rewind.json.JSON;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,6 +75,7 @@ public class ChromeDriverDistributor {
 	}
 
 	// 任务队列
+	// TODO 使用RBlockingQueue
 	public ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<ChromeTaskHolder>> queues
 			= new ConcurrentHashMap<>();
 
@@ -407,6 +409,8 @@ public class ChromeDriverDistributor {
 		ChromeTask task = null;
 
 		try {
+
+			System.err.println(JSON.toPrettyJson(holder));
 
 			task = holder.build();
 

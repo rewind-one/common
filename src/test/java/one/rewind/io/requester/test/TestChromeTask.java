@@ -2,10 +2,16 @@ package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.chrome.ChromeTaskScheduler;
 import one.rewind.io.requester.task.ChromeTask;
+import one.rewind.io.requester.task.ChromeTaskHolder;
+import one.rewind.io.requester.task.ScheduledChromeTask;
+import one.rewind.json.JSON;
+import one.rewind.txt.DateFormatUtil;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.*;
 
 public class TestChromeTask {
 
@@ -33,7 +39,7 @@ public class TestChromeTask {
 
 			this.addDoneCallback((t) -> {
 
-				/*ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t).scheduledTaskId);*/
+				/*ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t)._scheduledTaskId);*/
 
 				System.err.println(t.getResponse().getText().length());
 				System.err.println(this.getDomain());
@@ -67,7 +73,7 @@ public class TestChromeTask {
 
 			this.addDoneCallback((t) -> {
 
-				/*ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t).scheduledTaskId);*/
+				/*ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t)._scheduledTaskId);*/
 
 				System.err.println(t.getResponse().getText().length());
 				System.err.println(this.getDomain());
@@ -99,6 +105,125 @@ public class TestChromeTask {
 			this.addDoneCallback((t) -> {
 
 				ChromeDriverDistributor.getInstance().submit(this.getHolder(T1.class, ImmutableMap.of("q", "1000")));
+
+			});
+		}
+	}
+
+	public static class T4 extends ChromeTask {
+
+		public static long MIN_INTERVAL = 60000;
+
+		public static List<String> crons = Arrays.asList("* * * * *", "*/2 * * * *", "*/4 * * * *");
+
+		static {
+			registerBuilder(
+					TestChromeTask.T4.class,
+					"https://www.baidu.com/s?word={{q}}",
+					ImmutableMap.of("q", String.class),
+					ImmutableMap.of("q", "ip")
+			);
+		}
+
+		/**
+		 * @param url
+		 * @throws MalformedURLException
+		 * @throws URISyntaxException
+		 */
+		public T4(String url) throws MalformedURLException, URISyntaxException {
+
+			super(url);
+
+			this.addDoneCallback((t) -> {
+
+				ChromeTask t_ = (ChromeTask) t;
+
+				/*ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t)._scheduledTaskId);*/
+
+				System.err.println(this.getDomain() + "\t" + System.currentTimeMillis() + "\t" + t.getResponse().getText().length());
+
+				if(!ChromeTaskScheduler.getInstance().registered(t_._scheduledTaskId)) {
+
+					ChromeDriverDistributor.logger.info("Create scheduledTask.");
+
+					ScheduledChromeTask scheduledTask = new ScheduledChromeTask(
+						t_.getHolder(this.getClass(), this.init_map),
+						crons
+					);
+
+					ChromeTaskScheduler.getInstance().schedule(scheduledTask);
+				}
+				else {
+
+					//
+					if(System.currentTimeMillis() < DateFormatUtil.parseTime("2018-07-27 16:35:20").getTime()) {
+
+						ChromeDriverDistributor.logger.info("Degenerate scheduledTask: {}.", t_._scheduledTaskId);
+
+						ChromeTaskScheduler.getInstance().degenerate(t_._scheduledTaskId);
+
+					} else {
+
+						ChromeDriverDistributor.logger.info("Unschedule scheduledTask: {}.", t_._scheduledTaskId);
+
+
+						ChromeTaskScheduler.getInstance().unschedule(t_._scheduledTaskId);
+
+					}
+				}
+
+			});
+		}
+	}
+
+	public static class T5 extends ChromeTask {
+
+		public static long MIN_INTERVAL = 60000;
+
+		static {
+			registerBuilder(
+					TestChromeTask.T5.class,
+					"https://www.baidu.com/s?word={{q}}&pn={{pn}}",
+					ImmutableMap.of("q", String.class,"pn", Integer.class, "max_page", Integer.class),
+					ImmutableMap.of("q", "ip", "pn", 0, "max_page", 100)
+			);
+		}
+
+		/**
+		 * @param url
+		 * @throws MalformedURLException
+		 * @throws URISyntaxException
+		 */
+		public T5(String url) throws MalformedURLException, URISyntaxException {
+
+			super(url);
+
+			this.addDoneCallback((t) -> {
+
+				System.err.println(this.getDomain() + "\t" + System.currentTimeMillis() + "\t" + t.getResponse().getText().length());
+
+				int max_page = Integer.valueOf(String.valueOf(((ChromeTask) t).init_map.get("max_page")));
+
+				int current_page = Integer.valueOf(String.valueOf(((ChromeTask) t).init_map.get("pn")));
+
+				List<ChromeTaskHolder> holders = new ArrayList<>();
+
+				for(int i=current_page+10; i<=max_page; i=i+10) {
+
+					Map<String, Object> init_map = new HashMap<>();
+					init_map.putAll(((ChromeTask) t).init_map);
+					init_map.put("pn", i);
+					init_map.put("max_page", 0);
+
+					ChromeTaskHolder holder = ((ChromeTask) t).getHolder(((ChromeTask) t).getClass(), init_map);
+
+					holders.add(holder);
+				}
+
+				for(ChromeTaskHolder holder : holders) {
+					System.err.println(JSON.toPrettyJson(holder));
+					ChromeDriverDistributor.getInstance().submit(holder);
+				}
 
 			});
 		}

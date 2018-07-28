@@ -55,6 +55,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.Security;
+import java.time.Duration;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
@@ -83,11 +84,20 @@ public class ChromeDriverAgent {
 	// 关闭超时时间
 	private static int CLOSE_TIMEOUT = 120000;
 
+	// 页面加载判定时间
+	private static long PAGE_LOAD_TIMEOUT = 10000;
+
 	// 配置设定
 	static {
 
 		// A. 读取配置文件
 		Config ioConfig = Configs.getConfig(BasicRequester.class);
+
+		try {
+			PAGE_LOAD_TIMEOUT = ioConfig.getLong("pageLoadTimeout");
+		} catch (Exception e) {
+			logger.error(e);
+		}
 
 		// B. 设定chromedriver executable
 		if (EnvUtil.isHostLinux()) {
@@ -951,44 +961,44 @@ public class ChromeDriverAgent {
 		/*
 		 * 自定义ExpectedCondition 判断源码中是否出现body
 		 */
-		io.appium.java_client.functions.ExpectedCondition<String> ec = new io.appium.java_client.functions.ExpectedCondition<String>() {
+		io.appium.java_client.functions.ExpectedCondition<String> ec =
+			new io.appium.java_client.functions.ExpectedCondition<String>() {
 
-			String regx = "body";
+				String regx = "body";
 
-			@Override
-			public String apply(WebDriver driver) {
+				@Override
+				public String apply(WebDriver driver) {
 
-				Pattern p = Pattern.compile(regx);
-				Matcher m = p.matcher(driver.getPageSource());
+					Pattern p = Pattern.compile(regx);
+					Matcher m = p.matcher(driver.getPageSource());
 
-				if(m.find()) {
-					logger.info("Found " + regx);
-					return m.group();
+					if(m.find()) {
+						logger.info("Found " + regx);
+						return m.group();
+					}
+
+					return null;
 				}
 
-				return null;
-			}
-
-			@Override
-			public String toString() {
-				return "presence of text by: " + regx;
-			}
-		};
+				@Override
+				public String toString() {
+					return "presence of text by: " + regx;
+				}
+			};
 
 		// TODO 追踪所报异常，throw proxy timeout exception
 		// org.openqa.selenium.TimeOutExpection
 		// 需要进行测试
 		/*DocumentSettleCondition<WebElement> settleCondition = new DocumentSettleCondition<>(
 			ExpectedConditions.visibilityOf(driver.findElement(By.cssSelector("body"))));*/
-		DocumentSettleCondition<String> settleCondition = new DocumentSettleCondition<>(
-				ec
-		);
+
+		DocumentSettleCondition<String> settleCondition = new DocumentSettleCondition<>(ec);
 
 		try {
 
 			new FluentWait<WebDriver>(driver)
-					.withTimeout(10, TimeUnit.SECONDS)
-					.pollingEvery(settleCondition.getSettleTime(), TimeUnit.MILLISECONDS)
+					.withTimeout(Duration.ofMillis(PAGE_LOAD_TIMEOUT))
+					.pollingEvery(Duration.ofSeconds(1))
 					.ignoring(WebDriverException.class) // TODO add TimeoutException.class may lead wait infinitely.
 					.until(settleCondition);
 

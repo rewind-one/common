@@ -7,6 +7,7 @@ import one.rewind.txt.StringUtil;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,8 +39,12 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	// 优先级
 	public Task.Priority priority = Task.Priority.MEDIUM;
 
+	public List<String> crons;
+
 	// 创建时间
 	public Date create_time = new Date();
+
+	public ChromeTaskHolder() {}
 
 	/**
 	 *
@@ -109,7 +114,7 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 
 		task.id = this.id;
 
-		task.scheduledTaskId = StringUtil.MD5(this.class_name + "-" + JSON.toJson(this.init_map));;
+		task._scheduledTaskId = StringUtil.MD5(this.class_name + "-" + JSON.toJson(this.init_map));
 
 		return task;
 	}

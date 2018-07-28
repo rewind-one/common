@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static one.rewind.io.requester.chrome.ChromeDriverDistributor.LOCAL_IP;
@@ -34,19 +35,51 @@ public class ChromeTaskScheduler {
 		return instance;
 	}
 
+
 	public Scheduler scheduler;
 
+	public Timer timer;
+
 	/**
-	 *
+	 * 使用Redis保存Task
 	 */
+	//public RMap<String, ScheduledChromeTask> scheduledTasks;
 	public ConcurrentHashMap<String, ScheduledChromeTask> scheduledTasks = new ConcurrentHashMap<>();
 
 	/**
 	 *
 	 */
-	public ChromeTaskScheduler() {
+	private ChromeTaskScheduler() {
+
+		//scheduledTasks = RedissonAdapter.redisson.getMap("scheduled-tasks");
+
+		// 重新调度周期性任务
 		this.scheduler = new Scheduler();
 		scheduler.start();
+
+		/*for(ScheduledChromeTask task : scheduledTasks.values()) {
+			try {
+				this.schedule(task);
+			} catch (Exception e) {
+				logger.error("Error schedule task: {}. ", task.toJSON(), e);
+			}
+		}*/
+	}
+
+	/**
+	 *
+	 * @param id
+	 * @throws Exception
+	 */
+	public void degenerate(String id) throws Exception {
+
+		if(!scheduledTasks.containsKey(id)) {
+
+			throw new Exception("No such id:" + id + ".");
+		}
+
+		ScheduledChromeTask task = scheduledTasks.get(id);
+		task.degenerate();
 	}
 
 	/**
@@ -59,7 +92,6 @@ public class ChromeTaskScheduler {
 		if(scheduledTasks.containsKey(task.id)) throw new Exception("Task:" + task.id + " already scheduled.");
 
 		task.scheduleId = scheduler.schedule(task.cron, ()->{
-
 			try {
 				ChromeDriverDistributor.getInstance().submit(task.holder);
 			} catch (Exception e) {
@@ -81,17 +113,11 @@ public class ChromeTaskScheduler {
 	/**
 	 *
 	 * @param id
-	 * @throws Exception
+	 * @return
 	 */
-	public void degenerate(String id) throws Exception {
-
-		if(!scheduledTasks.containsKey(id)) {
-
-			throw new Exception("No such id:" + id + ".");
-		}
-
-		ScheduledChromeTask task = scheduledTasks.get(id);
-		task.degenerate();
+	public boolean registered(String id) {
+		if(scheduledTasks.containsKey(id)) return true;
+		return false;
 	}
 
 	/**

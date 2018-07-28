@@ -579,7 +579,7 @@ public class Task implements Comparable<Task> {
 	 * 判断重试
 	 * @return
 	 */
-	public int getStep() {
+	public synchronized int getStep() {
 		return this.step;
 	}
 

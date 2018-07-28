@@ -50,6 +50,15 @@ public class ChromeTask extends Task {
 		}
 	}
 
+	/**
+	 *
+	 * @param clazz
+	 * @param url_template
+	 * @param init_map_class
+	 * @param init_map_defaults
+	 * @param need_login
+	 * @param base_priority
+	 */
 	public static void registerBuilder(
 			Class<? extends ChromeTask> clazz,
 			String url_template,
@@ -60,7 +69,6 @@ public class ChromeTask extends Task {
 	){
 
 		try {
-
 
 			Builders.put(clazz, new Builder(
 					clazz,
@@ -76,6 +84,9 @@ public class ChromeTask extends Task {
 		}
 	}
 
+	/**
+	 *
+	 */
 	public static class Builder {
 
 		// 变量表达式
@@ -100,21 +111,21 @@ public class ChromeTask extends Task {
 		public Priority base_priority = Priority.MEDIUM;
 
 		public Builder(
-				Class<? extends ChromeTask> clazz,
-				String url_template,
-				Map<String, Class> init_map_class,
-				Map<String, Object> init_map_defaults
+			Class<? extends ChromeTask> clazz,
+			String url_template,
+			Map<String, Class> init_map_class,
+			Map<String, Object> init_map_defaults
 		) throws Exception {
 			this(clazz, url_template, init_map_class, init_map_defaults, false, Priority.MEDIUM);
 		}
 
 		public Builder(
-				Class<? extends ChromeTask> clazz,
-				String url_template,
-				Map<String, Class> init_map_class,
-				Map<String, Object> init_map_defaults,
-				boolean need_login,
-				Priority base_priority
+			Class<? extends ChromeTask> clazz,
+			String url_template,
+			Map<String, Class> init_map_class,
+			Map<String, Object> init_map_defaults,
+			boolean need_login,
+			Priority base_priority
 		) throws Exception {
 
 			// 验证class定义
@@ -148,9 +159,7 @@ public class ChromeTask extends Task {
 				vars.add(m.group().replaceAll("\\{\\{|\\}\\}", ""));
 			}
 
-			if(vars.containsAll(init_map_class.keySet()) && init_map_class.keySet().containsAll(vars)) {
-
-			} else {
+			if(!init_map_class.keySet().containsAll(vars)) {
 				throw new Exception("Illegal url_template.");
 			}
 
@@ -169,7 +178,10 @@ public class ChromeTask extends Task {
 	 * @return
 	 * @throws Exception
 	 */
-	public static Map<String, Object> validateInitMap(Builder builder, Map<String, Object> init_map) throws Exception {
+	public static Map<String, Object> validateInitMap(
+		Builder builder,
+		Map<String, Object> init_map
+	) throws Exception {
 
 		Map<String, Object> init = new HashMap<>();
 
@@ -202,7 +214,7 @@ public class ChromeTask extends Task {
 					init.put(key, init_map.get(key));
 
 				} else {
-					throw new Exception("init_map value type error.");
+					throw new Exception("init_map value type error, " + key + ":" + init_map.get(key).getClass() + " -- " + builder.init_map_class.get(key));
 				}
 
 			} else {
@@ -237,45 +249,15 @@ public class ChromeTask extends Task {
 
 	/**
 	 *
-	 * @param init_map
-	 * @return
-	 * @throws Exception
-	 */
-	public static ChromeTask build(Class<? extends ChromeTask> clazz, Map<String, Object> init_map) throws Exception {
-		return build(clazz, init_map, null, 0, getBasePriority(clazz));
-	}
-
-	/**
-	 *
-	 * @param init_map
-	 * @param username
-	 * @return
-	 * @throws Exception
-	 */
-	public static ChromeTask build(Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username) throws Exception {
-		return build(clazz, init_map, username, 0, getBasePriority(clazz));
-	}
-
-	/**
-	 *
-	 * @param init_map
-	 * @param username
-	 * @param step
-	 * @return
-	 * @throws Exception
-	 */
-	public static ChromeTask build(Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username, int step) throws Exception {
-		return build(clazz, init_map, username, step, getBasePriority(clazz));
-	}
-
-	/**
-	 *
 	 * @param builder
 	 * @param init_map
 	 * @return
 	 * @throws Exception
 	 */
-	public static String generateURL(Builder builder, Map<String, Object> init_map) throws Exception {
+	public static String generateURL(
+		Builder builder,
+		Map<String, Object> init_map
+	) throws Exception {
 
 		// 重载后的初始化变量表
 		Map<String, Object> vars = validateInitMap(builder, init_map);
@@ -298,7 +280,12 @@ public class ChromeTask extends Task {
 	 * @throws Exception
 	 */
 	public static ChromeTask build(
-			Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username, int step, Priority priority) throws Exception {
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		String username,
+		int step,
+		Priority priority
+	) throws Exception {
 
 		Builder builder = Builders.get(clazz);
 
@@ -310,7 +297,9 @@ public class ChromeTask extends Task {
 		Constructor<?> cons = clazz.getConstructor(String.class);
 
 		ChromeTask task = (ChromeTask) cons.newInstance(url);
-		task.init_map = init_map;
+
+		task.init_map = validateInitMap(builder, init_map); // 多余计算
+
 		if(builder.need_login) task.setLoginTask();
 		task.setUsername(username);
 		task.setStep(step);
@@ -319,20 +308,71 @@ public class ChromeTask extends Task {
 		return task;
 	}
 
+	/**
+	 *
+	 * @param init_map
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTask build(
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map
+	) throws Exception {
+		return build(clazz, init_map, null, 0, getBasePriority(clazz));
+	}
 
+	/**
+	 *
+	 * @param init_map
+	 * @param username
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTask build(
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		String username
+	) throws Exception {
+		return build(clazz, init_map, username, 0, getBasePriority(clazz));
+	}
+
+	/**
+	 *
+	 * @param init_map
+	 * @param username
+	 * @param step
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTask build(
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		String username,
+		int step
+	) throws Exception {
+		return build(clazz, init_map, username, step, getBasePriority(clazz));
+	}
+
+	// 初始化参数
 	public Map<String, Object> init_map;
 
 	// 执行动作列表
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 	private List<ChromeAction> actions = new ArrayList<>();
 
+	// 周期任务ID
+	public String _scheduledTaskId;
+
+	// 标志位 是否采集图片
+	public boolean noFetchImages = false;
+
+	/**
+	 * 手动设定id
+	 * @param id
+	 */
 	public void setId(String id) {
 		this.id = id;
 	}
-
-	public String scheduledTaskId;
-
-	public boolean noFetchImages = false;
 
 	/**
 	 *
@@ -385,7 +425,12 @@ public class ChromeTask extends Task {
 	 * @throws Exception
 	 */
 	public static ChromeTaskHolder buildHolder(
-			Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username, int step, Priority priority) throws Exception {
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		String username,
+		int step,
+		Priority priority
+	) throws Exception {
 
 		Builder builder = Builders.get(clazz);
 
@@ -408,7 +453,11 @@ public class ChromeTask extends Task {
 	 * @throws Exception
 	 */
 	public static ChromeTaskHolder buildHolder(
-			Class<? extends ChromeTask> clazz, Map<String, Object> init_map, String username, int step) throws Exception {
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		String username,
+		int step
+	) throws Exception {
 
 		return buildHolder(clazz, init_map, username, step, null);
 	}
@@ -422,7 +471,10 @@ public class ChromeTask extends Task {
 	 * @throws Exception
 	 */
 	public static ChromeTaskHolder buildHolder(
-			Class<? extends ChromeTask> clazz, String username, Map<String, Object> init_map) throws Exception {
+		Class<? extends ChromeTask> clazz,
+		String username,
+		Map<String, Object> init_map
+	) throws Exception {
 
 		return buildHolder(clazz, init_map, username, 0);
 	}
@@ -437,7 +489,10 @@ public class ChromeTask extends Task {
 	 * @throws Exception
 	 */
 	public static ChromeTaskHolder buildHolder(
-			Class<? extends ChromeTask> clazz, Map<String, Object> init_map, int step) throws Exception {
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		int step
+	) throws Exception {
 
 		return buildHolder(clazz, init_map, null, step);
 	}
@@ -450,7 +505,9 @@ public class ChromeTask extends Task {
 	 * @throws Exception
 	 */
 	public static ChromeTaskHolder buildHolder(
-			Class<? extends ChromeTask> clazz, Map<String, Object> init_map) throws Exception {
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map
+	) throws Exception {
 
 		return buildHolder(clazz, init_map, null, 0);
 	}
@@ -462,7 +519,10 @@ public class ChromeTask extends Task {
 	 * @return
 	 * @throws Exception
 	 */
-	public ChromeTaskHolder getHolder(Class<? extends ChromeTask> clazz, Map<String, Object> init_map) throws Exception {
+	public ChromeTaskHolder getHolder(
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map
+	) throws Exception {
 
 		return getHolder(clazz, init_map, getPriority());
 	}
@@ -475,7 +535,11 @@ public class ChromeTask extends Task {
 	 * @return
 	 * @throws Exception
 	 */
-	public ChromeTaskHolder getHolder(Class<? extends ChromeTask> clazz, Map<String, Object> init_map, Priority priority) throws Exception {
+	public ChromeTaskHolder getHolder(
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		Priority priority
+	) throws Exception {
 
 		int step = 0;
 

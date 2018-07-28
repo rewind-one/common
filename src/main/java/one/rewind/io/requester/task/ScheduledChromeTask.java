@@ -23,6 +23,8 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 
 	public ChromeTaskHolder holder;
 
+	public ScheduledChromeTask() {}
+
 	/**
 	 *
 	 * @param holder
@@ -59,6 +61,7 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 		}
 
 		if (crons.size() == 0) throw new Exception("Cron pattern invaild.");
+
 		cron = crons.get(0);
 
 		this.crons = crons;
@@ -74,7 +77,6 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 		int index = crons.indexOf(cron);
 		if(index > -1 && index < crons.size() - 1) {
 			cron = crons.get(index + 1);
-			System.err.println(cron);
 		}
 
 		ChromeTaskScheduler.getInstance().scheduler.reschedule(scheduleId, cron);
@@ -84,6 +86,5 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 	public String toJSON() {
 		return JSON.toJson(this);
 	}
-
 
 }
