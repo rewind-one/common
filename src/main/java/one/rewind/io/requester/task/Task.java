@@ -28,7 +28,7 @@ import java.util.*;
  * @author karajan
  *
  */
-public class Task implements Comparable<Task> {
+public class Task<T extends Task> implements Comparable<Task> {
 
 	public enum Priority {
 		LOWEST,
@@ -135,10 +135,10 @@ public class Task implements Comparable<Task> {
 	public TaskValidator validator;
 
 	// 采集后回调
-	public List<TaskCallback> doneCallbacks = new LinkedList<>();
+	public List<TaskCallback<T>> doneCallbacks = new LinkedList<>();
 
 	// 采集异常回调
-	public List<TaskCallback> exceptionCallbacks = new LinkedList<>();
+	public List<TaskCallback<T>> exceptionCallbacks = new LinkedList<>();
 
 	// 异常记录
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
@@ -733,7 +733,7 @@ public class Task implements Comparable<Task> {
 	 * @param callback
 	 * @return
 	 */
-	public Task addDoneCallback(TaskCallback callback) {
+	public Task addDoneCallback(TaskCallback<T> callback) {
 		if (this.doneCallbacks == null) this.doneCallbacks = new LinkedList<>();
 		this.doneCallbacks.add(callback);
 		return this;
@@ -744,7 +744,7 @@ public class Task implements Comparable<Task> {
 	 * @param callback
 	 * @return
 	 */
-	public Task addExceptionCallback(TaskCallback callback) {
+	public Task addExceptionCallback(TaskCallback<T> callback) {
 		if (this.exceptionCallbacks == null) this.exceptionCallbacks = new LinkedList<>();
 		this.exceptionCallbacks.add(callback);
 		return this;

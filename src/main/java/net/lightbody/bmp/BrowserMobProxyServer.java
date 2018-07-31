@@ -84,6 +84,7 @@ import java.util.regex.Pattern;
  * A LittleProxy-based implementation of {@link net.lightbody.bmp.BrowserMobProxy}.
  */
 public class BrowserMobProxyServer implements BrowserMobProxy {
+
 	private static final Logger log = LoggerFactory.getLogger(BrowserMobProxyServer.class);
 
 	private static final HarNameVersion HAR_CREATOR_VERSION = new HarNameVersion("BrowserMob Proxy", BrowserMobProxyUtil.getVersionString());

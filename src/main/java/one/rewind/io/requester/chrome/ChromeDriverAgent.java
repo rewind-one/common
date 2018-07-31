@@ -19,7 +19,6 @@ import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.util.DocumentSettleCondition;
 import one.rewind.io.ssh.RemoteShell;
 import one.rewind.util.Configs;
@@ -431,6 +430,11 @@ public class ChromeDriverAgent {
 
 			task.setDuration();
 
+			//
+			if(proxy != null) {
+				proxy.success();
+			}
+
 			// 停止页面加载
 			// driver.executeScript("window.stop()");
 
@@ -552,7 +556,6 @@ public class ChromeDriverAgent {
 		}
 
 		return this;
-
 	}
 
 	/**
@@ -599,9 +602,9 @@ public class ChromeDriverAgent {
 
 	/**
 	 *
-	 * @throws ChromeDriverException.IllegalStatusException
+	 * @throws Exception
 	 */
-	public synchronized void destroy() throws ChromeDriverException.IllegalStatusException, InterruptedException {
+	public synchronized void destroy() throws Exception {
 
 		terminatedCallbacks.clear();
 
@@ -610,6 +613,11 @@ public class ChromeDriverAgent {
 		executor.shutdown();
 
 		instances.remove(ChromeDriverAgent.this);
+
+		if(proxy != null) {
+			proxy.status = one.rewind.io.requester.proxy.Proxy.Status.Free;
+			proxy.update();
+		}
 
 		status = Status.DESTROYED;
 	}
@@ -1228,7 +1236,11 @@ public class ChromeDriverAgent {
 		}
 	}
 
-	private void runExceptionCallbacks(Task t) {
+	/**
+	 *
+	 * @param t
+	 */
+	private void runExceptionCallbacks(ChromeTask t) {
 		for(TaskCallback callback : t.exceptionCallbacks) {
 			ChromeDriverDistributor.getInstance().post_executor.submit(()->{
 				try {

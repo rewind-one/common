@@ -16,6 +16,7 @@ import java.util.Map;
  */
 public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<ChromeTaskHolder> {
 
+	// 生成的ChromeTask id等于这个id
 	public String id;
 
 	// 类名
@@ -33,11 +34,13 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	// 初始参数
 	public Map<String, Object> init_map;
 
-	// 步骤
+	// 步长
 	public int step;
 
 	// 优先级
 	public Task.Priority priority = Task.Priority.MEDIUM;
+
+
 
 	public List<String> crons;
 
@@ -112,9 +115,10 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 		ChromeTask task =
 				(ChromeTask) method.invoke(null, clazz, init_map, username, step, priority);
 
-		task.id = this.id;
-
-		task._scheduledTaskId = StringUtil.MD5(this.class_name + "-" + JSON.toJson(this.init_map));
+		// 设定关联ID
+		task.setId(id).setPossibleScheduledChromeTaskId(
+			StringUtil.MD5(this.class_name + "-" + JSON.toJson(this.init_map))
+		);
 
 		return task;
 	}

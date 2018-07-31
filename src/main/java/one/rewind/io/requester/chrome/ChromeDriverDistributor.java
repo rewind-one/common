@@ -3,11 +3,13 @@ package one.rewind.io.requester.chrome;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
+import io.netty.handler.codec.http.*;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.route.ChromeTaskRoute;
@@ -19,6 +21,10 @@ import one.rewind.json.JSON;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.littleshoot.proxy.HttpFilters;
+import org.littleshoot.proxy.HttpFiltersAdapter;
+import org.littleshoot.proxy.HttpFiltersSource;
+import org.littleshoot.proxy.HttpFiltersSourceAdapter;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
 
@@ -304,13 +310,12 @@ public class ChromeDriverDistributor {
 
 		String domain = holder.domain;
 		String username = holder.username;
+		String account_key = domain + "-" + username;
 
 		ChromeDriverAgent agent;
 
 		// 特定用户的采集任务
 		if(holder.username != null && holder.username.length() > 0) {
-
-			String account_key = domain + "-" + username;
 
 			agent = domain_account_agent_map.get(account_key);
 
@@ -318,6 +323,10 @@ public class ChromeDriverDistributor {
 
 				logger.warn("No agent hold account {}.", account_key);
 				throw new AccountException.NotFound();
+			} else {
+				Account account = agent.accounts.get(domain);
+				account.use_cnt ++;
+				account.update();
 			}
 
 		}
@@ -338,6 +347,16 @@ public class ChromeDriverDistributor {
 			.map(Map.Entry::getKey)
 			.collect(Collectors.toList())
 			.get(0);
+
+			if(agent == null) {
+				logger.warn("No agent hold domain:{} accounts.", domain);
+				throw new AccountException.NotFound();
+			} else {
+				Account account = agent.accounts.get(domain);
+				account.use_cnt ++;
+				account.update();
+			}
+
 		}
 		// 一般任务
 		else {
@@ -486,7 +505,7 @@ public class ChromeDriverDistributor {
 	 * 关闭
 	 * TODO 应该将未执行的任务持久化
 	 */
-	public void close() throws ChromeDriverException.IllegalStatusException, InterruptedException {
+	public void close() throws Exception {
 
 		executor.shutdown();
 		for(ChromeDriverAgent agent : queues.keySet()) {
@@ -519,6 +538,46 @@ public class ChromeDriverDistributor {
 		bmProxy.setMitmManager(ImpersonatingMitmManager.builder().trustAllServers(true).build());
 
 		bmProxy.start(localPort);
+
+		/*bmProxy.addRequestFilter((request, contents, messageInfo) -> {
+			if(contents != null && contents.getBinaryContents()!=null && proxy!=null) {
+				proxy.addSendBytes(contents.getBinaryContents().length);
+				proxy.use_cnt ++;
+			}
+			return null;
+		});*/
+
+		// 通过请求uri 判断该资源是否请求过 是否直接bypass
+		HttpFiltersSource filter = new HttpFiltersSourceAdapter() {
+			@Override
+			public HttpFilters filterRequest(HttpRequest originalRequest) {
+
+				return new HttpFiltersAdapter(originalRequest) {
+
+					@Override
+					public HttpResponse clientToProxyRequest(HttpObject httpObject) {
+						if (httpObject instanceof HttpRequest) {
+
+							if(httpObject != null && httpObject.toString()!=null && proxy!=null) {
+								proxy.addSendBytes(httpObject.toString().length());
+								proxy.use_cnt ++;
+							}
+						}
+
+						return super.clientToProxyRequest(httpObject);
+					}
+				};
+			}
+		};
+		bmProxy.addFirstHttpFilterFactory(filter);
+
+		bmProxy.addResponseFilter((response, contents, messageInfo) -> {
+			if(contents != null && contents.getBinaryContents()!=null && proxy!=null) {
+				proxy.addRevBytes(contents.getBinaryContents().length);
+				proxy.use_cnt ++;
+			}
+		});
+
 //		try {
 //			InetAddress address = InetAddress.getByName(LOCAL_IP);
 //			bmProxy.start(localPort, address);

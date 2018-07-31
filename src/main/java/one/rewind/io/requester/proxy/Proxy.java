@@ -53,6 +53,12 @@ public abstract class Proxy implements JSONable<Proxy> {
 	@DatabaseField(dataType = DataType.LONG, canBeNull = false)
 	public long use_cnt = 0;
 
+	@DatabaseField(dataType = DataType.LONG, canBeNull = false)
+	public long bytes_send = 0;
+
+	@DatabaseField(dataType = DataType.LONG, canBeNull = false)
+	public long bytes_rev = 0;
+
 	@DatabaseField(dataType = DataType.ENUM_STRING, width = 16, canBeNull = false)
 	public Status status = Status.Free;
 
@@ -139,6 +145,22 @@ public abstract class Proxy implements JSONable<Proxy> {
 		if(task.status.contains(ProxyValidator.Status.GL)){
 			this.gl = true;
 		}
+	}
+
+	/**
+	 *
+	 * @param bytes
+	 */
+	public synchronized void addSendBytes(long bytes) {
+		this.bytes_send += bytes;
+	}
+
+	/**
+	 *
+	 * @param bytes
+	 */
+	public synchronized void addRevBytes(long bytes) {
+		this.bytes_rev += bytes;
 	}
 
 	/**

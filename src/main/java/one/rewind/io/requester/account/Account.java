@@ -32,10 +32,6 @@ public abstract class Account implements JSONable<Account> {
 	@DatabaseField(dataType = DataType.STRING, width = 1024, index = true)
 	public String domain;
 
-	// 登录地址
-	@DatabaseField(dataType = DataType.STRING, width = 1024)
-	public String login_url;
-
 	// 用户名
 	@DatabaseField(dataType = DataType.STRING, width = 1024, index = true)
 	public String username;
@@ -55,6 +51,10 @@ public abstract class Account implements JSONable<Account> {
 	// Proxy Group
 	@DatabaseField(dataType = DataType.STRING, width = 32, index = true)
 	public String proxy_group;
+
+	// 使用次数
+	@DatabaseField(dataType = DataType.LONG, canBeNull = false)
+	public long use_cnt = 0;
 
 	// Proxy 状态
 	@DatabaseField(dataType = DataType.ENUM_STRING, width = 32)

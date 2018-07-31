@@ -440,7 +440,7 @@ public class BasicRequester {
 	 */
 	public class Wrapper implements Runnable {
 		
-		Task task;
+		Task<Task> task;
 		
 		Map<String, String> headers = null;
 		HttpURLConnection conn = null;

@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 
@@ -71,6 +72,15 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 
 	/**
 	 *
+	 * @return
+	 * @throws Exception
+	 */
+	public Map<String, Object> start() throws Exception {
+		return ChromeTaskScheduler.getInstance().schedule(this);
+	}
+
+	/**
+	 *
 	 */
 	public void degenerate() {
 
@@ -80,6 +90,15 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 		}
 
 		ChromeTaskScheduler.getInstance().scheduler.reschedule(scheduleId, cron);
+	}
+
+	/**
+	 *
+	 * @throws Exception
+	 */
+	public void stop() throws Exception {
+
+		ChromeTaskScheduler.getInstance().unschedule(id);
 	}
 
 	@Override

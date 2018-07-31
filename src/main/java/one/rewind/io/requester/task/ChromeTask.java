@@ -2,7 +2,9 @@ package one.rewind.io.requester.task;
 
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
+import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeTaskScheduler;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
 import one.rewind.txt.URLUtil;
@@ -17,7 +19,7 @@ import java.util.regex.Pattern;
 /**
  *
  */
-public class ChromeTask extends Task {
+public class ChromeTask extends Task<ChromeTask> {
 
 	public static long MIN_INTERVAL = 10000;
 
@@ -232,6 +234,47 @@ public class ChromeTask extends Task {
 		return init;
 	}
 
+	public static <T> T cast(Object o, Class<T> clazz) {
+		return clazz != null && clazz.isInstance(o) ? clazz.cast(o) : null;
+	}
+
+	// init_map中支持的类型 int long float double String boolean
+	public int getIntFromInitMap(String key) {
+		return cast(this.init_map.get(key), Integer.class);
+	}
+
+	public Long getLongFromInitMap(String key) {
+		return cast(this.init_map.get(key), Long.class);
+	}
+
+	public float getFloatFromInitMap(String key) {
+		return cast(this.init_map.get(key), Float.class);
+	}
+
+	public double getDoubleFromInitMap(String key) {
+		return cast(this.init_map.get(key), Double.class);
+	}
+
+	public String getStringFromInitMap(String key) {
+		return cast(this.init_map.get(key), String.class);
+	}
+
+	public boolean getBooleanFromInitMap(String key) {
+		return cast(this.init_map.get(key), Boolean.class);
+	}
+
+	/**
+	 *
+	 * @param params
+	 * @return
+	 */
+	public Map<String, Object> getNewInitMap(Map<String, Object> params) {
+		Map<String, Object> map = new HashMap<>();
+		map.putAll(init_map);
+		map.putAll(params);
+		return map;
+	}
+
 	/**
 	 *
 	 * @param clazz
@@ -361,7 +404,7 @@ public class ChromeTask extends Task {
 	private List<ChromeAction> actions = new ArrayList<>();
 
 	// 周期任务ID
-	public String _scheduledTaskId;
+	private String _scheduledTaskId;
 
 	// 标志位 是否采集图片
 	public boolean noFetchImages = false;
@@ -370,8 +413,27 @@ public class ChromeTask extends Task {
 	 * 手动设定id
 	 * @param id
 	 */
-	public void setId(String id) {
+	public ChromeTask setId(String id) {
 		this.id = id;
+		return this;
+	}
+
+	/**
+	 * 手动设定可能的 ScheduledChromeTaskId
+	 * @param id
+	 * @return
+	 */
+	public ChromeTask setPossibleScheduledChromeTaskId(String id) {
+		this._scheduledTaskId = id;
+		return this;
+	}
+
+	/**
+	 * 从Scheduler 找对应的 ScheduledTask
+	 * @return
+	 */
+	public ScheduledChromeTask getScheduledChromeTask() {
+		return ChromeTaskScheduler.getInstance().getScheduledTask(this._scheduledTaskId);
 	}
 
 	/**
@@ -411,6 +473,28 @@ public class ChromeTask extends Task {
 	 */
 	public ChromeTask addAction(ChromeAction action) {
 		this.actions.add(action);
+		return this;
+	}
+
+	/**
+	 * 增加完成回调
+	 * @param callback
+	 * @return
+	 */
+	public Task addDoneCallback(TaskCallback<ChromeTask> callback) {
+		if (this.doneCallbacks == null) this.doneCallbacks = new LinkedList<>();
+		this.doneCallbacks.add(callback);
+		return this;
+	}
+
+	/**
+	 * 添加采集异常回调
+	 * @param callback
+	 * @return
+	 */
+	public Task addExceptionCallback(TaskCallback<ChromeTask> callback) {
+		if (this.exceptionCallbacks == null) this.exceptionCallbacks = new LinkedList<>();
+		this.exceptionCallbacks.add(callback);
 		return this;
 	}
 
@@ -510,6 +594,19 @@ public class ChromeTask extends Task {
 	) throws Exception {
 
 		return buildHolder(clazz, init_map, null, 0);
+	}
+
+	/**
+	 *
+	 * @param init_map
+	 * @return
+	 * @throws Exception
+	 */
+	public ChromeTaskHolder getHolder(
+			Map<String, Object> init_map
+	) throws Exception {
+
+		return getHolder(this.getClass(), init_map, getPriority());
 	}
 
 	/**

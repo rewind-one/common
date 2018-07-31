@@ -2,13 +2,14 @@ package one.rewind.io.requester.chrome;
 
 import it.sauronsoftware.cron4j.Scheduler;
 import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.task.ChromeTaskHolder;
 import one.rewind.io.requester.task.ScheduledChromeTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static one.rewind.io.requester.chrome.ChromeDriverDistributor.LOCAL_IP;
@@ -35,10 +36,7 @@ public class ChromeTaskScheduler {
 		return instance;
 	}
 
-
 	public Scheduler scheduler;
-
-	public Timer timer;
 
 	/**
 	 * 使用Redis保存Task
@@ -112,12 +110,47 @@ public class ChromeTaskScheduler {
 
 	/**
 	 *
+	 * @param holder
+	 * @param cron
+	 * @return
+	 * @throws Exception
+	 */
+	public Map<String, Object> schedule(ChromeTaskHolder holder, String cron) throws Exception {
+
+		ScheduledChromeTask task = new ScheduledChromeTask(holder, cron);
+		return schedule(task);
+	}
+
+	/**
+	 *
+	 * @param holder
+	 * @param crons
+	 * @return
+	 * @throws Exception
+	 */
+	public Map<String, Object> schedule(ChromeTaskHolder holder, List<String> crons) throws Exception {
+
+		ScheduledChromeTask task = new ScheduledChromeTask(holder, crons);
+		return schedule(task);
+	}
+
+	/**
+	 *
 	 * @param id
 	 * @return
 	 */
 	public boolean registered(String id) {
 		if(scheduledTasks.containsKey(id)) return true;
 		return false;
+	}
+
+	/**
+	 * 根据id 返回已scheduled task
+	 * @param id
+	 * @return
+	 */
+	public ScheduledChromeTask getScheduledTask(String id) {
+		return scheduledTasks.get(id);
 	}
 
 	/**

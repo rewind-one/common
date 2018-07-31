@@ -23,7 +23,8 @@ public class BasicRequesterTest {
 		String url = "https://www.baidu.com";
 		String cookies = "JSESSIONID=BE83E060C0FECB71715418659ECFFD63; cninfo_search_record_cookie=%E6%8B%9B%E5%95%86%E9%93%B6%E8%A1%8C";
 		String ref = "http://www.cninfo.com.cn/cninfo-new/disclosure/szse/showFulltext/600036";
-		Task t = new Task(url, null, cookies, ref);
+
+		Task<Task> t = new Task(url, null, cookies, ref);
 		t.setPreProc();
 		Proxy proxy = new ProxyImpl("127.0.0.1", 3128, null, null);
 		t.setProxy(proxy);
@@ -51,7 +52,7 @@ public class BasicRequesterTest {
 
 				for(int j=0; j<1; j++) {
 
-					Task t;
+					Task<Task> t;
 
 					try {
 
@@ -112,7 +113,7 @@ public class BasicRequesterTest {
 		headers.put("Accept-Encoding", "gzip");
 
 
-		Task t = new Task(url, headers, null, null, null);
+		Task<Task> t = new Task(url, headers, null, null, null);
 
 		BasicRequester.getInstance().submit(t, 30000);
 
@@ -129,7 +130,7 @@ public class BasicRequesterTest {
 
 		String url = "http://www.baidu.com";
 
-		Task t = new Task(url);
+		Task<Task> t = new Task(url);
 		t.addDoneCallback((task)->{
 			System.out.println("A");
 		});

@@ -10,4 +10,7 @@ public class ProxyImpl extends Proxy {
 		super(group, host, port, username, password, location, request_per_second_limit);
 	}
 
+	public boolean update() throws Exception{
+		return true;
+	}
 }

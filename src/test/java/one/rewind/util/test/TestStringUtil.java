@@ -5,7 +5,6 @@ package one.rewind.util.test;
 
 import one.rewind.txt.StringUtil;
 import org.junit.Test;
-import one.rewind.txt.StringUtil;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,11 +13,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestStringUtil {
-	
-	@Test
-	public void testUnicodeConverter() {
-		
-	}
 
 	@Test
 	public void testSplitFirstChar() {

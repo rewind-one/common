@@ -1,5 +1,6 @@
 package one.rewind.io.requester.test;
 
+import com.google.common.collect.ImmutableMap;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
@@ -7,6 +8,7 @@ import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
+import one.rewind.io.requester.chrome.action.PostAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
@@ -15,6 +17,7 @@ import org.junit.Test;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.Map;
 
 /**
  * Created by karajan on 2017/6/3.
@@ -94,22 +97,22 @@ public class ChromeDriverAgentTest {
 			}
 		});*/
 
-		Proxy proxy = new ProxyImpl("scisaga.net", 60103, null, null);
-		ChromeDriverAgent agent = new ChromeDriverAgent(ChromeDriverAgent.Flag.MITM);
+		Proxy proxy = new ProxyImpl("10.0.0.56", 49999, null, null);
+		ChromeDriverAgent agent = new ChromeDriverAgent(proxy, ChromeDriverAgent.Flag.MITM);
 		agent.start();
 
 		agent.addTerminatedCallback((a)->{
 			System.err.println("TERMINATED");
 		});
 
-		agent.submit(t);
 		agent.submit(t2);
-		agent.submit(t);
-		agent.submit(t2);
-		t.noFetchImages = false;
-		agent.submit(t);
-		agent.submit(t2);
+		//agent.submit(t2);
+		//agent.submit(t);
+		//agent.submit(t2);
+		//agent.submit(t);
+		//agent.submit(t2);
 
+		System.err.println("Proxy\tbyte send:" + agent.proxy.bytes_send + "\tbyte rev:" + agent.proxy.bytes_rev);
 		Thread.sleep(10000);
 
 		agent.stop();
@@ -123,5 +126,20 @@ public class ChromeDriverAgentTest {
 		long min_interval = task.getClass().getField("MIN_INTERVAL").getLong(task.getClass());
 
 		System.err.println(min_interval);
+	}
+
+	@Test
+	public void testPostRequest() throws Exception {
+
+		String url = "https://www.jfh.com/jfhrm/buinfo/showbucaseinfo";
+		Map<String, String> data = ImmutableMap.of("uuidSecret", "MTQxODM7NDQ%3D");
+
+		ChromeDriverAgent agent = new ChromeDriverAgent();
+
+		agent.start();
+
+		ChromeTask task = new ChromeTask(url);
+		task.addAction(new PostAction(url, data));
+		agent.submit(task);
 	}
 }
