@@ -1,18 +1,23 @@
 package one.rewind.io.requester.util;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class ProxiedHttpsConnection extends HttpURLConnection {
-
-	private static final Logger logger = LogManager.getLogger(ProxiedHttpsConnection.class.getName());
-
+/**
+ * НЕ ПОЛУЧИЛОСЬ
+ * from here
+ *http://stackoverflow.com/questions/34877470/basic-proxy-authentification-for-https-urls-returns-http-1-0-407-proxy-authentic
+ * answer +2 (+100)
+ * @author ayrat
+ */
+public class ProxiedHttpsConnection extends HttpURLConnection{
 	private final String proxyHost;
 	private final int proxyPort;
 	private static final byte[] NEWLINE = "\r\n".getBytes();//should be "ASCII7"
@@ -33,7 +38,8 @@ public class ProxiedHttpsConnection extends HttpURLConnection {
 		socket = new Socket();
 		this.proxyHost = proxyHost;
 		this.proxyPort = proxyPort;
-		String encoded = Base64.getEncoder().encodeToString((username + ":" + password).getBytes())
+
+		String encoded = Base64.encode((username + ":" + password).getBytes())
 				.replace("\r\n", "");
 		proxyheaders.put("Proxy-Authorization", new ArrayList<>(Arrays.asList("Basic " + encoded)));
 	}
@@ -187,7 +193,8 @@ public class ProxiedHttpsConnection extends HttpURLConnection {
 		msg.setLength(0);
 		msg.append(method);
 		msg.append(" ");
-		msg.append(url.toExternalForm().split(String.valueOf(url.getPort()), -2)[1]);
+		//msg.append(url.toExternalForm().split(String.valueOf(url.getPort()), -2)[1]);
+		msg.append("/" + url.toExternalForm().split("/", 4)[3]);
 		msg.append(" HTTP/1.0\r\n");
 		for (Map.Entry<String, List<String>> h : sendheaders.entrySet()) {
 			for (String l : h.getValue()) {
@@ -270,7 +277,7 @@ public class ProxiedHttpsConnection extends HttpURLConnection {
 		try {
 			socket.close();
 		} catch (IOException ex) {
-			logger.fatal("", ex);
+			Logger.getLogger(ProxiedHttpsConnection.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
 

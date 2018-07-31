@@ -515,7 +515,6 @@ public class BasicRequester {
 				connBuilder.withPostData(task.getPost_data());
 				conn = connBuilder.build();
 
-
 				int code = 0;
 				try {
 
@@ -550,9 +549,6 @@ public class BasicRequester {
 					task.addExceptions(e);
 					inStream = new BufferedInputStream(conn.getErrorStream());
 				}
-
-
-				System.err.println("@@");
 
 				task.getResponse().setHeader(conn.getHeaderFields());
 				
@@ -629,7 +625,6 @@ public class BasicRequester {
 				task.getResponse().setSrc(bOutStream.toByteArray());
 				
 				if(task.getResponse().isText()) {
-
 					task.getResponse().setText();
 				}
 				

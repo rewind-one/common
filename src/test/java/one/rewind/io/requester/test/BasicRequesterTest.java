@@ -1,9 +1,10 @@
 package one.rewind.io.requester.test;
 
 import one.rewind.io.requester.BasicRequester;
-import one.rewind.io.requester.task.Task;
+import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
+import one.rewind.io.requester.task.Task;
 import one.rewind.json.JSON;
 import org.junit.Test;
 
@@ -142,5 +143,57 @@ public class BasicRequesterTest {
 		BasicRequester.getInstance().submit(t_,10000);
 
 		System.err.println(t.getResponse().getText());
+	}
+
+	@Test
+	public void testProxiedHttpsRequest() throws Exception {
+
+		Proxy proxy = new ProxyImpl("118.190.44.184",59998,"tfelab","TfeLAB2@15");
+
+		Task<Task> task = new XueQiuTask("https://xueqiu.com/friendships/groups/members.json?uid=3013624218&page=1&gid=0");
+
+		task.setProxy(proxy);
+
+		BasicRequester.getInstance().submit(task);
+
+		for (TaskCallback taskCallback : task.doneCallbacks) {
+			taskCallback.run(task);
+		}
+	}
+}
+
+class XueQiuTask extends Task{
+
+	public static HashMap<String, String> genHeaders() {
+
+		HashMap<String, String> headers = new HashMap<String, String>();
+		headers.put("Host", "xueqiu.com");
+		headers.put("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36");
+		headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
+		headers.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
+		// Accept-Encoding 不能为gzip
+		headers.put("Accept-Encoding", "*");
+		headers.put("Accept-Charset", "utf-8,gb2312;q=0.8,*;q=0.8");
+		headers.put("Cache-Control", "max-age=0");
+		headers.put("Connection", "keep-alive");
+		headers.put("Upgrade-Insecure-Requests", "1");
+		headers.put("Pragma", "no-cache");
+		headers.put("Cookie", "aliyungf_tc=AQAAAOY2Bl60MAoAe4bzdPn++5JA5RVK; __utmc=1; device_id=bc931461d2e2f6e7f546f2b92106d760; __utmz=1.1525920324.2.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); s=fl11xr6rdk; _ga=GA1.2.956805427.1524307479; __utma=1.956805427.1524307479.1526635062.1526965879.6; Hm_lvt_1db88642e346389874251b5a1eded6e3=1533048030; _gid=GA1.2.245365313.1533048031; _gat_gtag_UA_16079156_4=1; xq_a_token=aef774c17d4993658170397fcd0faedde488bd20; xq_a_token.sig=F7BSXzJfXY0HFj9lqXif9IuyZhw; xq_r_token=d694856665e58d9a55450ab404f5a0144c4c978e; xq_r_token.sig=Ozg4Sbvgl2PbngzIgexouOmvqt0; Hm_lpvt_1db88642e346389874251b5a1eded6e3=1533048054; u=361533048054356");
+		return headers;
+
+	}
+
+	public XueQiuTask(String url) throws MalformedURLException, URISyntaxException {
+
+		super(url, genHeaders(), "","", "");
+
+		this.addDoneCallback((t) -> {
+
+			String src = new String(getResponse().getSrc(), "UTF-8");
+
+			String text = getResponse().getText();
+			System.err.println(text);
+
+		});
 	}
 }

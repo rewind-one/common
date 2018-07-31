@@ -3,8 +3,6 @@ package one.rewind.txt.test;
 import one.rewind.txt.distance.Levenshtein;
 import one.rewind.txt.distance.NeedlemanWunsch;
 import org.junit.Test;
-import one.rewind.txt.distance.Levenshtein;
-import one.rewind.txt.distance.NeedlemanWunsch;
 
 public class TextTest {
 
@@ -32,5 +30,13 @@ public class TextTest {
 		System.out.println("similarityRatio: "
 				+ Levenshtein.compare(str, target));
 
+	}
+
+	@Test
+	public void splitTest() {
+		String str = "https://aaa/adsf/sdf";
+		for(String s: str.split("/", 4)) {
+			System.err.println(s);
+		}
 	}
 }
