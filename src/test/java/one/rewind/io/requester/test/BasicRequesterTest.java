@@ -145,6 +145,10 @@ public class BasicRequesterTest {
 		System.err.println(t.getResponse().getText());
 	}
 
+	/**
+	 * Basic proxy authentication for HTTPS URLs returns HTTP/1.0 407 Proxy Authentication Required
+	 * https://stackoverflow.com/questions/34877470/basic-proxy-authentication-for-https-urls-returns-http-1-0-407-proxy-authenticat
+	 */
 	@Test
 	public void testProxiedHttpsRequest() throws Exception {
 
