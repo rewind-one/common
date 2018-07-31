@@ -265,7 +265,7 @@ public class BasicRequester {
 	 *
 	 */
 	public static class ConnectionBuilder {
-		
+
 		HttpURLConnection conn;
 
 		public ConnectionBuilder(String url, one.rewind.io.requester.proxy.Proxy proxy)  throws MalformedURLException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException {
@@ -274,7 +274,12 @@ public class BasicRequester {
 
 				Authenticator.setDefault(new ProxyAuthenticator(proxy.getUsername(), proxy.getPassword()));
 
-				conn = (HttpURLConnection) new URL(url).openConnection(proxy.toProxy());
+				if(url.matches("https://.*?") && proxy.getUsername() != null && proxy.getPassword() != null) {
+					conn = new ProxiedHttpsConnection(new URL(url), proxy.host, proxy.port, proxy.getUsername(), proxy.getPassword());
+
+				} else {
+					conn = (HttpURLConnection) new URL(url).openConnection(proxy.toProxy());
+				}
 
 				if (proxy.needAuth()) {
 					conn.setRequestProperty("Proxy-Switch-Ip","yes");
@@ -286,8 +291,13 @@ public class BasicRequester {
 				conn = (HttpURLConnection) new URL(url).openConnection();
 			}
 
-			if(url.matches("^https.+?$"))
-				((HttpsURLConnection) conn).setSSLSocketFactory(CertAutoInstaller.getSSLFactory());
+			if(url.matches("^https.+?$")) {
+				if(conn instanceof ProxiedHttpsConnection) {
+					//TODO
+				} else {
+					((HttpsURLConnection) conn).setSSLSocketFactory(CertAutoInstaller.getSSLFactory());
+				}
+			}
 
 			conn.setConnectTimeout(CONNECT_TIMEOUT);
 
@@ -316,7 +326,7 @@ public class BasicRequester {
 				Authenticator.setDefault(new ProxyAuthenticator(proxy.getUsername(), proxy.getPassword()));
 
 				if(url.matches("https://.*?") && proxy.getUsername() != null && proxy.getPassword() != null) {
-					conn = (HttpURLConnection) new ProxiedHttpsConnection(new URL(url), proxy.host, proxy.port, proxy.getUsername(), proxy.getPassword());
+					conn = new ProxiedHttpsConnection(new URL(url), proxy.host, proxy.port, proxy.getUsername(), proxy.getPassword());
 				} else {
 					conn = (HttpURLConnection) new URL(url).openConnection(proxy.toProxy());
 				}
@@ -331,8 +341,13 @@ public class BasicRequester {
 				conn = (HttpURLConnection) new URL(url).openConnection();
 			}
 
-			if(url.matches("^https.+?$"))
-				((HttpsURLConnection) conn).setSSLSocketFactory(CertAutoInstaller.getSSLFactory());
+			if(url.matches("^https.+?$")) {
+				if(conn instanceof ProxiedHttpsConnection) {
+					//TODO
+				} else {
+					((HttpsURLConnection) conn).setSSLSocketFactory(CertAutoInstaller.getSSLFactory());
+				}
+			}
 			
 			conn.setConnectTimeout(CONNECT_TIMEOUT);
 
@@ -500,6 +515,7 @@ public class BasicRequester {
 				connBuilder.withPostData(task.getPost_data());
 				conn = connBuilder.build();
 
+
 				int code = 0;
 				try {
 
@@ -534,6 +550,9 @@ public class BasicRequester {
 					task.addExceptions(e);
 					inStream = new BufferedInputStream(conn.getErrorStream());
 				}
+
+
+				System.err.println("@@");
 
 				task.getResponse().setHeader(conn.getHeaderFields());
 				
@@ -620,6 +639,7 @@ public class BasicRequester {
 			}
 			catch (Exception e){
 				task.addExceptions(e);
+				logger.error("", e);
 			}
 			finally {
 				
