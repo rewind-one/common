@@ -2,15 +2,16 @@ package one.rewind.io.requester;
 
 import com.typesafe.config.Config;
 import one.rewind.io.requester.cookie.CookiesHolderManager;
+import one.rewind.io.requester.proxy.ProxyAuthenticator;
 import one.rewind.io.requester.task.Task;
+import one.rewind.io.requester.util.CertAutoInstaller;
+import one.rewind.io.requester.util.ProxiedHttpsConnection;
 import one.rewind.txt.ChineseChar;
 import one.rewind.txt.URLUtil;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.mozilla.universalchardet.UniversalDetector;
-import one.rewind.io.requester.proxy.ProxyAuthenticator;
-import one.rewind.io.requester.util.CertAutoInstaller;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLException;
@@ -314,7 +315,11 @@ public class BasicRequester {
 
 				Authenticator.setDefault(new ProxyAuthenticator(proxy.getUsername(), proxy.getPassword()));
 
-				conn = (HttpURLConnection) new URL(url).openConnection(proxy.toProxy());
+				if(url.matches("https://.*?") && proxy.getUsername() != null && proxy.getPassword() != null) {
+					conn = (HttpURLConnection) new ProxiedHttpsConnection(new URL(url), proxy.host, proxy.port, proxy.getUsername(), proxy.getPassword());
+				} else {
+					conn = (HttpURLConnection) new URL(url).openConnection(proxy.toProxy());
+				}
 
 				if (proxy.needAuth()) {
 					conn.setRequestProperty("Proxy-Switch-Ip","yes");
@@ -703,4 +708,3 @@ public class BasicRequester {
 
 	}
 }
-
