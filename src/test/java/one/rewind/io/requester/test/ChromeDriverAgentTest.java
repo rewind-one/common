@@ -6,9 +6,7 @@ import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
-import one.rewind.io.requester.chrome.action.ChromeAction;
-import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
-import one.rewind.io.requester.chrome.action.PostAction;
+import one.rewind.io.requester.chrome.action.*;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
@@ -135,11 +133,43 @@ public class ChromeDriverAgentTest {
 		Map<String, String> data = ImmutableMap.of("uuidSecret", "MTQxODM7NDQ%3D");
 
 		ChromeDriverAgent agent = new ChromeDriverAgent();
-
 		agent.start();
 
 		ChromeTask task = new ChromeTask(url);
 		task.addAction(new PostAction(url, data));
 		agent.submit(task);
+	}
+
+	@Test
+	public void testResponseFilter() throws Exception {
+
+		String url = "https://www.mihuashi.com/users/Nianless?role=employer";
+
+		//Proxy proxy = new ProxyImpl("10.0.0.56", 49999, null, null);
+		ChromeDriverAgent agent = new ChromeDriverAgent(ChromeDriverAgent.Flag.MITM);
+
+		agent.start();
+
+		ChromeTask task = new ChromeTask(url);
+
+		task.addAction(new ClickAction("#users-show > div.container-fluid > div.profile__container > main > header > ul > li:nth-child(2) > a", 1000));
+
+		task.addAction(new LoadMoreContentAction("#vue-comments-app > div:nth-child(2) > a > span:nth-child(1)"));
+
+		task.setResponseFilter((response, contents, messageInfo) -> {
+
+			if(messageInfo.getOriginalUrl().matches(".*?/users/Nianless/comments\\?role=employer&per=\\d+&page=\\d+")) {
+				task.getResponse().setVar("content",
+						task.getResponse().getVar("content") == null?
+								contents.getTextContents() :
+								task.getResponse().getVar("content") + "\n" + contents.getTextContents());
+			}
+		});
+
+		agent.submit(task);
+
+		System.err.println(task.getResponse().getVar("content"));
+
+		Thread.sleep(10000000);
 	}
 }
