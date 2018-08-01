@@ -7,12 +7,16 @@ import one.rewind.simulator.mouse.MouseEventModeler;
 import one.rewind.simulator.mouse.MouseEventSimulator;
 import one.rewind.txt.StringUtil;
 import one.rewind.util.FileUtil;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -20,6 +24,13 @@ import java.util.Random;
  * GeeTest bypass
  */
 public class GeetestAction extends Action {
+
+	static List<Mat> bg_list = new ArrayList<>();
+
+	static {
+		// TODO 从文件中读取 生成bg_list
+
+	}
 
 	// 点击验证
 	public String geetestContentCssPath = ".geetest_radar_tip";
@@ -59,7 +70,9 @@ public class GeetestAction extends Action {
 		// 等待图片加载
 		Thread.sleep(5000);
 		// 拖拽前截图
-		FileUtil.writeBytesToFile(agent.shoot(geetestWindowCssPath), img_1_path);
+		byte[] img_1 = agent.shoot(geetestWindowCssPath);
+		//FileUtil.writeBytesToFile(img_1, img_1_path);
+		Mat mat_1 = Imgcodecs.imdecode(new MatOfByte(img_1), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
 
 		// 点击滑块，向右拖5px
 		// TODO 此方法在未来可能被GeeTest屏蔽
@@ -71,10 +84,22 @@ public class GeetestAction extends Action {
 		Thread.sleep(5000);
 
 		// 简单拖拽后截图，截图中会包含目标拖拽位置
-		FileUtil.writeBytesToFile(agent.shoot(geetestWindowCssPath), img_2_path);
+		byte[] img_2 = agent.shoot(geetestWindowCssPath);
+		// FileUtil.writeBytesToFile(img_2, img_2_path);
+		Mat mat_2 = Imgcodecs.imdecode(new MatOfByte(img_2), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
 
-		// 生成位移
-		return OpenCVUtil.getOffset(img_1_path, img_2_path);
+		// TODO 判断 mat_1 和 mat_2 是否相同
+		if (OpenCVUtil.areEqual(mat_1, mat_2)) {
+
+			// TODO 如果相同 从6个备选图片中选择最像的那个  mat_1
+			Mat mat = OpenCVUtil.mostSimilar(bg_list, mat_1);
+			return OpenCVUtil.getOffset(mat, mat_1);
+
+		} else {
+
+			// 生成位移
+			return OpenCVUtil.getOffset(mat_1, mat_2);
+		}
 	}
 
 	/**

@@ -1,5 +1,6 @@
 package one.rewind.opencv;
 
+import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -16,6 +17,95 @@ public class OpenCVUtil {
 		public int x;
 		public int y;
 	}
+
+	/**
+	 * 本地原图片库与截图比较，选择原图进行下一步操作
+	 * TODO
+	 * @param bg_list
+	 * @param mat
+	 * @return
+	 */
+	public static Mat mostSimilar(List<Mat> bg_list, Mat mat) {
+
+		boolean next = true;
+
+		for (Mat bg_mat : bg_list) {
+
+			for (int h = 144; h < mat.height(); h++) {
+				for (int w = 0; w < mat.width(); w++) {
+
+					double[] data_1 = bg_mat.get(h, w);
+					double[] data_2 = mat.get(h, w);
+
+					for (int i = 0; i < 3; i++) {
+
+						if (!(data_1[i] - data_2[i] < 10 || data_1[i] - data_2[i] > 10)) {
+
+							System.err.println("11111111");
+							next = false;
+							break;
+						}
+					}
+					if (!next) {
+						break;
+					}
+				}
+				if (!next) {
+					break;
+				}
+			}
+			if (!next) {
+				next =true;
+				continue;
+			} else {
+				return bg_mat;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 *  比较两张图片是否一致
+	 * TODO
+	 * @param sMat1
+	 * @param sMat2
+	 * @return
+	 */
+	public static boolean areEqual(Mat sMat1, Mat sMat2) {
+
+		for (int h = 0; h < sMat1.height(); h++) {
+			for (int w = 0; w < sMat1.width(); w++) {
+
+				double[] data_1 = sMat1.get(h, w);
+				double[] data_2 = sMat2.get(h, w);
+
+				for (int i = 0; i < 3; i++) {
+					if (data_1[i] != data_2[i]) {
+						return false;
+					}
+				}
+
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 *
+	 */
+	public static int getOffset(Mat sMat1, Mat sMat2) {
+
+		Mat mat = imageContrast(sMat1, sMat2);
+		List<Coordinate> list_b = getList(mat);
+
+		Mat rMat = ChangeBlock(list_b, mat);
+
+		List<Coordinate> list_all = getList(rMat);
+
+		return getMoveNum(list_all);
+	}
+
 
 	/**
 	 * 最终获取位移

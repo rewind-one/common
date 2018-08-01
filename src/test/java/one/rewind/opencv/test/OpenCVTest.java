@@ -1,14 +1,23 @@
 package one.rewind.opencv.test;
 
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
+import one.rewind.io.requester.task.ChromeTask;
+import one.rewind.io.requester.task.Task;
 import one.rewind.opencv.OpenCVUtil;
 import one.rewind.util.FileUtil;
+import org.aspectj.apache.bcel.classfile.Module;
 import org.junit.Test;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.Rect;
 import org.opencv.imgcodecs.Imgcodecs;
 
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -120,6 +129,35 @@ public class OpenCVTest {
 			i++;
 			x = x + 6 + (i / 4);
 		}*/
+	}
+
+	@Test
+	public void zbjLoginImgTest() throws MalformedURLException, URISyntaxException {
+
+		ChromeDriverAgent chromeDriverAgent = new ChromeDriverAgent();
+
+		Task task = new ChromeTask("https://").addAction(new LoginWithGeetestAction());
+
+	}
+
+	@Test
+	public void ImgTest() throws MalformedURLException, URISyntaxException {
+
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+
+		Mat mat_1 = Imgcodecs.imread("tmp/geetest/geetest-1-1524048915299-1dce8b94f0cc4a0d9b807e7be1cd9254.png");
+		Mat mat_2 = Imgcodecs.imread("tmp/geetest/geetest-2-1524048915299-1dce8b94f0cc4a0d9b807e7be1cd9254.png");
+		List<Mat> list = new ArrayList<>();
+
+		for (int i= 1; i<7; i++) {
+			list.add(Imgcodecs.imread("tmp/zbj-geetest-bg/"+ i+".png"));
+		}
+
+		Imgcodecs.imwrite("tmp/zbj-geetest-bg/test.png", OpenCVUtil.mostSimilar(list, mat_1));
+		Imgcodecs.imwrite("tmp/zbj-geetest-bg/test1.png", mat_1);
+
+		System.err.println(OpenCVUtil.areEqual(mat_1, mat_2));
+
 	}
 
 }
