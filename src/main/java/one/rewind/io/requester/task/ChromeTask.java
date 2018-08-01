@@ -313,123 +313,7 @@ public class ChromeTask extends Task<ChromeTask> {
 		return url;
 	}
 
-	/**
-	 *
-	 * @param holder
-	 * @return
-	 * @throws Exception
-	 */
-	public static ChromeTask build(
-		ChromeTaskHolder holder
-	) throws Exception {
-
-		Class<?> clazz = Class.forName(holder.class_name);
-
-		Builder builder = Builders.get(clazz);
-
-		if(builder == null) throw new Exception("Builder not exist for " + holder.class_name);
-
-		// 生成URL
-		String url = generateURL(builder, holder.init_map);
-
-		Constructor<?> cons = clazz.getConstructor(String.class);
-
-		// ChromeTask task = (ChromeTask) cons.newInstance(url);
-
-		ChromeTask task = (ChromeTask) cons.newInstance(url);
-
-		task.init_map = validateInitMap(builder, holder.init_map); // 多余计算
-
-		if(builder.need_login) task.setLoginTask();
-		task.setUsername(holder.username);
-		task.setStep(holder.step);
-		task.setPriority(holder.priority);
-
-		return task;
-	}
-
-	/**
-	 * 通过TaskHolder build Task
-	 * @param init_map
-	 * @param username
-	 * @param step
-	 * @param priority
-	 * @return
-	 * @throws Exception
-	 */
-	public static ChromeTask build(
-		Class<? extends ChromeTask> clazz,
-		Map<String, Object> init_map,
-		String username,
-		int step,
-		Priority priority
-	) throws Exception {
-
-		Builder builder = Builders.get(clazz);
-
-		if(builder == null) throw new Exception("Builder not exist for " + clazz.getName());
-
-		// 生成URL
-		String url = generateURL(builder, init_map);
-
-		Constructor<?> cons = clazz.getConstructor(String.class);
-
-		ChromeTask task = (ChromeTask) cons.newInstance(url);
-
-		task.init_map = validateInitMap(builder, init_map); // 多余计算
-
-		if(builder.need_login) task.setLoginTask();
-		task.setUsername(username);
-		task.setStep(step);
-		task.setPriority(priority);
-
-		return task;
-	}
-
-	/**
-	 *
-	 * @param init_map
-	 * @return
-	 * @throws Exception
-	 */
-	public static ChromeTask build(
-		Class<? extends ChromeTask> clazz,
-		Map<String, Object> init_map
-	) throws Exception {
-		return build(clazz, init_map, null, 0, getBasePriority(clazz));
-	}
-
-	/**
-	 *
-	 * @param init_map
-	 * @param username
-	 * @return
-	 * @throws Exception
-	 */
-	public static ChromeTask build(
-		Class<? extends ChromeTask> clazz,
-		Map<String, Object> init_map,
-		String username
-	) throws Exception {
-		return build(clazz, init_map, username, 0, getBasePriority(clazz));
-	}
-
-	/**
-	 *
-	 * @param init_map
-	 * @param username
-	 * @param step
-	 * @return
-	 * @throws Exception
-	 */
-	public static ChromeTask build(
-		Class<? extends ChromeTask> clazz,
-		Map<String, Object> init_map,
-		String username,
-		int step
-	) throws Exception {
-		return build(clazz, init_map, username, step, getBasePriority(clazz));
-	}
+	public ChromeTaskHolder holder;
 
 	// 初始化参数
 	public Map<String, Object> init_map;
@@ -437,9 +321,6 @@ public class ChromeTask extends Task<ChromeTask> {
 	// 执行动作列表
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 	private List<ChromeAction> actions = new ArrayList<>();
-
-	// 周期任务ID
-	private String _scheduledTaskId;
 
 	// 标志位 是否采集图片
 	public boolean noFetchImages = false;
@@ -454,21 +335,11 @@ public class ChromeTask extends Task<ChromeTask> {
 	}
 
 	/**
-	 * 手动设定可能的 ScheduledChromeTaskId
-	 * @param id
-	 * @return
-	 */
-	public ChromeTask setPossibleScheduledChromeTaskId(String id) {
-		this._scheduledTaskId = id;
-		return this;
-	}
-
-	/**
 	 * 从Scheduler 找对应的 ScheduledTask
 	 * @return
 	 */
 	public ScheduledChromeTask getScheduledChromeTask() {
-		return ChromeTaskScheduler.getInstance().getScheduledTask(this._scheduledTaskId);
+		return holder == null ? null : ChromeTaskScheduler.getInstance().getScheduledTask(holder.scheduled_task_id);
 	}
 
 	/**
