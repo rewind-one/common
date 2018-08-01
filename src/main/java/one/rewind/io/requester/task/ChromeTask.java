@@ -314,6 +314,41 @@ public class ChromeTask extends Task<ChromeTask> {
 	}
 
 	/**
+	 *
+	 * @param holder
+	 * @return
+	 * @throws Exception
+	 */
+	public static ChromeTask build(
+		ChromeTaskHolder holder
+	) throws Exception {
+
+		Class<?> clazz = Class.forName(holder.class_name);
+
+		Builder builder = Builders.get(clazz);
+
+		if(builder == null) throw new Exception("Builder not exist for " + holder.class_name);
+
+		// 生成URL
+		String url = generateURL(builder, holder.init_map);
+
+		Constructor<?> cons = clazz.getConstructor(String.class);
+
+		// ChromeTask task = (ChromeTask) cons.newInstance(url);
+
+		ChromeTask task = (ChromeTask) cons.newInstance(url);
+
+		task.init_map = validateInitMap(builder, holder.init_map); // 多余计算
+
+		if(builder.need_login) task.setLoginTask();
+		task.setUsername(holder.username);
+		task.setStep(holder.step);
+		task.setPriority(holder.priority);
+
+		return task;
+	}
+
+	/**
 	 * 通过TaskHolder build Task
 	 * @param init_map
 	 * @param username

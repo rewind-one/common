@@ -14,16 +14,24 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask> {
 
 	private static final Logger logger = LogManager.getLogger(ScheduledChromeTask.class.getName());
 
+	// holder.class_name 和 holder.init_map 定义
 	public String id;
 
+	// cron4j 给出
 	public String scheduleId;
 
+	// cron pattern
 	public String cron;
 
+	// 递减 cron pattern
 	public List<String> crons;
 
+	// 生成 holder
 	public ChromeTaskHolder holder;
 
+	/**
+	 *
+	 */
 	public ScheduledChromeTask() {}
 
 	/**

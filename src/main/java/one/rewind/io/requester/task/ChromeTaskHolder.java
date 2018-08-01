@@ -16,8 +16,11 @@ import java.util.Map;
  */
 public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<ChromeTaskHolder> {
 
-	// 生成的ChromeTask id等于这个id
+	// 生成 Task 时 复用这个 id
 	public String id;
+
+	// 生成 Holder 的 task_id 可以为空
+	public String generate_id;
 
 	// 类名
 	public String class_name;
@@ -40,12 +43,21 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	// 优先级
 	public Task.Priority priority = Task.Priority.MEDIUM;
 
-
-
-	public List<String> crons;
+	// task_id trace
+	public List<String> trace;
 
 	// 创建时间
 	public Date create_time = new Date();
+
+	// 执行时间
+	public Date exec_time;
+
+	// 任务是否已经完成
+	public boolean done = false;
+
+	// 所有子任务是否已经完成
+	public boolean all_done = false;
+
 
 	public ChromeTaskHolder() {}
 
