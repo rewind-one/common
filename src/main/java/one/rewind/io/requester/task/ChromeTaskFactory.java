@@ -99,8 +99,8 @@ public class ChromeTaskFactory {
 	 * @throws Exception
 	 */
 	public TaskHolder newHolder(
-			TaskHolder holder
-	) throws Exception {
+		TaskHolder holder
+	) {
 
 		List<String> trace = holder.trace;
 		if(trace == null) trace = new ArrayList<>();
@@ -123,12 +123,12 @@ public class ChromeTaskFactory {
 	 * @throws Exception
 	 */
 	public TaskHolder newHolder(
-			TaskHolder holder,
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map,
-			String username,
-			int step,
-			Task.Priority priority
+		TaskHolder holder,
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		String username,
+		int step,
+		Task.Priority priority
 	) throws Exception {
 
 		TaskBuilder builder = builders.get(clazz);
@@ -169,11 +169,11 @@ public class ChromeTaskFactory {
 	 * @throws Exception
 	 */
 	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map,
-			String username,
-			int step,
-			Task.Priority priority
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		String username,
+		int step,
+		Task.Priority priority
 	) throws Exception {
 
 		TaskBuilder builder = builders.get(clazz);
@@ -207,10 +207,10 @@ public class ChromeTaskFactory {
 	 * @throws Exception
 	 */
 	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map,
-			String username,
-			int step
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		String username,
+		int step
 	) throws Exception {
 
 		return newHolder(clazz, init_map, username, step, null);
@@ -225,9 +225,9 @@ public class ChromeTaskFactory {
 	 * @throws Exception
 	 */
 	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			String username,
-			Map<String, Object> init_map
+		Class<? extends ChromeTask> clazz,
+		String username,
+		Map<String, Object> init_map
 	) throws Exception {
 
 		return newHolder(clazz, init_map, username, 0);
@@ -243,9 +243,9 @@ public class ChromeTaskFactory {
 	 * @throws Exception
 	 */
 	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map,
-			int step
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map,
+		int step
 	) throws Exception {
 
 		return newHolder(clazz, init_map, null, step);
@@ -259,8 +259,8 @@ public class ChromeTaskFactory {
 	 * @throws Exception
 	 */
 	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map
+		Class<? extends ChromeTask> clazz,
+		Map<String, Object> init_map
 	) throws Exception {
 
 		return newHolder(clazz, init_map, null, 0);
