@@ -1,7 +1,9 @@
 package one.rewind.opencv.test;
 
+import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
+import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.Task;
 import one.rewind.opencv.OpenCVUtil;
@@ -20,6 +22,9 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static one.rewind.opencv.OpenCVUtil.ChangeBlock;
+import static one.rewind.opencv.OpenCVUtil.getList;
 
 public class OpenCVTest {
 
@@ -132,11 +137,18 @@ public class OpenCVTest {
 	}
 
 	@Test
-	public void zbjLoginImgTest() throws MalformedURLException, URISyntaxException {
+	public void zbjLoginImgTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		ChromeDriverAgent chromeDriverAgent = new ChromeDriverAgent();
+		chromeDriverAgent.start();
 
-		Task task = new ChromeTask("https://").addAction(new LoginWithGeetestAction());
+		AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
+
+		ChromeTask task = new ChromeTask("https://login.zbj.com/login").addAction(new LoginWithGeetestAction(account));
+
+		chromeDriverAgent.submit(task);
+
+		Thread.sleep(10000);
 
 	}
 
@@ -145,7 +157,7 @@ public class OpenCVTest {
 
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
-		Mat mat_1 = Imgcodecs.imread("tmp/geetest/geetest-1-1524048915299-1dce8b94f0cc4a0d9b807e7be1cd9254.png");
+		Mat mat_1 = Imgcodecs.imread("tmp/geetest/geetest-1-1525771475985-02db356c486a4f3f893e0f7802069272.png");
 		Mat mat_2 = Imgcodecs.imread("tmp/geetest/geetest-2-1524048915299-1dce8b94f0cc4a0d9b807e7be1cd9254.png");
 		List<Mat> list = new ArrayList<>();
 
@@ -153,11 +165,29 @@ public class OpenCVTest {
 			list.add(Imgcodecs.imread("tmp/zbj-geetest-bg/"+ i+".png"));
 		}
 
-		Imgcodecs.imwrite("tmp/zbj-geetest-bg/test.png", OpenCVUtil.mostSimilar(list, mat_1));
 		Imgcodecs.imwrite("tmp/zbj-geetest-bg/test1.png", mat_1);
+		Imgcodecs.imwrite("tmp/zbj-geetest-bg/test.png", OpenCVUtil.mostSimilar(list, mat_1));
+
 
 		System.err.println(OpenCVUtil.areEqual(mat_1, mat_2));
 
+	}
+
+	@Test
+	public void imageContrastTest() {
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+		Mat mat_1 = Imgcodecs.imread("tmp/zbj-geetest-bg/t2.png");
+		Mat mat_2 = Imgcodecs.imread("tmp/zbj-geetest-bg/t1.png");
+
+		Mat mat = OpenCVUtil.imageContrast(mat_1, mat_2);
+		Imgcodecs.imwrite("tmp/zbj-geetest-bg/mat.png", mat);
+
+		List<OpenCVUtil.Coordinate> list_b = getList(mat);
+
+		Mat rMat = ChangeBlock(list_b, mat);
+
+
+		Imgcodecs.imwrite("tmp/zbj-geetest-bg/mat1.png", rMat);
 	}
 
 }
