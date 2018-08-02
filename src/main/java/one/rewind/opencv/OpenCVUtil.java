@@ -13,12 +13,13 @@ public class OpenCVUtil {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 	}
 
-	static class Coordinate {
+	public static class Coordinate {
 		public int x;
 		public int y;
 	}
 
 	/**
+	 * 选择5个点
 	 * 本地原图片库与截图比较，选择原图进行下一步操作
 	 * TODO
 	 * @param bg_list
@@ -27,37 +28,34 @@ public class OpenCVUtil {
 	 */
 	public static Mat mostSimilar(List<Mat> bg_list, Mat mat) {
 
-		boolean next = true;
+		int[][] a = {{7,7},{245,15},{31,145},{100,155},{253,153}};
 
 		for (Mat bg_mat : bg_list) {
+			boolean is = true;
 
-			for (int h = 144; h < mat.height(); h++) {
-				for (int w = 0; w < mat.width(); w++) {
+			int sum = 0;
 
-					double[] data_1 = bg_mat.get(h, w);
-					double[] data_2 = mat.get(h, w);
+			for (int i = 0 ; i<5; i++) {
 
-					for (int i = 0; i < 3; i++) {
+				double[] data_1 = mat.get(a[i][1], a[i][0]);
+				double[] data_2 = bg_mat.get(a[i][1], a[i][0]);
 
-						if (!(data_1[i] - data_2[i] < 10 || data_1[i] - data_2[i] > 10)) {
+				for (int index = 0; index<3; index++) {
 
-							System.err.println("11111111");
-							next = false;
-							break;
-						}
-					}
-					if (!next) {
+					if (data_1[index] - data_2[index] < 10 && data_1[index] - data_2[index] > -10) {
+
+					} else {
+						is = false;
 						break;
 					}
 				}
-				if (!next) {
-					break;
+				if (!is) {
+					sum++;
 				}
 			}
-			if (!next) {
-				next =true;
-				continue;
-			} else {
+
+			if (sum < 3 ) {
+				Imgcodecs.imwrite("tmp/zbj-geetest-bg/bg_mat.png", bg_mat);
 				return bg_mat;
 			}
 		}

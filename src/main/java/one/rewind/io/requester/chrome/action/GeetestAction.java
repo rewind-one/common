@@ -6,7 +6,9 @@ import one.rewind.opencv.OpenCVUtil;
 import one.rewind.simulator.mouse.MouseEventModeler;
 import one.rewind.simulator.mouse.MouseEventSimulator;
 import one.rewind.txt.StringUtil;
+import one.rewind.util.EnvUtil;
 import one.rewind.util.FileUtil;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -28,8 +30,20 @@ public class GeetestAction extends Action {
 	static List<Mat> bg_list = new ArrayList<>();
 
 	static {
-		// TODO 从文件中读取 生成bg_list
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
+		if (EnvUtil.isHostLinux()) {
+			// TODO 从文件中读取 生成bg_list
+			for (int i= 1; i<7; i++) {
+				bg_list.add(Imgcodecs.imread("tmp/zbj-geetest-bg-linux/"+ i+".png"));
+			}
+
+		} else {
+			// TODO 从文件中读取 生成bg_list
+			for (int i= 1; i<7; i++) {
+				bg_list.add(Imgcodecs.imread("tmp/zbj-geetest-bg-windows/"+ i+".png"));
+			}
+		}
 	}
 
 	// 点击验证
@@ -92,11 +106,11 @@ public class GeetestAction extends Action {
 		if (OpenCVUtil.areEqual(mat_1, mat_2)) {
 
 			// TODO 如果相同 从6个备选图片中选择最像的那个  mat_1
-			Mat mat = OpenCVUtil.mostSimilar(bg_list, mat_1);
-			return OpenCVUtil.getOffset(mat, mat_1);
+			Mat bg_mat = OpenCVUtil.mostSimilar(bg_list, mat_2);
+
+			return OpenCVUtil.getOffset(mat_2, bg_mat);
 
 		} else {
-
 			// 生成位移
 			return OpenCVUtil.getOffset(mat_1, mat_2);
 		}

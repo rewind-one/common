@@ -98,7 +98,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		int containerNum = 1;
 
-		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
+		DockerHost host = new DockerHost("10.0.0.62", 22, "root");
 		host.delAllDockerContainers();
 
 		//
@@ -109,9 +109,9 @@ public class ChromeDriverDistributorRemoteTest {
 
 		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
 
-		final Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
+		//final Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
 
-		CountDownLatch downLatch = new CountDownLatch(containerNum);
+		//CountDownLatch downLatch = new CountDownLatch(containerNum);
 
 		for(ChromeDriverDockerContainer container : containers) {
 
@@ -121,18 +121,18 @@ public class ChromeDriverDistributorRemoteTest {
 
 					final URL remoteAddress = container.getRemoteAddress();
 
-					proxy.validate();
+					//proxy.validate();
 
 					/*CountDownLatch latch = new CountDownLatch(1);*/
 
-					ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy);
+					ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container/*, proxy*/);
 					//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
 
-					ChromeTask task = new ChromeTask("http://zbj.com");
+					ChromeTask task = new ChromeTask("https://login.zbj.com/login");
 
-					/*AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
+					AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
 
-					task.addAction(new LoginWithGeetestAction(account));*/
+					task.addAction(new LoginWithGeetestAction(account));
 
 					// TODO 如果在NewCallback中调用了agent.submit方法，任务执行成功后会调用IdleCallbacks，而不是继续执行后续的NewCallback
 					agent.addNewCallback((a) -> {
@@ -141,7 +141,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 					distributor.addAgent(agent);
 
-					downLatch.countDown();
+					//downLatch.countDown();
 
 				} catch (ChromeDriverException.IllegalStatusException | URISyntaxException | InterruptedException | MalformedURLException e) {
 					e.printStackTrace();
@@ -150,7 +150,7 @@ public class ChromeDriverDistributorRemoteTest {
 			}).start();
 		}
 
-		downLatch.await();
+		//downLatch.await();
 
 		ChromeTask task = new ChromeTask("https://www.baidu.com");
 
