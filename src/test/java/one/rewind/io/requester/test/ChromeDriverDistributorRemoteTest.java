@@ -13,7 +13,8 @@ import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.ChromeTaskHolder;
+import one.rewind.io.requester.task.ChromeTaskFactory;
+import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.json.JSON;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +25,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 public class ChromeDriverDistributorRemoteTest {
 
@@ -33,7 +33,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		Class.forName(TestChromeTask.class.getName());
 
-		/*ChromeTaskHolder holder = new ChromeTaskHolder(
+		/*TaskHolder holder = new TaskHolder(
 
 				TestChromeTask.class.getName(),
 				TestChromeTask.domain(),
@@ -82,7 +82,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		for(int i=0; i<100; i++) {
 
-			ChromeTaskHolder holder = ChromeTask.buildHolder(TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
+			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
 
 			Map<String, Object> info = distributor.submit(holder);
 
@@ -184,7 +184,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		for(int i=0; i<10; i++) {
 
-			ChromeTaskHolder holder = ChromeTask.buildHolder(TestFailedChromeTask.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
+			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(TestFailedChromeTask.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
 
 			distributor.submit(holder);
 		}
@@ -230,7 +230,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		distributor.addAgent(agent);
 
-		ChromeTaskHolder holder = ChromeTask.buildHolder(TestProxyFailedChromeTask.class, ImmutableMap.of("q", "ip"));
+		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(TestProxyFailedChromeTask.class, ImmutableMap.of("q", "ip"));
 
 		//
 		/*agent.addIdleCallback((a)->{
@@ -295,7 +295,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		});
 
-		ChromeTaskHolder holder = ChromeTask.buildHolder(TestFailedChromeTask.class, "17600668061", ImmutableMap.of("q", ""));
+		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(TestFailedChromeTask.class, "17600668061", ImmutableMap.of("q", ""));
 
 		distributor.submit(holder);
 

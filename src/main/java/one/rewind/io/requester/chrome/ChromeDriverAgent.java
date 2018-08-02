@@ -1093,6 +1093,8 @@ public class ChromeDriverAgent {
 				});
 			}
 
+			task.holder.done = true;
+
 			logger.info("Task done. {}", task.getUrl());
 		}
 		// 超时终止

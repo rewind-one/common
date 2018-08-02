@@ -16,7 +16,8 @@ import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.ChromeTaskHolder;
+import one.rewind.io.requester.task.ChromeTaskFactory;
+import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.io.requester.task.ScheduledChromeTask;
 import one.rewind.json.JSON;
 import org.junit.Before;
@@ -63,12 +64,12 @@ public class ChromeDriverDistributorTest {
 		for(int i=0; i<1000; i++) {
 
 			if(i%2 == 0) {
-				ChromeTaskHolder holder = ChromeTask.buildHolder(
+				TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 						TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
 
 				Map<String, Object> info = distributor.submit(holder);
 			} else {
-				ChromeTaskHolder holder = ChromeTask.buildHolder(
+				TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 						TestChromeTask.T2.class, ImmutableMap.of("k", String.valueOf(1950 + i)));
 
 				Map<String, Object> info = distributor.submit(holder);
@@ -95,7 +96,7 @@ public class ChromeDriverDistributorTest {
 
 		for(int i=0; i<10; i++) {
 
-			ChromeTaskHolder holder = ChromeTask.buildHolder(
+			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 					TestChromeTask.T3.class,
 					ImmutableMap.of("k", String.valueOf(1950 + i)));
 
@@ -124,7 +125,7 @@ public class ChromeDriverDistributorTest {
 
 		distributor.layout();
 
-		ChromeTaskHolder holder = ChromeTask.buildHolder(
+		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 				TestChromeTask.T3.class, ImmutableMap.of("k", String.valueOf(1950)));
 
 		Map<String, Object> info = ChromeTaskScheduler.getInstance().schedule(new ScheduledChromeTask(holder, "* * * * *"));
@@ -162,8 +163,8 @@ public class ChromeDriverDistributorTest {
 
 		for(int i=0; i<10000; i++) {
 
-			ChromeTaskHolder holder =
-					ChromeTask.buildHolder(TestChromeTask.T1.class, ImmutableMap.of("q", "ip"));
+			TaskHolder holder =
+					ChromeTaskFactory.getInstance().newHolder(TestChromeTask.T1.class, ImmutableMap.of("q", "ip"));
 
 			distributor.submit(holder);
 		}
@@ -193,7 +194,7 @@ public class ChromeDriverDistributorTest {
 
 		for(int i=0; i<10; i++) {
 
-			ChromeTaskHolder holder = ChromeTask.buildHolder(
+			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 					TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
 
 			distributor.submit(holder);
@@ -209,7 +210,7 @@ public class ChromeDriverDistributorTest {
 
 		Class.forName(TestFailedChromeTask.class.getName());
 
-		ChromeTaskHolder holder = ChromeTask.buildHolder(
+		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 				TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
 
 	}
@@ -267,7 +268,7 @@ public class ChromeDriverDistributorTest {
 
 		});
 
-		ChromeTaskHolder holder = ChromeTask.buildHolder(
+		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 				TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
 
 		distributor.submit(holder);
@@ -308,7 +309,7 @@ public class ChromeDriverDistributorTest {
 
 		task.setValidator((a, t) -> {
 
-			logger.info("proxy");
+			logger.holder("proxy");
 			//throw new UnreachableBrowserException("Test");
 			throw new ProxyException.Failed(a.proxy);
 			//throw new AccountException.Failed(account);
@@ -327,7 +328,7 @@ public class ChromeDriverDistributorTest {
 
 		distributor.addAgent(agent);
 
-		ChromeTaskHolder holder = ChromeTask.buildHolder(
+		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 				TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
 
 		distributor.submit(holder);
@@ -360,7 +361,7 @@ public class ChromeDriverDistributorTest {
 
 		// distributor.layout();
 
-		ChromeTaskHolder holder = ChromeTask.buildHolder(
+		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 				TestChromeTask.T4.class, ImmutableMap.of("q", String.valueOf(1950)));
 
 		distributor.submit(holder);
@@ -382,7 +383,7 @@ public class ChromeDriverDistributorTest {
 
 		// distributor.layout();
 
-		ChromeTaskHolder holder = ChromeTask.buildHolder(
+		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 				TestChromeTask.T5.class, ImmutableMap.of("q", String.valueOf(1950), "max_page", 60));
 
 		distributor.submit(holder);

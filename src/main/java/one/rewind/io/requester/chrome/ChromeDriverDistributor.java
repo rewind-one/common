@@ -15,7 +15,7 @@ import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.route.ChromeTaskRoute;
 import one.rewind.io.requester.route.DistributorRoute;
 import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.ChromeTaskHolder;
+import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.io.server.MsgTransformer;
 import one.rewind.json.JSON;
 import one.rewind.util.Configs;
@@ -82,7 +82,7 @@ public class ChromeDriverDistributor {
 
 	// 任务队列
 	// TODO 使用RBlockingQueue
-	public ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<ChromeTaskHolder>> queues
+	public ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<TaskHolder>> queues
 			= new ConcurrentHashMap<>();
 
 	// 域名-账户 Agent 映射
@@ -305,7 +305,7 @@ public class ChromeDriverDistributor {
 	 * @throws ChromeDriverException.NotFoundException
 	 * @throws AccountException.NotFound
 	 */
-	public Map<String, Object> submit(ChromeTaskHolder holder) throws Exception
+	public Map<String, Object> submit(TaskHolder holder) throws Exception
 	{
 
 		String domain = holder.domain;
@@ -331,7 +331,7 @@ public class ChromeDriverDistributor {
 
 		}
 		// 需要登录采集的任务 或 没有找到加载指定账户的Agent
-		else if(holder.login_task){
+		else if(holder.need_login){
 
 			if(!domain_agent_map.keySet().contains(domain)) {
 				logger.warn("No agent hold {} accounts.", domain);
@@ -399,7 +399,7 @@ public class ChromeDriverDistributor {
 	 * @param holder
 	 * @param agent
 	 */
-	public void submit(ChromeTaskHolder holder, ChromeDriverAgent agent) {
+	public void submit(TaskHolder holder, ChromeDriverAgent agent) {
 
 		// 生成指派信息
 		if(agent != null) {
@@ -423,13 +423,13 @@ public class ChromeDriverDistributor {
 	 */
 	public ChromeTask distribute(ChromeDriverAgent agent) throws InterruptedException {
 
-		ChromeTaskHolder holder = queues.get(agent).take();
+		TaskHolder holder = queues.get(agent).take();
+
+		holder.exec_time = new Date();
 
 		ChromeTask task = null;
 
 		try {
-
-			System.err.println(JSON.toPrettyJson(holder));
 
 			task = holder.build();
 

@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.ChromeTaskScheduler;
 import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.ChromeTaskHolder;
+import one.rewind.io.requester.task.ChromeTaskFactory;
+import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.io.requester.task.ScheduledChromeTask;
 import one.rewind.io.server.Msg;
 import org.apache.logging.log4j.LogManager;
@@ -35,7 +36,7 @@ public class ChromeTaskRoute {
 			Class<? extends ChromeTask> clazz = (Class<? extends ChromeTask>) Class.forName(class_name);
 
 			// 初始参数
-			String init_map_str = request.queryParams("init_map");
+			String init_map_str = request.queryParams("vars");
 
 			ObjectMapper mapper = new ObjectMapper();
 			TypeReference<HashMap<String, Object>> typeRef
@@ -52,10 +53,8 @@ public class ChromeTaskRoute {
 				step = Integer.valueOf(request.queryParams("step"));
 			}
 
-			ChromeTask.Builder builder = ChromeTask.Builders.get(class_name);
-
 			// Create Holder
-			ChromeTaskHolder holder = ChromeTask.buildHolder(clazz, init_map, username, step);
+			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(clazz, init_map, username, step);
 
 			String[] cron = request.queryParamsValues("cron");
 
@@ -79,7 +78,7 @@ public class ChromeTaskRoute {
 				info = ChromeDriverDistributor.getInstance().submit(holder);
 			}
 
-			// Return info
+			// Return holder
 			return new Msg<Map<String, Object>>(Msg.SUCCESS, info);
 
 		}

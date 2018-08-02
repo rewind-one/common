@@ -4,9 +4,7 @@ import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +13,7 @@ import java.util.Map;
  * Hold the door
  * 序列化ChromeTask
  */
-public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<ChromeTaskHolder> {
+public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> {
 
 	// 生成 Task 时 复用这个 id
 	public String id;
@@ -33,13 +31,15 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	public String domain;
 
 	// 是否为登录任务
-	public boolean login_task = false;
+	public boolean need_login = false;
 
 	// 用户名
 	public String username;
 
 	// 初始参数
-	public Map<String, Object> init_map;
+	public Map<String, Object> vars;
+
+	public String url;
 
 	// 步长
 	public int step;
@@ -62,52 +62,57 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	// 所有子任务是否已经完成
 	public boolean all_done = false;
 
-	public ChromeTaskHolder() {}
+	public TaskHolder() {}
 
-	/**
-	 *
-	 * @param class_name
-	 * @param domain
-	 * @param username
-	 * @param init_map
-	 * @param step
-	 */
-	public ChromeTaskHolder(
-		String class_name, String domain, boolean login_task, String username, Map<String, Object> init_map, int step
+	public TaskHolder(
+			String class_name, String domain, Map<String, Object> vars, String url, boolean login_task, String username, int step, Task.Priority priority
 	) {
-		this(class_name, domain, login_task, username, init_map, step, Task.Priority.MEDIUM);
+
+		this(class_name, domain, vars, url, login_task, username, step, priority, null, null, null);
 	}
 
 	/**
 	 *
 	 * @param class_name
 	 * @param domain
+	 * @param vars
+	 * @param url
+	 * @param login_task
 	 * @param username
-	 * @param init_map
 	 * @param step
 	 * @param priority
+	 * @param generate_task_id
+	 * @param scheduled_task_id
+	 * @param trace
 	 */
-	public ChromeTaskHolder(
-		String class_name, String domain, boolean login_task, String username, Map<String, Object> init_map, int step, Task.Priority priority
+	public TaskHolder(
+		String class_name, String domain, Map<String, Object> vars, String url, boolean login_task, String username, int step, Task.Priority priority,
+		String generate_task_id,
+		String scheduled_task_id,
+		List<String> trace
 	) {
 
 		this.class_name = class_name;
 		this.domain = domain;
-		this.login_task = login_task;
+		this.vars = vars;
+		this.url = url;
+
+		this.need_login = login_task;
 
 		this.username = username;
 		if(username != null && username.length() > 0) {
-			this.login_task = true;
+			this.need_login = true;
 		}
 
-		this.init_map = init_map;
 		this.step = step;
 		this.priority = priority;
 
-		String init_map_json = JSON.toJson(init_map);
-
 		// 定义 ID
-		this.id = StringUtil.MD5(class_name + "-" + init_map_json + "-" + System.currentTimeMillis());
+		this.id = StringUtil.MD5(class_name + "-" + JSON.toJson(vars) + "-" + System.currentTimeMillis());
+
+		this.generate_task_id = generate_task_id;
+		this.scheduled_task_id = scheduled_task_id;
+		this.trace = trace;
 	}
 
 	/**
@@ -119,32 +124,7 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	 * @throws IllegalAccessException
 	 */
 	public ChromeTask build() throws Exception {
-
-		Class<?> clazz = Class.forName(class_name);
-
-		ChromeTask.Builder builder = ChromeTask.Builders.get(clazz);
-
-		if(builder == null) throw new Exception("Builder not exist for " + clazz.getName());
-
-		// 生成URL
-		String url = ChromeTask.generateURL(builder, init_map);
-
-		// Call customized constructor
-		Constructor<?> cons = clazz.getConstructor(String.class);
-		ChromeTask task = (ChromeTask) cons.newInstance(url);
-
-		// 验证 init_map
-		task.init_map = ChromeTask.validateInitMap(builder, init_map); // TODO 检查冗余过程
-
-		if(builder.need_login) task.setLoginTask();
-		task.setUsername(username);
-		task.setStep(step);
-		task.setPriority(priority);
-
-		// 设定关联ID
-		task.setId(id);
-
-		return task;
+		return ChromeTaskFactory.getInstance().buildTask(this);
 	}
 
 	/**
@@ -153,7 +133,7 @@ public class ChromeTaskHolder implements Comparable<ChromeTaskHolder>, JSONable<
 	 * @param another
 	 * @return
 	 */
-	public int compareTo(ChromeTaskHolder another) {
+	public int compareTo(TaskHolder another) {
 
 		final Task.Priority me = this.priority;
 		final Task.Priority it = another.priority;
