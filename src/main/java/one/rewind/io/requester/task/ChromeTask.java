@@ -9,7 +9,6 @@ import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
 import one.rewind.txt.URLUtil;
 
-import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -500,6 +499,14 @@ public class ChromeTask extends Task<ChromeTask> {
 	) throws Exception {
 
 		return buildHolder(clazz, init_map, null, 0);
+	}
+
+	/**
+	 * 返回当前的Holder
+	 * @return
+	 */
+	public ChromeTaskHolder getHolder() {
+		return holder;
 	}
 
 	/**
