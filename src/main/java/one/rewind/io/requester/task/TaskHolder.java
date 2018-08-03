@@ -1,5 +1,11 @@
 package one.rewind.io.requester.task;
 
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+import one.rewind.db.DBName;
+import one.rewind.db.DaoManager;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
@@ -10,60 +16,101 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Hold the door
- * 序列化ChromeTask
+ * ChromeTask 序列化对象
+ * @author scisaga@gmail.com
+ * @date 2018/08/03
  */
+@DBName(value = "requester")
+@DatabaseTable(tableName = "tasks")
 public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> {
 
 	// 生成 Task 时 复用这个 id
+	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, id = true)
 	public String id;
 
 	// 生成 Holder 的 task_id 可以为空
+	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
 	public String generate_task_id;
 
 	// 如果由 ScheduledChromeTask 生成 会包含这个ID
+	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
 	public String scheduled_task_id;
 
 	// 类名
+	@DatabaseField(dataType = DataType.STRING, width = 128, canBeNull = false)
 	public String class_name;
 
 	// 域名
+	@DatabaseField(dataType = DataType.STRING, width = 256, canBeNull = false)
 	public String domain;
 
 	// 是否为登录任务
+	@DatabaseField(dataType = DataType.BOOLEAN, canBeNull = false)
 	public boolean need_login = false;
 
 	// 用户名
+	@DatabaseField(dataType = DataType.STRING, width = 128)
 	public String username;
 
 	// 初始参数
 	public Map<String, Object> vars;
 
+	// URL
+	@DatabaseField(dataType = DataType.STRING, width = 1024, canBeNull = false)
 	public String url;
 
 	// 步长
-	public int step;
+	@DatabaseField(dataType = DataType.INTEGER, width = 5, canBeNull = false)
+	public int step = 0;
 
 	// 优先级
+	@DatabaseField(dataType = DataType.ENUM_STRING, width = 32, canBeNull = false)
 	public Task.Priority priority = Task.Priority.MEDIUM;
+
+
+	// 任务是否已经完成
+	@DatabaseField(dataType = DataType.BOOLEAN, canBeNull = false)
+	public boolean done = false;
+
+	// 所有子任务是否已经完成
+	@DatabaseField(dataType = DataType.BOOLEAN, canBeNull = false)
+	public boolean all_done = false;
 
 	// task_id trace
 	public List<String> trace;
 
 	// 创建时间
+	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
 	public Date create_time = new Date();
 
 	// 执行时间
+	@DatabaseField(dataType = DataType.DATE)
 	public Date exec_time;
 
-	// 任务是否已经完成
-	public boolean done = false;
+	// 任务完成时间
+	@DatabaseField(dataType = DataType.DATE)
+	public Date done_time;
 
-	// 所有子任务是否已经完成
-	public boolean all_done = false;
+	// 全部后续任务 完成时间
+	@DatabaseField(dataType = DataType.DATE)
+	public Date all_done_time;
 
+	/**
+	 *
+	 */
 	public TaskHolder() {}
 
+	/**
+	 * 新Holder场景调用
+	 * @param class_name
+	 * @param domain
+	 * @param vars
+	 * @param url
+	 * @param login_task
+	 * @param username
+	 * @param step
+	 * @param priority
+	 */
 	public TaskHolder(
 			String class_name, String domain, Map<String, Object> vars, String url, boolean login_task, String username, int step, Task.Priority priority
 	) {
@@ -72,7 +119,7 @@ public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> 
 	}
 
 	/**
-	 *
+	 * 由已有Holder生成Holder场景调用
 	 * @param class_name
 	 * @param domain
 	 * @param vars
@@ -116,7 +163,39 @@ public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> 
 	}
 
 	/**
-	 *
+	 * 插入新代理记录
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean insert() throws Exception{
+
+		Dao dao = DaoManager.getDao(this.getClass());
+
+		if (dao.create(this) == 1) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * 更新代理记录
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean update() throws Exception{
+
+		Dao dao = DaoManager.getDao(this.getClass());
+
+		if (dao.update(this) == 1) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * 生成ChromeTask
 	 * @return
 	 * @throws ClassNotFoundException
 	 * @throws NoSuchMethodException
@@ -128,7 +207,7 @@ public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> 
 	}
 
 	/**
-	 * 优先级比较
+	 * 优先级 比较
 	 *
 	 * @param another
 	 * @return
@@ -151,6 +230,5 @@ public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> 
 	public String toJSON() {
 		return JSON.toJson(this);
 	}
-
 
 }
