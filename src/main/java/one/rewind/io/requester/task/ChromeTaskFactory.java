@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ *
+ */
 public class ChromeTaskFactory {
 
 	//
@@ -18,11 +21,11 @@ public class ChromeTaskFactory {
 	//
 	private static final Logger logger = LogManager.getLogger(ChromeTaskFactory.class.getName());
 
-	//
+	// 保存所有ChromeTask Class 对应的TaskBuilder
 	public Map<Class<? extends ChromeTask>, TaskBuilder> builders = new HashMap<>();
 
 	/**
-	 *
+	 * 单例方法
 	 * @return
 	 */
 	public static ChromeTaskFactory getInstance() {
