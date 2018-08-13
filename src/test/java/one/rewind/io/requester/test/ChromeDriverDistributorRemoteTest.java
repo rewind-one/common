@@ -199,7 +199,7 @@ public class ChromeDriverDistributorRemoteTest {
 	@Test
 	public void RremoteProxyFiledTest() throws Exception {
 
-		DockerHost host = new DockerHost("10.0.0.50", 22, "root");
+		DockerHost host = new DockerHost("***", 22, "***");
 
 		host.delAllDockerContainers();
 
@@ -207,11 +207,11 @@ public class ChromeDriverDistributorRemoteTest {
 
 		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
 
-		Proxy proxy1 = new ProxyImpl("47.106.89.236", 59998, "tfelab", "TfeLAB2@15");
+		Proxy proxy1 = new ProxyImpl("***", 59998, "***", "***@15");
 
 		proxy1.validate();
 
-		Proxy proxy2 = new ProxyImpl("39.108.178.54", 59998, "tfelab", "TfeLAB2@15");
+		Proxy proxy2 = new ProxyImpl("***", 59998, "***", "***@15");
 
 		proxy2.validate();
 
