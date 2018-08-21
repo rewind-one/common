@@ -50,7 +50,7 @@ public class ChromeDriverDistributor {
 	public static String LOCAL_IP;
 
 	// Web服务端口号
-	public static int WEB_PORT = 80;
+	//public static int WEB_PORT = 80;
 
 	// 配置设定
 	static {
@@ -138,7 +138,7 @@ public class ChromeDriverDistributor {
 	 */
 	public void buildHttpApiServer() {
 
-		port(WEB_PORT);
+		//port(WEB_PORT);
 
 		before("/*", (q, a) -> logger.info("Received api call"));
 
