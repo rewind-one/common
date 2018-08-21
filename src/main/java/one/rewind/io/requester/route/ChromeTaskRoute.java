@@ -2,12 +2,10 @@ package one.rewind.io.requester.route;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.chrome.ChromeTaskScheduler;
-import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.ChromeTaskFactory;
-import one.rewind.io.requester.task.TaskHolder;
-import one.rewind.io.requester.task.ScheduledChromeTask;
+import one.rewind.io.requester.task.*;
 import one.rewind.io.server.Msg;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,6 +23,16 @@ import java.util.Map;
 public class ChromeTaskRoute {
 
 	private static final Logger logger = LogManager.getLogger(ChromeTaskRoute.class.getName());
+
+	public interface Filter {
+		void run(String class_name, String username) throws Exception;
+	}
+
+	public static Filter filter;
+
+	public static void setFilter(Filter filter) {
+		ChromeTaskRoute.filter = filter;
+	}
 
 	// 执行任务，返回任务分派信息
 	public static Route submit = (Request request, Response response) -> {
@@ -46,6 +54,9 @@ public class ChromeTaskRoute {
 
 			// 用户名
 			String username = request.queryParams("username");
+
+			if(filter != null)
+				filter.run(class_name, username);
 
 			// 步骤数
 			int step = 0;
@@ -76,6 +87,7 @@ public class ChromeTaskRoute {
 			else {
 				holder.step = 1;
 				info = ChromeDriverDistributor.getInstance().submit(holder);
+
 			}
 
 			// Return holder
@@ -85,7 +97,7 @@ public class ChromeTaskRoute {
 		catch (Exception e) {
 
 			logger.error("Error create/assign task. ", e);
-			return new Msg<>(Msg.FAILURE);
+			return new Msg<String>(Msg.FAILURE, e.getMessage());
 		}
 	};
 

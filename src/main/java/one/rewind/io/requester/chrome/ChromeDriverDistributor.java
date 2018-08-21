@@ -138,7 +138,7 @@ public class ChromeDriverDistributor {
 	 */
 	public void buildHttpApiServer() {
 
-		//port(WEB_PORT);
+		port(WEB_PORT);
 
 		before("/*", (q, a) -> logger.info("Received api call"));
 

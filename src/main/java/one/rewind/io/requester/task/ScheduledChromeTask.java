@@ -55,7 +55,7 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask>, Runna
 	 */
 	public ScheduledChromeTask(TaskHolder holder, List<String> crons) throws Exception {
 
-		this.id = StringUtil.MD5(holder.class_name + "-" + JSON.toJson(holder.vars));
+		this.id = holder.generateScheduledChromeTaskId();
 
 		for (String cron_ : crons) {
 			if (!StringUtil.validCron(cron_)) {

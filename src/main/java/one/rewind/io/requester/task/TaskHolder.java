@@ -224,6 +224,16 @@ public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> 
 	}
 
 	/**
+	 * 若生成scheduledChromeTask
+	 * 其Id应调用此方法生成
+	 * @return
+	 */
+	public String generateScheduledChromeTaskId() {
+
+		return StringUtil.MD5(this.class_name + "-" + JSON.toJson(this.vars));
+	}
+
+	/**
 	 *
 	 * @return
 	 */

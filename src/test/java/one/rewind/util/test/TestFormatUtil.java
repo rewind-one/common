@@ -34,4 +34,12 @@ public class TestFormatUtil {
 		System.out.println(DateFormatUtil.parseTime("2014.10.01"));
 	}
 
+	@Test
+	public void testPage() {
+
+		long total = 102;
+		long limit = 10;
+
+		System.err.println(total / limit + ( total % limit == 0 ? 0 : 1));
+	}
 }

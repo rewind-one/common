@@ -82,6 +82,7 @@ public class ChromeTaskFactory {
 		// Call sub class constructor
 		Constructor<?> cons = clazz.getConstructor(String.class);
 		ChromeTask task = (ChromeTask) cons.newInstance(holder.url);
+		task.holder = holder;
 
 		// 验证 vars
 		if(builder.need_login) task.setLoginTask();

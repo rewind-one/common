@@ -152,7 +152,7 @@ public class BasicRequesterTest {
 	@Test
 	public void testProxiedHttpsRequest() throws Exception {
 
-		Proxy proxy = new ProxyImpl("118.190.44.184",59998,"tfelab","TfeLAB2@15");
+		Proxy proxy = new ProxyImpl("http-dyn.abuyun.com",9020,"HC712I309A6549HD","B9BA137D9DD68EAC");
 
 		Task<Task> task = new XueQiuTask("https://xueqiu.com/friendships/groups/members.json?uid=3013624218&page=1&gid=0");
 
@@ -162,6 +162,10 @@ public class BasicRequesterTest {
 
 		for (TaskCallback taskCallback : task.doneCallbacks) {
 			taskCallback.run(task);
+		}
+
+		for(Throwable throwable : task.getExceptions()) {
+
 		}
 	}
 }

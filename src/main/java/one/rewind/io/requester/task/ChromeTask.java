@@ -142,7 +142,7 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @return
 	 */
 	public ScheduledChromeTask getScheduledChromeTask() {
-		return holder == null ? null : ChromeTaskScheduler.getInstance().getScheduledTask(holder.scheduled_task_id);
+		return holder == null ? null : ChromeTaskScheduler.getInstance().getScheduledTask(holder.generateScheduledChromeTaskId());
 	}
 
 	/**

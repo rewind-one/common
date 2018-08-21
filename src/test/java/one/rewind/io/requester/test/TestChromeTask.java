@@ -112,6 +112,9 @@ public class TestChromeTask {
 		}
 	}
 
+	/**
+	 *
+	 */
 	public static class T4 extends ChromeTask {
 
 		public static long MIN_INTERVAL = 60000;
@@ -146,6 +149,7 @@ public class TestChromeTask {
 
 					st = new ScheduledChromeTask(t.getHolder(), crons);
 					st.start();
+
 					//ChromeTaskScheduler.getInstance().schedule(t.getHolder(this.vars), crons);
 				}
 				else {
