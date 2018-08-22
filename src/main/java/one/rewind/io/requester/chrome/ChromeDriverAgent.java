@@ -1093,7 +1093,9 @@ public class ChromeDriverAgent {
 				});
 			}
 
-			task.holder.done = true;
+			if (task.holder != null) {
+				task.holder.done = true;
+			}
 
 			logger.info("Task done. {}", task.getUrl());
 		}
