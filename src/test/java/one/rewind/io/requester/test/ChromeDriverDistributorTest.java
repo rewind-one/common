@@ -386,7 +386,11 @@ public class ChromeDriverDistributorTest {
 		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 				TestChromeTask.T5.class, ImmutableMap.of("q", String.valueOf(1950), "max_page", 60));
 
+		TaskHolder holder1 = ChromeTaskFactory.getInstance().newHolder(
+				TestChromeTask.T5.class, ImmutableMap.of("q", String.valueOf(1989), "max_page", 60));
+
 		distributor.submit(holder);
+		distributor.submit(holder1);
 
 		Thread.sleep(600000);
 
