@@ -85,8 +85,6 @@ public class HttpTaskSubmitter {
 
 		String url = "http://" + host + ":" + port + "/task?" + params;
 
-		System.err.println(url);
-
 		Task task = new Task(url);
 		task.setPost();
 		BasicRequester.getInstance().submit(task);
