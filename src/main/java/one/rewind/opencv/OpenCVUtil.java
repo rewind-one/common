@@ -55,7 +55,6 @@ public class OpenCVUtil {
 			}
 
 			if (sum < 3 ) {
-				Imgcodecs.imwrite("tmp/zbj-geetest-bg/bg_mat.png" + System.currentTimeMillis(), bg_mat);
 				return bg_mat;
 			}
 		}
