@@ -5,6 +5,8 @@ import com.google.common.net.InternetDomainName;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * URL相关工具方法
@@ -24,7 +26,18 @@ public class URLUtil {
 	public static String getDomainName(String url) throws URISyntaxException, MalformedURLException {
 		URL uri = new URL(url);
 		String domain = uri.getHost();
-		return domain.startsWith("www.") ? domain.substring(4) : domain;
+
+		if (domain.contains(".")){
+			String[] domains = domain.split("\\.");
+
+			for (int i = 0; i < domains.length; i++) {
+				if (domains[i].equals("com") && i != 0) {
+					domain = domains[i-1] +"."+ domains[i];
+					return domain;
+				}
+			}
+		}
+		return domain;
 	}
 
 	/**

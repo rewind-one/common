@@ -5,6 +5,7 @@ import one.rewind.io.requester.HttpTaskSubmitter;
 import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeDriverDistributor;
 import one.rewind.io.requester.exception.ChromeDriverException;
+import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.io.requester.test.TestChromeTask;
 import one.rewind.io.server.Msg;
 import one.rewind.json.JSON;
@@ -20,7 +21,7 @@ import static spark.Spark.port;
 public class HttpTaskSubmitterTest {
 
 	@Before
-	public void init() throws ChromeDriverException.IllegalStatusException, InterruptedException, ClassNotFoundException {
+	public void init() throws ChromeDriverException.IllegalStatusException, InterruptedException, ClassNotFoundException, URISyntaxException, UnsupportedEncodingException, MalformedURLException {
 
 		port(80);
 
@@ -38,12 +39,14 @@ public class HttpTaskSubmitterTest {
 			ChromeDriverAgent agent = new ChromeDriverAgent();
 			distributor.addAgent(agent);
 		}
+		HttpTaskSubmitter.getInstance().submit(TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950)));
 	}
 
 	@Test
 	public void submitterTest() throws ClassNotFoundException, MalformedURLException, UnsupportedEncodingException, URISyntaxException, InterruptedException {
 
-		Msg msg = HttpTaskSubmitter.getInstance().submit(TestChromeTask.T4.class, ImmutableMap.of("q", String.valueOf(1950)));
+
+		Msg msg = HttpTaskSubmitter.getInstance().submit(TestChromeTask.T4.class, "", ImmutableMap.of("q", String.valueOf(1950)), 0, null);
 
 		System.err.println(JSON.toPrettyJson(msg));
 
