@@ -51,24 +51,23 @@ public class HttpTaskSubmitter {
 
 	/**
 	 *
-	 * @param clazz
+	 * @param class_name
 	 * @param username
-	 * @param map
+	 * @param map_json
 	 * @param step
 	 * @param cron
 	 * @return
-	 * @throws ClassNotFoundException
 	 * @throws UnsupportedEncodingException
 	 * @throws MalformedURLException
 	 * @throws URISyntaxException
 	 */
-	public Msg submit(Class clazz, String username, Map<String, String> map, int step, String... cron) throws UnsupportedEncodingException, MalformedURLException, URISyntaxException {
+	public Msg submit(String class_name, String username, String map_json, int step, String... cron) throws UnsupportedEncodingException, MalformedURLException, URISyntaxException {
 
 		String params = "";
 
-		params += "class_name=" + clazz.getName();
+		params += "class_name=" + class_name;
 
-		params += "&vars=" + JSON.toJson(map);
+		params += "&vars=" + map_json;
 
 		params += "&step=" + step;
 
@@ -100,37 +99,37 @@ public class HttpTaskSubmitter {
 	/**
 	 *
 	 * @param clazz
-	 * @param map
+	 * @param map_json
 	 * @return
 	 * @throws ClassNotFoundException
 	 * @throws MalformedURLException
 	 * @throws URISyntaxException
 	 * @throws UnsupportedEncodingException
 	 */
-	public Msg submit(Class clazz, Map<String, String> map) throws ClassNotFoundException, MalformedURLException, URISyntaxException, UnsupportedEncodingException {
-		return submit(clazz, null, map, 0, null);
+	public Msg submit(String clazz, String map_json) throws ClassNotFoundException, MalformedURLException, URISyntaxException, UnsupportedEncodingException {
+		return submit(clazz, null, map_json, 0, null);
 	}
 
 	/**
 	 *
 	 * @param clazz
 	 * @param username
-	 * @param map
+	 * @param map_json
 	 * @return
 	 * @throws ClassNotFoundException
 	 * @throws MalformedURLException
 	 * @throws URISyntaxException
 	 * @throws UnsupportedEncodingException
 	 */
-	public Msg submit(Class clazz, String username, Map<String, String> map) throws ClassNotFoundException, MalformedURLException, URISyntaxException, UnsupportedEncodingException {
-		return submit(clazz, username, map, 0, null);
+	public Msg submit(String clazz, String username, String map_json) throws ClassNotFoundException, MalformedURLException, URISyntaxException, UnsupportedEncodingException {
+		return submit(clazz, username, map_json, 0, null);
 	}
 
 	/**
 	 *
 	 * @param clazz
 	 * @param username
-	 * @param map
+	 * @param map_json
 	 * @param step
 	 * @return
 	 * @throws ClassNotFoundException
@@ -138,7 +137,7 @@ public class HttpTaskSubmitter {
 	 * @throws URISyntaxException
 	 * @throws UnsupportedEncodingException
 	 */
-	public Msg submit(Class clazz, String username, Map<String, String> map, int step) throws ClassNotFoundException, MalformedURLException, URISyntaxException, UnsupportedEncodingException {
-		return submit(clazz, username, map, step, null);
+	public Msg submit(String clazz, String username, String map_json, int step) throws ClassNotFoundException, MalformedURLException, URISyntaxException, UnsupportedEncodingException {
+		return submit(clazz, username, map_json, step, null);
 	}
 }

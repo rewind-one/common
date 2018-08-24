@@ -39,14 +39,14 @@ public class HttpTaskSubmitterTest {
 			ChromeDriverAgent agent = new ChromeDriverAgent();
 			distributor.addAgent(agent);
 		}
-		HttpTaskSubmitter.getInstance().submit(TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950)));
+		HttpTaskSubmitter.getInstance().submit(TestChromeTask.T1.class.getName(), JSON.toJson(ImmutableMap.of("q", String.valueOf(1950))));
 	}
 
 	@Test
 	public void submitterTest() throws ClassNotFoundException, MalformedURLException, UnsupportedEncodingException, URISyntaxException, InterruptedException {
 
 
-		Msg msg = HttpTaskSubmitter.getInstance().submit(TestChromeTask.T4.class, "", ImmutableMap.of("q", String.valueOf(1950)), 0, null);
+		Msg msg = HttpTaskSubmitter.getInstance().submit(TestChromeTask.T4.class.getName(), "", JSON.toJson(ImmutableMap.of("q", String.valueOf(1950))), 0, null);
 
 		System.err.println(JSON.toPrettyJson(msg));
 
