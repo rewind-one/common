@@ -8,7 +8,7 @@ import one.rewind.io.requester.chrome.ChromeDriverAgent;
  */
 public class LoginWithGeetestAction extends LoginAction {
 
-	GeetestAction action;
+	public GeetestAction action;
 
 	public String geetestContentCssPath = ".geetest_radar_tip";
 
@@ -21,10 +21,12 @@ public class LoginWithGeetestAction extends LoginAction {
 	//#password-captcha-box > div.geetest_holder.geetest_wind.geetest_radar_error > div.geetest_btn > div.geetest_radar_btn > div.geetest_radar_tip > span.geetest_radar_error_code
 	public String geetestRefreshTooManyErrorCssPath = "span.geetest_radar_error_code";
 
-	public LoginWithGeetestAction() {}
+	public LoginWithGeetestAction() {
+		className = LoginWithGeetestAction.class.getName();
+	}
 
-	public LoginWithGeetestAction(Account account) {
-		super(account);
+	@Override
+	public LoginAction setAccount(Account account) {
 
 		action = new GeetestAction();
 
@@ -34,6 +36,8 @@ public class LoginWithGeetestAction extends LoginAction {
 		action.geetestSuccessMsgCssPath = geetestSuccessMsgCssPath;
 		action.geetestResetTipCssPath = geetestResetTipCssPath;
 		action.geetestRefreshButtonCssPath = geetestRefreshButtonCssPath;
+
+		return super.setAccount(account);
 	}
 
 	/**

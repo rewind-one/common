@@ -11,6 +11,8 @@ public class LoginAction extends Action {
 
 	public ChromeDriverAgent agent;
 
+	public String className;
+
 	//public String url = "https://login.zbj.com/login";
 
 	public String usernameCssPath = "#username";
@@ -24,12 +26,9 @@ public class LoginAction extends Action {
 
 	public LoginAction() {}
 
-	public LoginAction(Account account) {
+	public LoginAction setAccount(Account account) {
 		this.account = account;
-	}
-
-	public void setAccount(Account account) {
-		this.account = account;
+		return this;
 	}
 
 	public Account getAccount() {

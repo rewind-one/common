@@ -144,7 +144,7 @@ public class OpenCVTest {
 
 		AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
 
-		ChromeTask task = new ChromeTask("https://login.zbj.com/login").addAction(new LoginWithGeetestAction(account));
+		ChromeTask task = new ChromeTask("https://login.zbj.com/login").addAction(new LoginWithGeetestAction().setAccount(account));
 
 		chromeDriverAgent.submit(task);
 

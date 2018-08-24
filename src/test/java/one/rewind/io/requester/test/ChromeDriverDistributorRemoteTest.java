@@ -132,7 +132,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 					AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");
 
-					task.addAction(new LoginWithGeetestAction(account));
+					task.addAction(new LoginWithGeetestAction().setAccount(account));
 
 					// TODO 如果在NewCallback中调用了agent.submit方法，任务执行成功后会调用IdleCallbacks，而不是继续执行后续的NewCallback
 					agent.addNewCallback((a) -> {
@@ -275,7 +275,7 @@ public class ChromeDriverDistributorRemoteTest {
 		AccountImpl account_2 = new AccountImpl("zbj.com", "15284809626", "123456");
 
 		ChromeTask task = new ChromeTask("http://www.zbj.com")
-				.addAction(new LoginWithGeetestAction(account_1));
+				.addAction(new LoginWithGeetestAction().setAccount(account_1));
 
 		//
 		agent.submit(task, true);
@@ -285,7 +285,7 @@ public class ChromeDriverDistributorRemoteTest {
 			try {
 				ChromeTask task1 = new ChromeTask("http://www.zbj.com")
 						.addAction(new RedirectAction("https://login.zbj.com/login/dologout"))
-						.addAction(new LoginWithGeetestAction(account_2));
+						.addAction(new LoginWithGeetestAction().setAccount(account_2));
 
 				a.submit(task1, true);
 
