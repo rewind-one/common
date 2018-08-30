@@ -25,7 +25,7 @@ public class MouseEventTracker {
 	private static final Logger logger = LogManager.getLogger(MouseEventTracker.class.getName());
 
 	// 记录文件夹路径
-	public static final String serPath = "mouse_movements/";
+	public static final String serPath = "data/mouse_movements/";
 
 	// 上一次操作时间
 	private long lastTs = System.currentTimeMillis();

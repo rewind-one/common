@@ -35,13 +35,13 @@ public class GeetestAction extends Action {
 		if (EnvUtil.isHostLinux()) {
 			// TODO 从文件中读取 生成bg_list
 			for (int i= 1; i<7; i++) {
-				bg_list.add(Imgcodecs.imread("tmp/zbj-geetest-bg-linux/"+ i+".png"));
+				bg_list.add(Imgcodecs.imread("data/zbj-geetest-bg-linux/"+ i+".png"));
 			}
 
 		} else {
 			// TODO 从文件中读取 生成bg_list
 			for (int i= 1; i<7; i++) {
-				bg_list.add(Imgcodecs.imread("tmp/zbj-geetest-bg-windows/"+ i+".png"));
+				bg_list.add(Imgcodecs.imread("data/zbj-geetest-bg-windows/"+ i+".png"));
 			}
 		}
 	}
