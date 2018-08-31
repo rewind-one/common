@@ -152,9 +152,6 @@ public class Task<T extends Task> implements Comparable<Task> {
 	// 下载页面
 	private boolean SAVE_SRC = true;
 
-	// 下载doc
-	private boolean SAVE_DOC = true;
-
 	private Task() {}
 
 	/**
@@ -724,19 +721,9 @@ public class Task<T extends Task> implements Comparable<Task> {
 		this.SAVE_SRC = SAVE_SRC;
 	}
 
-	// 设置下载doc标志位
-	public void setSaveDoc( boolean SAVE_DOC ){
-		this.SAVE_DOC = SAVE_DOC;
-	}
-
 	// 获取下载页面标志位
 	public boolean getSaveSrc(){
 		return this.SAVE_SRC;
-	}
-
-	// 获取下载doc标志位
-	public boolean getSaveDoc(){
-		return this.SAVE_DOC;
 	}
 
 	/**
