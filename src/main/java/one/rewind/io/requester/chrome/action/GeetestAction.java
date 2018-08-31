@@ -105,10 +105,21 @@ public class GeetestAction extends Action {
 		// TODO 判断 mat_1 和 mat_2 是否相同
 		if (OpenCVUtil.areEqual(mat_1, mat_2)) {
 
-			// TODO 如果相同 从6个备选图片中选择最像的那个  mat_1
-			Mat bg_mat = OpenCVUtil.mostSimilar(bg_list, mat_2);
+			logger.info("Choose a img!");
 
-			return OpenCVUtil.getOffset(mat_2, bg_mat);
+			// TODO 如果相同 从6个备选图片中选择最像的那个  mat_1
+			Mat bg_mat = OpenCVUtil.mostSimilar(bg_list, mat_1);
+
+			if (bg_list == null && bg_list.size() < 1) {
+				logger.error("The system does not load the data/zbj-geetest-bg-***");
+			}
+
+			if (bg_mat == null) {
+				logger.info("Don`t get choose img, Retry login!");
+				return -1;
+			}
+
+			return OpenCVUtil.getOffset(mat_1, bg_mat);
 
 		} else {
 			// 生成位移
