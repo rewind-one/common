@@ -4,6 +4,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.csource.common.NameValuePair;
 import org.csource.fastdfs.*;
+
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class FastDFSAdapter {
@@ -16,7 +19,7 @@ public class FastDFSAdapter {
 	private int size = 5;
 
 	//空闲的连接
-	private ArrayBlockingQueue<StorageClient> idleStorageClient = null;
+	private Queue<StorageClient> idleStorageClient = new LinkedList<>();
 
 	/**
 	 * 单例方法
