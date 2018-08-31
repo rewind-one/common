@@ -57,7 +57,7 @@ public class FastDFSAdapter {
 		try {
 
 			// 定义 配置文件路径
-			String conf_filename = "tmp/fastdfs.conf";
+			String conf_filename = "fastdfs.conf";
 
 			// 创建 client链接
 			ClientGlobal.init(conf_filename);
@@ -95,7 +95,7 @@ public class FastDFSAdapter {
 	/**
 	 * 上传文件
 	 */
-	String[] upload_file(byte[] file_buff, String file_ext_name, NameValuePair[] meta_list) throws Exception{
+	public String[] upload_file(byte[] file_buff, String file_ext_name, NameValuePair[] meta_list) throws Exception{
 
 		// 获取链接
 		StorageClient storageClient = getStorageClient();
