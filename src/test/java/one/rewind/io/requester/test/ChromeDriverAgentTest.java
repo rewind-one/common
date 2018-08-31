@@ -49,6 +49,31 @@ public class ChromeDriverAgentTest {
 	}
 
 	@Test
+	public void testTianyancha() throws Exception {
+
+		ChromeTask t = new ChromeTask("https://www.tianyancha.com/");
+
+		Proxy proxy = new ProxyImpl("sdyk.red", 60202, "tfelab", "TfeLAB2@15");
+		//ProxyImpl proxy1 = new ProxyImpl( "sdyk.red", 60202, "tfelab", "TfeLAB2@15");
+		//Proxy proxy = new ProxyImpl("tpda.cc", 60202, "sdyk", "sdyk");
+
+		ChromeDriverAgent agent = new ChromeDriverAgent(proxy, ChromeDriverAgent.Flag.MITM);
+
+		agent.start();
+
+		agent.addTerminatedCallback((a)->{
+			System.err.println("TERMINATED");
+		});
+
+		agent.submit(t);
+
+		Thread.sleep(1000000);
+
+		agent.stop();
+
+	}
+
+	@Test
 	public void testBuildProxy() {
 
 		BrowserMobProxyServer ps = ChromeDriverDistributor.buildBMProxy(null);
@@ -68,7 +93,9 @@ public class ChromeDriverAgentTest {
 			agent.start();
 
 			ChromeTask task = new ChromeTask("http://www.zbj.com");
+
 			ChromeAction action = new LoginWithGeetestAction().setAccount(account);
+
 			task.addAction(action);
 			agent.submit(task);
 
