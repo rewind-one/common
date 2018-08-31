@@ -1,5 +1,5 @@
 group 'one.rewind'
-version '1.1.35-SNAPSHOT'
+version '1.1.39-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -119,6 +119,9 @@ dependencies {
 
     // Apache Commons Collections
     compile group: 'org.apache.commons', name: 'commons-collections4', version: '4.1'
+
+    // https://mvnrepository.com/artifact/cn.bestwu/fastdfs-client-java
+    compile group: 'cn.bestwu', name: 'fastdfs-client-java', version: '1.27'
 
     // https://mvnrepository.com/artifact/it.sauronsoftware.cron4j/cron4j
     compile group: 'it.sauronsoftware.cron4j', name: 'cron4j', version: '2.2.5'
