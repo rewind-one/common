@@ -18,6 +18,7 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -148,6 +149,12 @@ public class Task<T extends Task> implements Comparable<Task> {
 	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
 	private Date create_time = new Date();
 
+	// 下载页面
+	private boolean SAVE_SRC = true;
+
+	// 下载doc
+	private boolean SAVE_DOC = true;
+
 	private Task() {}
 
 	/**
@@ -163,6 +170,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 		this.response = new Response();
 		this.id = StringUtil.MD5(url + " " + System.nanoTime());
 		this.request_method = RequestMethod.GET;
+
 	}
 
 	/**
@@ -709,6 +717,26 @@ public class Task<T extends Task> implements Comparable<Task> {
 	 */
 	public Priority getPriority() {
 		return priority;
+	}
+
+	// 设置下载页面标志位
+	public void setSaveSrc( boolean SAVE_SRC ){
+		this.SAVE_SRC = SAVE_SRC;
+	}
+
+	// 设置下载doc标志位
+	public void setSaveDoc( boolean SAVE_DOC ){
+		this.SAVE_DOC = SAVE_DOC;
+	}
+
+	// 获取下载页面标志位
+	public boolean getSaveSrc(){
+		return this.SAVE_SRC;
+	}
+
+	// 获取下载doc标志位
+	public boolean getSaveDoc(){
+		return this.SAVE_DOC;
 	}
 
 	/**
