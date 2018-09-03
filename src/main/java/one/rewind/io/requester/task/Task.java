@@ -148,6 +148,16 @@ public class Task<T extends Task> implements Comparable<Task> {
 	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
 	private Date create_time = new Date();
 
+	private boolean SAVE_SRC = true;
+
+	public void setSaveSrc( boolean SAVE_SRC ){
+		this.SAVE_SRC = SAVE_SRC;
+	}
+
+	public boolean getSaveSrc(){
+		return this.SAVE_SRC;
+	}
+
 	private Task() {}
 
 	/**
