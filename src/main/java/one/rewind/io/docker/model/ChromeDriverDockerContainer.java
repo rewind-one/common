@@ -81,7 +81,7 @@ public class ChromeDriverDockerContainer extends DockerContainer {
 	 */
 	public void create() throws Exception {
 
-		String cmd = "docker run -d --name " + name
+		String cmd = "docker run -d --shm-size=2g --name " + name
 				+ " -p " + seleniumPort + ":4444 -p " + vncPort + ":5900" +
 				" -e SCREEN_WIDTH=\"1360\" -e SCREEN_HEIGHT=\"768\" -e SCREEN_DEPTH=\"24\"" +
 				" " + imageName;

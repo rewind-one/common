@@ -294,6 +294,7 @@ public class ChromeDriverAgent {
 					instances.remove(this);
 				}*/
 
+
 				logger.info("[{}] stopped.", name);
 			}
 
@@ -701,6 +702,7 @@ public class ChromeDriverAgent {
 		options.addArguments("--disk-cache-size=1");
 		options.addArguments("--timeout=28000"); // 	Issues a stop after the specified number of milliseconds. This cancels all navigation and causes the DOMContentLoaded event to fire.
 		options.addArguments("--ipc-connection-timeout=28"); // Overrides the timeout, in seconds, that a child process waits for a connection from the browser before killing itself. ↪
+        options.addArguments("--disable-setuid-sandbox");
 
 		/*options.addArguments("--log-level=3");
 		options.addArguments("--silent");*/
@@ -1181,19 +1183,26 @@ public class ChromeDriverAgent {
 			// 帐号失效
 			catch (AccountException.Failed e) {
 
-				logger.error("{}, Account {}::{} failed, ", name, e.account.getDomain(), e.account.getUsername(), e);
+				try {
 
-				// 删除账户登录信息
-				removeLoginInfo(e.account.getDomain(), e.account);
+					logger.error("{}, Account {}::{} failed, ", name, e.account.getDomain(), e.account.getUsername(), e);
 
-				status = Status.IDLE;
+					// 删除账户登录信息
+					removeLoginInfo(e.account.getDomain(), e.account);
 
-				if (accountFailedCallbacks == null) return;
-				for (AccountCallback callback : accountFailedCallbacks) {
+					if (accountFailedCallbacks == null) return;
+					for (AccountCallback callback : accountFailedCallbacks) {
 
-					// 通常AccountFailedCallback对应的都是重登陆任务
-					callback.run(this, e.account);
+						// 通常AccountFailedCallback对应的都是重登陆任务
+						callback.run(this, e.account);
+					}
+				} catch ( Exception eException) {
+					logger.error("", eException);
 				}
+				finally {
+					status = Status.IDLE;
+				}
+
 			}
 			// 代理失效
 			catch (ProxyException.Failed e) {
@@ -1238,8 +1247,7 @@ public class ChromeDriverAgent {
 
 		// Set idle callback
 		// TODO 为什么要check queue.size
-		if(status == Status.IDLE && queue.size() == 0 && !ignoreIdleCallback) {
-
+		if( status == Status.IDLE ) {
 			runCallbacks(idleCallbacks);
 		}
 	}
