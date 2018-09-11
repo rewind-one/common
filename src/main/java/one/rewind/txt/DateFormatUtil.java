@@ -219,13 +219,18 @@ public class DateFormatUtil {
 		} else if (prefix.matches("\\d+分钟前")){
 			int n = Integer.parseInt(prefix.replaceAll("分钟前", ""));
 			v = - n * 60 * 1000;
-		}else if (prefix.matches("\\d+个星期前")){
+		} else if (prefix.matches("\\d+个星期前")){
 			int n = Integer.parseInt(prefix.replaceAll("个星期前", ""));
 			v = - n * 7 * 24 * 60 * 60 * 1000;
+		} else if (prefix.matches("\\d+个月前")) {
+			int n = Integer.parseInt(prefix.replaceAll("个月前", ""));
+			v = -n * 30L * 24L * 60L * 60L * 1000L;
+		} else if (prefix.matches("\\d+年前")) {
+			int n = Integer.parseInt(prefix.replaceAll("年前", ""));
+			v = -n * 365L * 24L * 60L * 60L * 1000L;
 		}
 		
 		return v;
 	}
-
 
 }

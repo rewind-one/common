@@ -100,6 +100,7 @@ public class BasicRequester {
 	
 	/**
 	 * 异步请求
+	 * TODO 根本用不着Wrapper 和 Future
 	 * @param task
 	 * @param timeout 可以手工设定超时时间
 	 */
@@ -454,6 +455,8 @@ public class BasicRequester {
 	
 	/**
 	 * Request Wraper Object
+	 *
+	 * TODO 应将异常放在Wrapper外部捕获
 	 * 
 	 * @author karajan
 	 *
@@ -494,7 +497,9 @@ public class BasicRequester {
 
 				String cookies = null;
 				CookiesHolderManager.CookiesHolder cookiesHolder = null;
+
 				String host = task.getProxy() == null ? "" : task.getProxy().getHost();
+
 				if(task.getCookies() != null) {
 					cookies = task.getCookies();
 				} else {
@@ -626,6 +631,10 @@ public class BasicRequester {
 				
 				if(task.getResponse().isText()) {
 					task.getResponse().setText();
+				}
+
+				if(task.buildDom()){
+					task.getResponse().buildDom();
 				}
 				
 				if(task.getResponse().getText() != null) {

@@ -1,5 +1,6 @@
 package one.rewind.io.requester.task;
 
+import com.google.common.collect.ImmutableMap;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
@@ -7,6 +8,7 @@ import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.db.DaoManager;
 import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.callback.TaskValidator;
 import one.rewind.json.JSON;
@@ -53,7 +55,8 @@ public class Task<T extends Task> implements Comparable<Task> {
 	public static enum Flag {
 		PRE_PROC,
 		SHOOT_SCREEN,
-		BUILD_DOM
+		BUILD_DOM,
+		SWITCH_PROXY
 	}
 
 	@DatabaseField(dataType = DataType.STRING, width = 32, id = true)
@@ -84,7 +87,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 	private String domain;
 
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
-	private HashMap<String, Object> params = new HashMap<>();
+	private Map<String, Object> params = new HashMap<>();
 
 	@DatabaseField(dataType = DataType.STRING, width = 256)
 	private String requester_class = BasicRequester.class.getSimpleName();
@@ -137,6 +140,8 @@ public class Task<T extends Task> implements Comparable<Task> {
 	// 采集后回调
 	public List<TaskCallback<T>> doneCallbacks = new LinkedList<>();
 
+	public List<NextTaskGenerator<T>> nextTaskGenerators = new LinkedList<>();
+
 	// 采集异常回调
 	public List<TaskCallback<T>> exceptionCallbacks = new LinkedList<>();
 
@@ -168,11 +173,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 	 * @throws URISyntaxException
 	 */
 	public Task(String url) throws MalformedURLException, URISyntaxException {
-		this.url = url;
-		domain = URLUtil.getDomainName(url);
-		this.response = new Response();
-		this.id = StringUtil.MD5(url + " " + System.nanoTime());
-		this.request_method = RequestMethod.GET;
+		this(url, null);
 	}
 
 	/**
@@ -185,18 +186,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 	 */
 	public Task(String url, String post_data) throws MalformedURLException, URISyntaxException {
 
-		this.url = url;
-		this.post_data = post_data;
-		domain = URLUtil.getDomainName(url);
-
-		this.response = new Response();
-		this.id = StringUtil.MD5(url + post_data + System.nanoTime());
-
-		if (post_data != null && post_data.length() > 0) {
-			this.request_method = RequestMethod.POST;
-		} else {
-			this.request_method = RequestMethod.GET;
-		}
+		this(url, post_data, null, null);
 	}
 
 	/**
@@ -211,20 +201,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 	 */
 	public Task(String url, String post_data, String cookies, String ref) throws MalformedURLException, URISyntaxException {
 
-		this.url = url;
-		this.post_data = post_data;
-		this.cookies = cookies;
-		this.ref = ref;
-		domain = URLUtil.getDomainName(url);
-
-		this.response = new Response();
-		this.id = StringUtil.MD5(url + post_data + cookies + System.nanoTime());
-
-		if (post_data != null && post_data.length() > 0) {
-			this.request_method = RequestMethod.POST;
-		} else {
-			this.request_method = RequestMethod.GET;
-		}
+		this(url, null, post_data, cookies, ref);
 	}
 
 	/**
@@ -248,7 +225,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 		domain = URLUtil.getDomainName(url);
 
 		this.response = new Response();
-		this.id = StringUtil.MD5(url + post_data + cookies + System.nanoTime());
+		this.id = StringUtil.MD5(url + "::" + post_data + "::" + cookies + "::" + System.currentTimeMillis());
 
 		if (post_data != null && post_data.length() > 0) {
 			this.request_method = RequestMethod.POST;
@@ -337,8 +314,21 @@ public class Task<T extends Task> implements Comparable<Task> {
 	 * 仅对BasicRequester有效
 	 * @param headers
 	 */
-	public void setHeaders(Map<String, String> headers) {
+	public Task setHeaders(Map<String, String> headers) {
 		this.headers = headers;
+		return this;
+	}
+
+	/**
+	 *
+	 * @param k
+	 * @param v
+	 * @return
+	 */
+	public Task addHeader(String k, String v) {
+		if(headers == null) headers = new HashMap<>();
+		headers.put(k, v);
+		return this;
 	}
 
 	/**
@@ -440,8 +430,6 @@ public class Task<T extends Task> implements Comparable<Task> {
 		return this;
 	}
 
-
-
 	/**
 	 * 设定请求过滤器
 	 * ChromeDriverAgent 专用
@@ -506,6 +494,14 @@ public class Task<T extends Task> implements Comparable<Task> {
 	 */
 	public void setPreProc() {
 		flags.add(Flag.PRE_PROC);
+	}
+
+	public boolean switchProxy() {
+		return flags.contains(Flag.SWITCH_PROXY);
+	}
+
+	public void setSwitchProxy() {
+		flags.add(Flag.SWITCH_PROXY);
 	}
 
 	/**
@@ -595,6 +591,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 设置验证器
+	 * TODO 默认应该没有ChromeDriverAgent对象
 	 * @param validator
 	 * @return
 	 */
@@ -685,8 +682,30 @@ public class Task<T extends Task> implements Comparable<Task> {
 	 * @param key
 	 * @param object
 	 */
-	public void setParam(String key, Object object) {
+	public Task param(String key, Object object) {
 		this.params.put(key, object);
+		return this;
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public String getFingerprint() {
+
+		if(params.keySet().size() == 0) {
+			return id;
+		}
+		else {
+
+			String src = "[" + domain + ":" + username + "];";
+
+			for(String key : params.keySet()) {
+				src += key + ":" + params.get(key) + ";";
+			}
+
+			return StringUtil.MD5(src);
+		}
 	}
 
 	/**
@@ -746,6 +765,17 @@ public class Task<T extends Task> implements Comparable<Task> {
 	public Task addDoneCallback(TaskCallback<T> callback) {
 		if (this.doneCallbacks == null) this.doneCallbacks = new LinkedList<>();
 		this.doneCallbacks.add(callback);
+		return this;
+	}
+
+	/**
+	 *
+	 * @param ntg
+	 * @return
+	 */
+	public Task addNextTaskGenerator(NextTaskGenerator<T> ntg) {
+		if (this.nextTaskGenerators == null) this.nextTaskGenerators = new LinkedList<>();
+		this.nextTaskGenerators.add(ntg);
 		return this;
 	}
 

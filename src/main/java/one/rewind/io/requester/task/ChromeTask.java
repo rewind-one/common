@@ -7,6 +7,7 @@ import one.rewind.io.requester.chrome.ChromeDriverAgent;
 import one.rewind.io.requester.chrome.ChromeTaskScheduler;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
+import one.rewind.txt.StringUtil;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -126,6 +127,28 @@ public class ChromeTask extends Task<ChromeTask> {
 		map.putAll(holder.vars);
 		map.putAll(params);
 		return map;
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public String getFingerprint() {
+
+		if(holder == null || holder.vars == null || holder.vars.keySet().size() == 0) {
+			return id;
+		}
+		else {
+
+			String src = "[" + holder.domain + ":" + holder.username + "];";
+
+			for(String key : holder.vars.keySet()) {
+				if(!key.equals("url"))
+					src += key + ":" + holder.vars.get(key) + ";";
+			}
+
+			return StringUtil.MD5(src);
+		}
 	}
 
 	/**

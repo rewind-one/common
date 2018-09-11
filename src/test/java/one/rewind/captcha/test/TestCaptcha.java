@@ -10,9 +10,10 @@ public class TestCaptcha {
 	public void bypass() {
 		
 		String key = "92506c6fadaa8d4d25c8b338dbea3220";
-		String img_fn = "src/test/java/org/tfelab/captcha/pin.png";
 
-		String pass = CaptchaHandler.bypass("src/test/java/org/tfelab/captcha/pin.png");
+		String img_fn = "src/test/java/one/rewind/captcha/test/pin.png";
+
+		String pass = CaptchaHandler.bypass(img_fn);
 		System.err.println(pass);
 
 //		System.out.println("Decoding");

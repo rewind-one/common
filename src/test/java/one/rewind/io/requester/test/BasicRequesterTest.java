@@ -39,6 +39,24 @@ public class BasicRequesterTest {
 		System.err.println(t.getDuration() + "\t" + t.getResponse().getText());
 	}
 
+	@Test
+	public void domBuildTest() throws Exception {
+
+		String url = "https://www.baidu.com";
+
+		Task<Task> t = new Task(url);
+		t.setBuildDom();
+
+		BasicRequester.getInstance().submit(t, 30000);
+
+		for(Throwable e : t.getExceptions()) {
+			e.printStackTrace();
+		}
+
+		System.err.println(t.getDuration() + "\t" + t.getResponse().getDoc().select("#su").attr("value"));
+
+	}
+
 	/**
 	 * TODO
 	 * 已知问题：https请求 使用需要验证的proxy 会出错 原因是 HttpURLConnection不支持单独设定Authenticator

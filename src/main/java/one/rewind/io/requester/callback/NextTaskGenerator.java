@@ -4,6 +4,6 @@ import one.rewind.io.requester.task.Task;
 
 import java.util.List;
 
-public interface TaskCallback<T extends Task> {
-	void run(T t) throws Exception;
+public interface NextTaskGenerator<T extends Task>  {
+	void run(T t, List<T> nts) throws Exception;
 }
