@@ -1,6 +1,7 @@
 package one.rewind.db.test;
 
 import one.rewind.db.FastDFSAdapter;
+import org.csource.fastdfs.*;
 import org.junit.Test;
 
 import java.io.*;
@@ -46,7 +47,7 @@ public class FastDFSAdapterTest {
                 executor.submit(()-> {
                     try {
 
-                        String[] src = FastDFSAdapter.getInstance().upload_file(b, null, null);
+                        String[] src = FastDFSAdapter.getInstance().upload_file(b, "png", null);
                         File csv = new File("tmp/test.csv"); // CSV数据文件
                         BufferedWriter bw = new BufferedWriter(new FileWriter(csv, true)); // 附加
                         bw.write( src[0] + "," + src[1]); // 添加新的数据行
@@ -64,4 +65,43 @@ public class FastDFSAdapterTest {
         countDownLatch.await();
         System.out.print(System.currentTimeMillis() - t1);
     }
+
+    @Test
+    public void testUpFile(){
+
+        String conf_filename = "fastdfs.conf";
+
+        TrackerServer trackerServer =null;
+        StorageServer storageServer = null;
+
+        try {
+            ClientGlobal.init(conf_filename);
+            TrackerClient tracker = new TrackerClient();
+            trackerServer = tracker.getConnection();
+            StorageClient1 client = new StorageClient1(trackerServer, storageServer);
+
+            //要上传的文件路径
+            String local_filename = "tmp/1.png";
+
+            StorageClient storageClient = new StorageClient(trackerServer, storageServer);
+            String fileIds[] = storageClient.upload_file(local_filename, "png", null);
+
+            System.out.println(fileIds.length);
+            System.out.println("组名：" + fileIds[0]);
+            System.out.println("路径: " + fileIds[1]);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally{
+            try {
+                if(null!=storageServer) storageServer.close();
+                if(null!=trackerServer) trackerServer.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    public void testFastDFSAdapterDownFile(){}
 }
