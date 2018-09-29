@@ -59,6 +59,8 @@ public class Task<T extends Task> implements Comparable<Task> {
 		SWITCH_PROXY
 	}
 
+	public static long MIN_INTERVAL = 0;
+
 	@DatabaseField(dataType = DataType.STRING, width = 32, id = true)
 	public String id;
 
@@ -328,6 +330,17 @@ public class Task<T extends Task> implements Comparable<Task> {
 	public Task addHeader(String k, String v) {
 		if(headers == null) headers = new HashMap<>();
 		headers.put(k, v);
+		return this;
+	}
+
+	/**
+	 *
+	 * @param k
+	 * @return
+	 */
+	public Task removeHeader(String k) {
+		if(headers == null) return this;
+		headers.remove(k);
 		return this;
 	}
 

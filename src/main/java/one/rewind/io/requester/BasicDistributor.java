@@ -5,8 +5,12 @@ import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.proxy.IpDetector;
 import one.rewind.io.requester.proxy.Proxy;
+import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.Task;
+import one.rewind.json.JSON;
+import one.rewind.txt.DateFormatUtil;
 import one.rewind.util.Configs;
+import one.rewind.util.FileUtil;
 import one.rewind.util.NetworkUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,7 +20,7 @@ import java.util.concurrent.*;
 
 public class BasicDistributor extends Thread {
 
-	private static final Logger logger = LogManager.getLogger(BasicDistributor.class.getName());
+	static final Logger logger = LogManager.getLogger(BasicDistributor.class.getName());
 
 	protected static BasicDistributor instance;
 
@@ -39,17 +43,16 @@ public class BasicDistributor extends Thread {
 		return instance;
 	}
 
-
 	public static String LOCAL_IP = IpDetector.getIp() + " :: " + NetworkUtil.getLocalIp();
 
 	// 全局每秒请求数
-	static int REQUEST_PER_SECOND_LIMIT = 1;
+	static int REQUEST_PER_SECOND_LIMIT = 20;
 
 	// 单次请求TIMEOUT
-	static int CONNECT_TIMEOUT = 5000;
+	static int CONNECT_TIMEOUT = 20000;
 
 	// 重试次数
-	static int RETRY_LIMIT = 3;
+	static int RETRY_LIMIT = 12;
 
 	static {
 		try {
@@ -62,14 +65,19 @@ public class BasicDistributor extends Thread {
 
 	Proxy proxy = null;
 
-	private long lastRequestTime = System.currentTimeMillis();
+	// 上一次请求时间
+	public long lastRequestTime = System.currentTimeMillis();
 
-	private ConcurrentHashMap<String, Date> fingerprints = new ConcurrentHashMap<>();
+	// 已经执行完的任务特征缓存
+	public ConcurrentHashMap<String, Long> fingerprints = new ConcurrentHashMap<>();
 
-	BlockingQueue<Task> queue;
+	// 任务队列
+	PriorityBlockingQueue<Task> queue = new PriorityBlockingQueue();
 
+	// 是否执行完的标识
 	private volatile boolean done = false;
 
+	// 线程池执行器
 	ThreadPoolExecutor executor =  new ThreadPoolExecutor(
 			20 * REQUEST_PER_SECOND_LIMIT,
 			40 * REQUEST_PER_SECOND_LIMIT,
@@ -78,14 +86,14 @@ public class BasicDistributor extends Thread {
 
 
 	/**
-	 *
+	 * 私有构造器
 	 */
-	private BasicDistributor() {
+	public BasicDistributor() {
 
-		queue = new LinkedBlockingQueue();
-
-		executor.setThreadFactory(new ThreadFactoryBuilder()
-				.setNameFormat("BasicDistributor-%d").build());
+		executor.setThreadFactory(
+				new ThreadFactoryBuilder()
+						.setNameFormat("BasicDistributor-%d")
+						.build());
 	}
 
 	/**
@@ -101,34 +109,12 @@ public class BasicDistributor extends Thread {
 
 				t = queue.take();
 
-				if(t.switchProxy()) {
+				executor.submit(new RequestWrapper(t));
 
-					logger.info("New Request Group: {}", t.getUrl());
+				waits();
 
-					t.addHeader("Proxy-Switch-Ip","yes");
+				logger.info("[{} / {} / {}]", executor.getActiveCount(), executor.getQueue().size(), queue.size());
 
-					RequestGroupWrapper gw = new RequestGroupWrapper(t);
-
-					executor.submit(gw);
-
-					gw.phaser.arriveAndAwaitAdvance();
-
-					gw.done = true;
-					gw = null;
-
-					logger.info("Request Group: {} Done.", t.getUrl());
-
-				} else {
-
-					executor.submit(new RequestWrapper(t, queue));
-					waits();
-
-				}
-
-				logger.info("Active: {}, in queue: {}.", executor.getActiveCount(), executor.getQueue().size());
-
-			} catch (InterruptedException e) {
-				logger.error(e);
 			} catch (Exception e) {
 				logger.error("{}", t.toJSON(), e);
 			}
@@ -136,22 +122,41 @@ public class BasicDistributor extends Thread {
 	}
 
 	/**
-	 *
+	 * 提交任务
 	 * @param t
-	 * @throws InterruptedException
 	 */
-	public void submit(Task t) throws InterruptedException {
+	public void submit(Task t, BlockingQueue<Task> queue) {
 
 		if(!fingerprints.containsKey(t.getFingerprint())) {
-			fingerprints.put(t.getFingerprint(), new Date());
-			queue.put(t);
+
+			queue.add(t);
+
 		} else {
-			logger.warn("Duplicate fingerprints [{}] --> {}", t.getFingerprint(), t.getUrl());
+
+			// 上一次采集时间
+			long lts = fingerprints.get(t.getFingerprint());
+
+			long ts = System.currentTimeMillis();
+
+			if(ts - lts >= t.MIN_INTERVAL / 10) {
+				queue.add(t);
+			} else {
+				logger.warn("Duplicate fingerprints {}:[{}] --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.getUrl());
+			}
 		}
 	}
 
 	/**
-	 *
+	 * 提交任务
+	 * @param t
+	 */
+	public void submit(Task t) {
+
+		submit(t, queue);
+	}
+
+	/**
+	 * 设置代理
 	 * @param proxy
 	 */
 	public void setProxy(Proxy proxy) {
@@ -159,21 +164,22 @@ public class BasicDistributor extends Thread {
 	}
 
 	/**
-	 *
+	 * 计数
+	 * TODO 未实现
 	 */
 	public void count() {
 
 	}
 
 	/**
-	 *
+	 * 设置结束
 	 */
 	public void setDone() {
 		this.done = true;
 	}
 
 	/**
-	 *
+	 * 任务等待
 	 * @throws InterruptedException
 	 */
 	public synchronized void waits() throws InterruptedException {
@@ -181,109 +187,107 @@ public class BasicDistributor extends Thread {
 		long wait_time = lastRequestTime + (long) Math.ceil(1000D / (double) REQUEST_PER_SECOND_LIMIT) - System.currentTimeMillis();
 
 		if(wait_time > 0) {
+
 			logger.info("Wait {} ms.", wait_time);
 			Thread.sleep(wait_time);
+
 		}
 
 		lastRequestTime = System.currentTimeMillis();
 	}
 
 	/**
-	 *
-	 */
-	class RequestGroupWrapper implements Runnable {
-
-		BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
-
-		Phaser phaser;
-
-		private volatile boolean done = false;
-
-		/**
-		 *
-		 */
-		public RequestGroupWrapper(Task t) throws InterruptedException {
-			queue.put(t);
-			phaser = new Phaser(2);
-		}
-
-		/**
-		 *
-		 */
-		public void run() {
-
-			while(!done) {
-
-				Task t = null;
-
-				try {
-
-					t = queue.poll(1, TimeUnit.SECONDS);
-
-					if(t != null) {
-
-						executor.submit(new RequestWrapper(t, queue, phaser));
-
-						waits();
-					}
-
-				} catch (Exception e) {
-					logger.error("Error poll task, ", e);
-				}
-			}
-		}
-	}
-
-	/**
-	 *
+	 * 请求封装
 	 */
 	class RequestWrapper implements Runnable {
 
-		Task<Task> t;
+		// 任务
+		public Task<Task> t;
 
-		BlockingQueue<Task> queue;
+		// 验证异常
+		public boolean validatorException = false;
 
-		Phaser phaser;
+		// 采集异常
+		public boolean fetchException = false;
 
-		RequestWrapper(Task t, BlockingQueue<Task> queue, Phaser phaser) {
+		// 重试
+		public boolean retry = false;
+
+		/**
+		 * 构造方法
+		 * @param t
+		 */
+		RequestWrapper(Task t) {
 			this.t = t;
-			this.queue = queue;
-			this.phaser = phaser;
 		}
 
-		RequestWrapper(Task t, BlockingQueue<Task> queue) {
-			this(t, queue, null);
+		/**
+		 *
+		 * @param nt
+		 */
+		public void submit(Task nt) {
+
+			nt.removeHeader("Proxy-Switch-Ip");
+			nt.getExceptions().clear();
+
+			BasicDistributor.this.submit(nt);
 		}
 
 		@Override
 		public void run() {
 
+			if(t.switchProxy()) {
+				t.addHeader("Proxy-Switch-Ip","yes");
+				logger.info("Change proxy {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
+			}
+
+			// 二次去重
+			if(fingerprints.containsKey(t.getFingerprint())) {
+
+				// 上一次采集时间
+				long lts = fingerprints.get(t.getFingerprint());
+
+				long ts = System.currentTimeMillis();
+
+				if(ts - lts < t.MIN_INTERVAL) {
+					logger.warn("Duplicate fingerprints {}:[{}] --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.getUrl());
+					return;
+				}
+			}
+
+			// 下一级任务
 			List<Task> nts = new ArrayList<>();
 
+			t.setProxy(proxy);
+
+			BasicRequester.getInstance().submit(t, CONNECT_TIMEOUT);
+
+			// A Validator 验证
 			try {
+				if(t.validator != null)
+					t.validator.run(null, t);
 
-				t.setProxy(proxy);
-				// t.setHeaders(genHeaders());
+			} catch (Exception e) {
 
-				BasicRequester.getInstance().submit(t, CONNECT_TIMEOUT);
+				logger.error("Validator exception {}:[{}], ", t.getClass().getSimpleName(), t.getFingerprint(), e);
+				validatorException = true;
+				retry = true;
+			}
 
-				// A 重试
-				if (t.getExceptions().size() > 0) {
+			// B1 异常处理
+			if (t.getExceptions().size() > 0) {
 
-					for(Throwable e : t.getExceptions()) {
-						logger.error("Fetch Error: {}.", t.getUrl(), e);
-					}
-
-					if(t.getRetryCount() < RETRY_LIMIT) {
-						t.addRetryCount();
-						queue.put(t);
-						return;
-					} else {
-						t.insert();
-					}
+				for(Throwable e : t.getExceptions()) {
+					logger.error("Fetch Error {}:[{}], {}", t.getClass().getSimpleName(), t.getFingerprint(), e.getMessage());
 				}
-				// B 成功执行
-				else {
+
+				fetchException = true;
+				retry = true;
+			}
+			// B2 成功执行 执行 callbacks 生成下一级任务
+			else {
+
+				try {
 
 					for (TaskCallback tc : t.doneCallbacks) {
 						tc.run(t);
@@ -296,42 +300,42 @@ public class BasicDistributor extends Thread {
 					// 计数
 					count();
 
+					// 提交下一级任务
 					for(Task nt : nts) {
-
-						if(!fingerprints.containsKey(nt.getFingerprint())) {
-
-							fingerprints.put(nt.getFingerprint(), new Date());
-
-							if(nt.switchProxy()) {
-
-								BasicDistributor.this.queue.put(nt);
-
-							}
-							else {
-
-								// TODO phaser 没有传
-								System.err.println(nt.getUrl());
-								queue.put(nt);
-
-								if(phaser != null)
-									phaser.register();
-							}
-						}
-						else {
-							logger.warn("Duplicate fingerprints [{}] --> {}", nt.getFingerprint(), nt.getUrl());
-						}
+						submit(nt);
 					}
+
+				} catch (Exception e) {
+
+					logger.error("Error exec callbacks {}:[{}], ", t.getClass().getSimpleName(), t.getFingerprint(), e);
+
+					fetchException = true;
+					retry = true;
 				}
-
-				logger.info("{} {} duration: {}", t.getClass().getSimpleName(), t.getUrl(), t.getDuration());
-
-			} catch (Exception e) {
-
-				logger.error("Error exec request: {}, ", t.getUrl(), e);
 			}
 
-			if(phaser != null)
-				phaser.arriveAndDeregister();
+			// C1 异常 重试
+			if(retry) {
+
+				if(t.getRetryCount() < RETRY_LIMIT) {
+
+					logger.warn("Retry {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
+
+					t.addRetryCount();
+					submit(t); // 非阻塞方法
+
+				} else {
+
+					logger.warn("Exceed retry limit, {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
+					// TODO 数据库建表
+					// t.insert();
+				}
+			}
+			// C2 成功执行
+			else {
+				fingerprints.put(t.getFingerprint(), new Date().getTime());
+				logger.info("{}:[{}] done --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.getDuration());
+			}
 		}
 	}
 
@@ -407,7 +411,6 @@ public class BasicDistributor extends Thread {
 		headers.put("Accept-Language", "zh-CN,zh;q=0.8");
 		headers.put("Accept-Charset", "utf-8,gb2312;q=0.8,*;q=0.8");
 		headers.put("User-Agent", getUserAgent());
-		//headers.put("User-Agent", getUserAgent());
 		//headers.put("Cookie", "pgv_pvi=7228721152; RK=9HYJF9Ik8x; ptcz=9eb72791f3f6403680844c7d4f6dfa90f0e142797bbca1d4f21db76567fc3a5f; ua_id=nH3IrBSrbrAcNn3vAAAAAO8gdtPurzMXN5W1qWdfohY=; eas_sid=S1O5S1o6j4k5b9q9s4I4M7w7y4; pgv_pvid=2899769615; LW_uid=Z1j5q1e6d540T0l7k7C3A3A1W3; tvfe_boss_uuid=051d402f854c09cc; ptui_loginuin=1161493143; pt2gguin=o1161493143; o_cookie=1161493143; LW_sid=S1J5x321x4D0f2O0C478R932u2; mm_lang=zh_CN; __lnkrntdmcvrd=-1; rewardsn=; wxtokenkey=777");
 		headers.put("Accept-Encoding", "zip");
 		headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");

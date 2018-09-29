@@ -18,8 +18,6 @@ import java.util.*;
  */
 public class ChromeTask extends Task<ChromeTask> {
 
-	public static long MIN_INTERVAL = 10000;
-
 	public TaskHolder holder;
 
 	// 执行动作列表
@@ -140,7 +138,7 @@ public class ChromeTask extends Task<ChromeTask> {
 		}
 		else {
 
-			String src = "[" + holder.domain + ":" + holder.username + "];";
+			String src = "[" + holder.domain + ":" + holder.username + "];" + this.getClass().getSimpleName() + ";";
 
 			for(String key : holder.vars.keySet()) {
 				if(!key.equals("url"))

@@ -29,17 +29,17 @@ import java.util.zip.GZIPInputStream;
 
 /**
  * 基本HTTP内容请求器
- * 
+ *
  * @author karajan
  *
  */
 public class BasicRequester {
-	
+
 	protected static BasicRequester instance;
-	
+
 	public static int CONNECT_TIMEOUT;
 	public static int READ_TIMEOUT;
-	
+
 	private static final Logger logger = LogManager.getLogger(BasicRequester.class.getName());
 
 	private static final Pattern charsetPattern = Pattern.compile("(?i)\\bcharset=\\s*\"?([^\\s;\"]*)");
@@ -63,13 +63,13 @@ public class BasicRequester {
 	}
 
 	CookiesHolderManager cookiesHolderManager = null;
-	
+
 	/**
 	 * 单例模式
 	 * @return
 	 */
 	public static BasicRequester getInstance() {
-		
+
 		if (instance == null) {
 			synchronized (BasicRequester.class) {
 				if (instance == null) {
@@ -87,7 +87,7 @@ public class BasicRequester {
 	private BasicRequester() {
 		cookiesHolderManager = new CookiesHolderManager();
 	}
-	
+
 	/**
 	 * 同步请求
 	 * @param task
@@ -97,7 +97,7 @@ public class BasicRequester {
 		wrapper.run();
 		wrapper.close();
 	}
-	
+
 	/**
 	 * 异步请求
 	 * TODO 根本用不着Wrapper 和 Future
@@ -107,11 +107,11 @@ public class BasicRequester {
 	public void submit(Task task, long timeout) {
 
 		Wrapper wrapper = new Wrapper(task);
-		
+
 		final ExecutorService executor = Executors.newSingleThreadExecutor();
 		final Future<?> future = executor.submit(wrapper);
 		executor.shutdown();
-		
+
 		try {
 
 			future.get(timeout, TimeUnit.MILLISECONDS);
@@ -122,6 +122,7 @@ public class BasicRequester {
 		catch (TimeoutException e){
 			future.cancel(true);
 			logger.error("Task {}, ", task.getUrl(), e);
+			task.addExceptions(e);
 		}
 		catch (ExecutionException e) {
 			logger.error("Task {}, ", task.getUrl(), e.getCause());
@@ -199,11 +200,11 @@ public class BasicRequester {
 	 * @throws UnsupportedEncodingException 异常
 	 */
 	public static String autoDecode(byte[] src, String preferredEncoding) throws UnsupportedEncodingException {
-		
+
 		String text;
 
 		if(preferredEncoding != null){
-			
+
 			logger.trace("charset detected = {}", preferredEncoding);
 			try {
 				text = new String(src, preferredEncoding);
@@ -211,16 +212,16 @@ public class BasicRequester {
 				logger.trace("decoding using {}", "utf-8");
 				text = new String(src, "utf-8");
 			}
-		
+
 		} else {
-			
+
 			text = new String(src, "utf-8");
 			Pattern pattern = Pattern.compile("meta.*?charset\\s*?=\\s*?([^\"' ]+)", Pattern.MULTILINE);
 			Matcher matcher = pattern.matcher(text);
-			
+
 			if (matcher.find()) {
 				String encode = matcher.group(1);
-				
+
 				try {
 					logger.trace("try decoding using {}", encode);
 					text = new String(src, encode);
@@ -230,12 +231,12 @@ public class BasicRequester {
 				}
 
 			} else {
-				
+
 				UniversalDetector detector = new UniversalDetector(null);
 				detector.handleData(src, 0, src.length);
 				detector.dataEnd();
 				String charset = detector.getDetectedCharset();
-				
+
 				if (charset != null) {
 					logger.trace("charset detected = {}", charset);
 					try {
@@ -249,7 +250,7 @@ public class BasicRequester {
 				}
 			}
 		}
-		
+
 		try {
 			text = ChineseChar.unicode2utf8(text);
 		} catch (Exception | Error e){
@@ -258,10 +259,10 @@ public class BasicRequester {
 
 		return text;
 	}
-	
+
 	/**
 	 * HttpURLConnection工厂类
-	 * 
+	 *
 	 * @author karajan
 	 *
 	 */
@@ -283,7 +284,6 @@ public class BasicRequester {
 				}
 
 				if (proxy.needAuth()) {
-					conn.setRequestProperty("Proxy-Switch-Ip","yes");
 					String headerKey = "Proxy-Authorization";
 					conn.addRequestProperty(headerKey, proxy.getAuthenticationHeader());
 				}
@@ -308,17 +308,17 @@ public class BasicRequester {
 
 			conn.setRequestMethod("GET");
 		}
-		
+
 		/**
-		 * 
+		 *
 		 * @param url
 		 * @param proxy
 		 * @throws MalformedURLException
 		 * @throws IOException
-		 * @throws CertificateException 
-		 * @throws KeyStoreException 
-		 * @throws NoSuchAlgorithmException 
-		 * @throws KeyManagementException 
+		 * @throws CertificateException
+		 * @throws KeyStoreException
+		 * @throws NoSuchAlgorithmException
+		 * @throws KeyManagementException
 		 */
 		public ConnectionBuilder(String url, one.rewind.io.requester.proxy.Proxy proxy, String method) throws MalformedURLException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException {
 
@@ -333,7 +333,6 @@ public class BasicRequester {
 				}
 
 				if (proxy.needAuth()) {
-					conn.setRequestProperty("Proxy-Switch-Ip","yes");
 					String headerKey = "Proxy-Authorization";
 					conn.addRequestProperty(headerKey, proxy.getAuthenticationHeader());
 				}
@@ -349,11 +348,11 @@ public class BasicRequester {
 					((HttpsURLConnection) conn).setSSLSocketFactory(CertAutoInstaller.getSSLFactory());
 				}
 			}
-			
+
 			conn.setConnectTimeout(CONNECT_TIMEOUT);
 
 			conn.setReadTimeout(READ_TIMEOUT);
-			
+
 			conn.setDoOutput(true);
 
 			conn.setRequestMethod(method);
@@ -361,9 +360,9 @@ public class BasicRequester {
 			if(method.equals("POST")) {
 				conn.setDoInput(true);
 			}
-			
+
 		}
-		
+
 		/**
 		 * 定义Header
 		 * @param header
@@ -376,16 +375,16 @@ public class BasicRequester {
 				}
 			}
 		}
-		
+
 		/**
 		 * 定义Post Data
 		 * @param postData
 		 * @throws IOException
 		 */
 		public void withPostData (String postData) throws IOException {
-			
+
 			//logger.info(postData);
-			
+
 			if (postData != null && !postData.isEmpty()) {
 				conn.setDoInput(true);
 				PrintWriter out = new PrintWriter(conn.getOutputStream());
@@ -393,9 +392,9 @@ public class BasicRequester {
 				out.flush();
 			}
 		}
-		
+
 		/**
-		 * 
+		 *
 		 * @return
 		 */
 		public HttpURLConnection build() {
@@ -406,18 +405,18 @@ public class BasicRequester {
 
 	/**
 	 * HeaderBuilder
-	 * 
+	 *
 	 * 构建请求所需的Header字段
 	 */
 	public static class HeaderBuilder {
-		
+
 		static String UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36";
 		static String Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
 		static String AcceptLanguage = "zh-CN,zh;q=0.8";
 		static String AcceptEncoding = "zip"; //, deflate, sdch
 		static String AcceptCharset = "utf-8,gb2312;q=0.8,*;q=0.8";
 		static String Connection = "Keep-Alive";
-		
+
 		/**
 		 * Build headers from url, cookies and ref url
 		 * @param url
@@ -430,9 +429,9 @@ public class BasicRequester {
 		public static Map<String, String> build(String url, String cookie, String ref)
 				throws URISyntaxException, MalformedURLException
 		{
-			
+
 			String host = URLUtil.getDomainName(url);
-			
+
 			Map<String, String> header = new TreeMap<String, String>();
 			header.put("Host", host);
 			header.put("User-Agent", UserAgent);
@@ -448,51 +447,51 @@ public class BasicRequester {
 				header.put("Cookie", cookie);
 			if(ref != null)
 				header.put("Referer", ref);
-			
+
 			return header;
 		}
 	}
-	
+
 	/**
 	 * Request Wraper Object
 	 *
 	 * TODO 应将异常放在Wrapper外部捕获
-	 * 
+	 *
 	 * @author karajan
 	 *
 	 */
 	public class Wrapper implements Runnable {
-		
+
 		Task<Task> task;
-		
+
 		Map<String, String> headers = null;
 		HttpURLConnection conn = null;
 		BufferedInputStream inStream = null;
 		ByteArrayOutputStream bOutStream = null;
-		
+
 		boolean retry = false;
 		int retry_count = 0;
-		
+
 		/**
-		 * 
+		 *
 		 * @param task
 		 */
 		public Wrapper(Task task) {
 			this.task = task;
 			task.setStartTime();
 		}
-		
+
 		/**
 		 *
 		 */
 		public void run() {
-			
+
 			retry_count ++;
-			
+
 			if(retry_count > 2) return;
-			
+
 			logger.info(task.getUrl() + (task.getProxy() == null? "" : " via " + task.getProxy().getInfo()));
-			
+
 			try {
 
 				String cookies = null;
@@ -525,18 +524,18 @@ public class BasicRequester {
 
 					inStream = new BufferedInputStream(conn.getInputStream());
 					code = conn.getResponseCode();
-				} 
+				}
 				catch (NoSuchElementException | SocketException | SocketTimeoutException e) {
 
 					logger.error("Error Code: {}", code);
 					throw e;
-				} 
+				}
 				catch (SSLException e){
-					
+
 					logger.warn("Encounter: {}", e.getMessage());
-					
+
 					try {
-						
+
 						CertAutoInstaller.installCert(task.getDomain(), URLUtil.getPort(task.getUrl()));
 						// 重新获取
 						connBuilder = new ConnectionBuilder(task.getUrl(), task.getProxy(), task.getRequestMethod());
@@ -544,7 +543,7 @@ public class BasicRequester {
 						connBuilder.withPostData(task.getPost_data());
 						conn = connBuilder.build();
 						inStream = new BufferedInputStream(conn.getInputStream());
-						
+
 					} catch (Exception e1){
 						task.addExceptions(e1);
 					}
@@ -556,14 +555,14 @@ public class BasicRequester {
 				}
 
 				task.getResponse().setHeader(conn.getHeaderFields());
-				
+
 				for (Map.Entry<String, List<String>> entry : task.getResponse().getHeader().entrySet()) {
-					
+
 					/**
 					 * 解压缩
 					 */
 					if (entry.getKey() != null && entry.getKey().equals("Content-Encoding")) {
-		
+
 						if (entry.getValue().get(0).equals("gzip")) {
 							inStream = new BufferedInputStream(decompress_stream(inStream));
 						}
@@ -572,7 +571,7 @@ public class BasicRequester {
 					 * SET ENCODE
 					 */
 					if (entry.getKey() != null && entry.getKey().equals("Content-Type")) {
-		
+
 						for (String val : entry.getValue()) {
 							if (val.matches(".*?charset=.+?")) {
 								task.getResponse().setEncoding(
@@ -585,10 +584,10 @@ public class BasicRequester {
 					 * Set-Cookie
 					 */
 					if (entry.getKey() != null && entry.getKey().equals("Set-Cookie")) {
-						
+
 						String newCookies = "";
 						HashMap<String, String> cookie_map = new HashMap<String, String>();
-						
+
 						for(String val : entry.getValue()){
 							String[] item = val.split("; *");
 							for(String kv : item){
@@ -596,17 +595,17 @@ public class BasicRequester {
 								if(kv_.length>1 && ! kv_[0].matches("[Pp]ath|[Ee]xpires|[Dd]omain")) {
 									cookie_map.put(kv_[0], kv_[1]);
 								}
-									
+
 							}
 						}
-						
+
 						for(String key : cookie_map.keySet()) {
 							newCookies += key + "=" + cookie_map.get(key) + "; ";
 						}
-						
+
 						newCookies = CookiesHolderManager.mergeCookies(cookies, newCookies);
 						task.getResponse().setCookies(newCookies);
-						
+
 						if(task.getCookies() == null) {
 							if(cookiesHolder != null) {
 								cookiesHolder.setCookie(newCookies);
@@ -614,21 +613,21 @@ public class BasicRequester {
 								cookiesHolder = new CookiesHolderManager.CookiesHolder(newCookies);
 							}
 							cookiesHolderManager.addCookiesHolder(host, task.getDomain(), cookiesHolder);
-						}	
+						}
 					}
 				}
-				
+
 				byte[] buf = new byte[1024];
 				bOutStream = new ByteArrayOutputStream();
-				
+
 				// possible read timeout here
 				int size;
 				while ((size = inStream.read(buf)) > 0) {
 					bOutStream.write(buf, 0, size);
 				}
-				
+
 				task.getResponse().setSrc(bOutStream.toByteArray());
-				
+
 				if(task.getResponse().isText()) {
 					task.getResponse().setText();
 				}
@@ -636,25 +635,25 @@ public class BasicRequester {
 				if(task.buildDom()){
 					task.getResponse().buildDom();
 				}
-				
+
 				if(task.getResponse().getText() != null) {
 					handleRefreshRequest(task);
 				}
 			}
 			catch (Exception e){
 				task.addExceptions(e);
-				logger.error("", e);
+				// logger.error("", e);
 			}
 			finally {
-				
+
 			}
-			
+
 			if(retry) {
 				close();
 				run();
 			}
 		}
-		
+
 		/**
 		 * 处理内容跳转页面
 		 * @param task
@@ -663,45 +662,45 @@ public class BasicRequester {
 		 * @throws Exception
 		 */
 		private void handleRefreshRequest(Task task) throws SocketTimeoutException, IOException, Exception {
-			
+
 			Pattern p = Pattern.compile("(?is)<META HTTP-EQUIV=REFRESH CONTENT=['\"]\\d+;URL=(?<T>[^>]+?)['\"]>");
 			Matcher m = p.matcher(task.getResponse().getText());
-			
+
 			if(m.find()){
 				task.setUrl(m.group("T"));
 				retry = true;
 			}
 		}
-		
+
 		/**
-		 * 
+		 *
 		 */
 		public void close() {
-			
+
 			if(task != null) {
 				if (bOutStream != null) {
-			        try {
-			        	bOutStream.close();
-			        } catch (IOException e) {
+					try {
+						bOutStream.close();
+					} catch (IOException e) {
 						task.addExceptions(e);
-			        }
-			    }
-			    if (inStream != null) {
-			        try {
-			        	inStream.close();
-			        } catch (IOException e) {
+					}
+				}
+				if (inStream != null) {
+					try {
+						inStream.close();
+					} catch (IOException e) {
 						task.addExceptions(e);
-			        }
-			    }
-			    try {
-				    if (conn != null) {
-				    	conn.disconnect();
-				    }
-			    } catch (Exception e) {
+					}
+				}
+				try {
+					if (conn != null) {
+						conn.disconnect();
+					}
+				} catch (Exception e) {
 					task.addExceptions(e);
-			    }
-			    
-			    task.setDuration();
+				}
+
+				task.setDuration();
 			}
 		}
 	}
@@ -711,23 +710,23 @@ public class BasicRequester {
 	 * @param cookies
 	 */
 	public static void printCookies(String cookies) {
-		
+
 		Map<String, String> map = new TreeMap<String, String>();
-		
+
 		if(cookies != null && cookies.length() > 0) {
 			String[] cookie_items = cookies.split(";");
 			for(String cookie_item : cookie_items) {
 				cookie_item = cookie_item.trim();
 				String[] kv = cookie_item.split("=", 2);
 				if(kv.length > 1) {
-					
+
 					map.put(kv[0], kv[1]);
 				}
 			}
 		}
-		
+
 		for(String k: map.keySet()){
-			System.out.println(k + "=" + map.get(k) + "; "); 
+			System.out.println(k + "=" + map.get(k) + "; ");
 		}
 
 	}
