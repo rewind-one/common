@@ -1,6 +1,6 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
@@ -26,7 +26,7 @@ public class ClickAction extends Action {
 		this.sleepTime = sleepTime;
 	}
 
-	public boolean run(ChromeDriverAgent agent) {
+	public boolean run(ChromeAgent agent) {
 
 		try {
 

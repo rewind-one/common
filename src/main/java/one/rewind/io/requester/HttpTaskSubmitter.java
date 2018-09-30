@@ -1,7 +1,8 @@
 package one.rewind.io.requester;
 
 import com.google.gson.reflect.TypeToken;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.basic.BasicRequester;
+import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.server.Msg;
 import one.rewind.json.JSON;
@@ -18,7 +19,7 @@ import java.util.Map;
 public class HttpTaskSubmitter {
 
 	// logger 日志
-	public static final Logger logger = LogManager.getLogger(ChromeDriverDistributor.class.getName());
+	public static final Logger logger = LogManager.getLogger(ChromeDistributor.class.getName());
 
 	//
 	public static HttpTaskSubmitter instance;

@@ -13,6 +13,7 @@ sourceCompatibility = 1.8
 
 // mainClassName = 'one.rewind.io.BasicRequester'
 
+
 applicationDefaultJvmArgs = ["-Xms200m", "-Xmx4000m", "-Dsun.net.inetaddr.ttl=-1", "-Djava.net.preferIPv4Stack=true", "-Dlog4j.configurationFile=log4j2.xml", "-Dfile.encoding=UTF8", "-Djdk.http.auth.tunneling.disabledSchemes=\"\""]
 
 buildscript {

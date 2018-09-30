@@ -1,6 +1,6 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 import one.rewind.json.JSON;
 
 import java.util.Map;
@@ -50,7 +50,7 @@ public class PostAction extends Action {
 		this.sleepTime = sleepTime;
 	}
 
-	public boolean run(ChromeDriverAgent agent) {
+	public boolean run(ChromeAgent agent) {
 
 		try {
 

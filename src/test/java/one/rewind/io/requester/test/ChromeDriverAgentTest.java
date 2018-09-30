@@ -4,13 +4,13 @@ import com.google.common.collect.ImmutableMap;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.chrome.ChromeAgent;
+import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.chrome.action.*;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
-import one.rewind.io.requester.task.ChromeTask;
+import one.rewind.io.requester.chrome.ChromeTask;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -30,7 +30,7 @@ public class ChromeDriverAgentTest {
 		Proxy proxy = new ProxyImpl("scisaga.net", 60103, null, null);
 		//Proxy proxy = new ProxyImpl("tpda.cc", 60202, "sdyk", "sdyk");
 
-		ChromeDriverAgent agent = new ChromeDriverAgent(proxy, ChromeDriverAgent.Flag.MITM);
+		ChromeAgent agent = new ChromeAgent(proxy, ChromeAgent.Flag.MITM);
 
 		agent.start();
 
@@ -51,7 +51,7 @@ public class ChromeDriverAgentTest {
 	@Test
 	public void testBuildProxy() {
 
-		BrowserMobProxyServer ps = ChromeDriverDistributor.buildBMProxy(null);
+		BrowserMobProxyServer ps = ChromeDistributor.buildBMProxy(null);
 
 		System.err.println(ps.getPort());
 
@@ -64,7 +64,7 @@ public class ChromeDriverAgentTest {
 
 		for(int i=0; i<10; i++) {
 
-			ChromeDriverAgent agent = new ChromeDriverAgent();
+			ChromeAgent agent = new ChromeAgent();
 			agent.start();
 
 			ChromeTask task = new ChromeTask("http://www.zbj.com");
@@ -96,7 +96,7 @@ public class ChromeDriverAgentTest {
 		});*/
 
 		Proxy proxy = new ProxyImpl("10.0.0.56", 49999, null, null);
-		ChromeDriverAgent agent = new ChromeDriverAgent(proxy, ChromeDriverAgent.Flag.MITM);
+		ChromeAgent agent = new ChromeAgent(proxy, ChromeAgent.Flag.MITM);
 		agent.start();
 
 		agent.addTerminatedCallback((a)->{
@@ -132,7 +132,7 @@ public class ChromeDriverAgentTest {
 		String url = "https://www.jfh.com/jfhrm/buinfo/showbucaseinfo";
 		Map<String, String> data = ImmutableMap.of("uuidSecret", "MTQxODM7NDQ%3D");
 
-		ChromeDriverAgent agent = new ChromeDriverAgent();
+		ChromeAgent agent = new ChromeAgent();
 		agent.start();
 
 		ChromeTask task = new ChromeTask(url);
@@ -146,7 +146,7 @@ public class ChromeDriverAgentTest {
 		String url = "https://www.mihuashi.com/users/Nianless?role=employer";
 
 		//Proxy proxy = new ProxyImpl("10.0.0.56", 49999, null, null);
-		ChromeDriverAgent agent = new ChromeDriverAgent(ChromeDriverAgent.Flag.MITM);
+		ChromeAgent agent = new ChromeAgent(ChromeAgent.Flag.MITM);
 
 		agent.start();
 

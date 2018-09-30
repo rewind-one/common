@@ -18,16 +18,14 @@ public abstract class Model implements JSONable, Serializable {
 
 	public static final Logger logger = LogManager.getLogger(Model.class.getName());
 
-	public static Dao dao;
-
 	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, id = true)
-	public transient String id;
+	public String id;
 
 	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
-	public transient Date insert_time = new Date();
+	public Date insert_time = new Date();
 
 	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
-	public transient Date update_time = new Date();
+	public Date update_time = new Date();
 
 	public String toJSON() {
 		return JSON.toJson(this);
@@ -41,7 +39,13 @@ public abstract class Model implements JSONable, Serializable {
 	@SuppressWarnings("unchecked")
 	public boolean insert() throws Exception{
 
-		return dao.create(this) == 1;
+		Dao dao = DaoManager.getDao(this.getClass());
+
+		if (dao.create(this) == 1) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -52,12 +56,13 @@ public abstract class Model implements JSONable, Serializable {
 	@SuppressWarnings("unchecked")
 	public boolean update() throws Exception{
 
-		update_time = new Date();
+		Dao dao = DaoManager.getDao(this.getClass());
+
+		this.update_time = new Date();
 
 		if (dao.update(this) == 1) {
 			return true;
 		}
-
 		return false;
 	}
 
@@ -67,7 +72,9 @@ public abstract class Model implements JSONable, Serializable {
 	 * @throws Exception
 	 */
 	@SuppressWarnings("unchecked")
-	public boolean delete() throws SQLException {
+	public boolean delete() throws Exception {
+
+		Dao dao = DaoManager.getDao(this.getClass());
 
 		if (dao.deleteById(id) == 1) {
 			return true;

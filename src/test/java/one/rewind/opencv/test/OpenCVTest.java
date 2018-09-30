@@ -1,23 +1,19 @@
 package one.rewind.opencv.test;
 
 import one.rewind.io.requester.account.AccountImpl;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.exception.ChromeDriverException;
-import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.Task;
+import one.rewind.io.requester.chrome.ChromeTask;
 import one.rewind.opencv.OpenCVUtil;
 import one.rewind.util.FileUtil;
-import org.aspectj.apache.bcel.classfile.Module;
 import org.junit.Test;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.Rect;
 import org.opencv.imgcodecs.Imgcodecs;
 
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -139,7 +135,7 @@ public class OpenCVTest {
 	@Test
 	public void zbjLoginImgTest() throws MalformedURLException, URISyntaxException, ChromeDriverException.IllegalStatusException, InterruptedException {
 
-		ChromeDriverAgent chromeDriverAgent = new ChromeDriverAgent();
+		ChromeAgent chromeDriverAgent = new ChromeAgent();
 		chromeDriverAgent.start();
 
 		AccountImpl account = new AccountImpl("zbj.com", "17600668061", "gcy116149");

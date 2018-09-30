@@ -1,10 +1,10 @@
 package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
-import one.rewind.io.requester.task.ChromeTask;
+import one.rewind.io.requester.chrome.ChromeDistributor;
+import one.rewind.io.requester.chrome.ChromeTask;
+import one.rewind.io.requester.task.ScheduledTask;
 import one.rewind.io.requester.task.TaskHolder;
-import one.rewind.io.requester.task.ScheduledChromeTask;
 import one.rewind.json.JSON;
 import one.rewind.txt.DateFormatUtil;
 
@@ -41,7 +41,7 @@ public class TestChromeTask {
 
 			this.addDoneCallback((t) -> {
 
-				/*ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t)._scheduledTaskId);*/
+				/*TaskScheduler.getInstance().degenerate(((ChromeTask) t)._scheduledTaskId);*/
 
 				System.err.println(t.getResponse().getText().length());
 				System.err.println(this.getDomain());
@@ -75,7 +75,7 @@ public class TestChromeTask {
 
 			this.addDoneCallback((t) -> {
 
-				/*ChromeTaskScheduler.getInstance().degenerate(((ChromeTask) t)._scheduledTaskId);*/
+				/*TaskScheduler.getInstance().degenerate(((ChromeTask) t)._scheduledTaskId);*/
 
 				System.err.println(t.getResponse().getText().length());
 				System.err.println(this.getDomain());
@@ -106,7 +106,7 @@ public class TestChromeTask {
 
 			this.addDoneCallback((t) -> {
 
-				ChromeDriverDistributor.getInstance().submit(this.getHolder(T1.class, ImmutableMap.of("q", "1000")));
+				ChromeDistributor.getInstance().submit(this.getHolder(T1.class, ImmutableMap.of("q", "1000")));
 
 			});
 		}
@@ -143,14 +143,14 @@ public class TestChromeTask {
 
 				System.err.println(this.getDomain() + "\t" + System.currentTimeMillis() + "\t" + t.getResponse().getText().length());
 
-				ScheduledChromeTask st = t.getScheduledChromeTask();
+				ScheduledTask st = t.getScheduledChromeTask();
 
 				if(st == null) {
 
-					st = new ScheduledChromeTask(t.getHolder(), crons);
+					st = new ScheduledTask(t.getHolder(), crons);
 					st.start();
 
-					//ChromeTaskScheduler.getInstance().schedule(t.getHolder(this.vars), crons);
+					//TaskScheduler.getInstance().schedule(t.getHolder(this.vars), crons);
 				}
 				else {
 					//
@@ -205,7 +205,7 @@ public class TestChromeTask {
 				for(TaskHolder holder : holders) {
 
 					System.err.println(JSON.toPrettyJson(holder));
-					ChromeDriverDistributor.getInstance().submit(holder);
+					ChromeDistributor.getInstance().submit(holder);
 				}
 
 			});

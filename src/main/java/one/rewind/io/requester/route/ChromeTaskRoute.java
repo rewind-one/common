@@ -2,9 +2,10 @@ package one.rewind.io.requester.route;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
-import one.rewind.io.requester.chrome.ChromeTaskScheduler;
+import one.rewind.io.requester.chrome.ChromeDistributor;
+import one.rewind.io.requester.chrome.ChromeTask;
+import one.rewind.io.requester.chrome.ChromeTaskFactory;
+import one.rewind.io.requester.scheduler.TaskScheduler;
 import one.rewind.io.requester.task.*;
 import one.rewind.io.server.Msg;
 import org.apache.logging.log4j.LogManager;
@@ -75,18 +76,18 @@ public class ChromeTaskRoute {
 			// 加载到Scheduler
 			if(cron != null) {
 				if (cron.length ==1) {
-					ScheduledChromeTask st = new ScheduledChromeTask(holder, cron[0]);
-					info = ChromeTaskScheduler.getInstance().schedule(st);
+					ScheduledTask st = new ScheduledTask(holder, cron[0]);
+					info = TaskScheduler.getInstance().schedule(st);
 				}
 				else if (cron.length > 1) {
-					ScheduledChromeTask st =  new ScheduledChromeTask(holder, Arrays.asList(cron));
-					info = ChromeTaskScheduler.getInstance().schedule(st);
+					ScheduledTask st =  new ScheduledTask(holder, Arrays.asList(cron));
+					info = TaskScheduler.getInstance().schedule(st);
 				}
 			}
 			// B 单步任务 Submit Holder
 			else {
 				holder.step = 1;
-				info = ChromeDriverDistributor.getInstance().submit(holder);
+				info = ChromeDistributor.getInstance().submit(holder);
 
 			}
 
@@ -109,7 +110,7 @@ public class ChromeTaskRoute {
 			// 任务类名
 			String id = request.params(":id");
 
-			ChromeTaskScheduler.getInstance().unschedule(id);
+			TaskScheduler.getInstance().unschedule(id);
 
 			return new Msg<>(Msg.SUCCESS);
 		}

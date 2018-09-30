@@ -1,6 +1,6 @@
 package one.rewind.io.requester.test;
 
-import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;

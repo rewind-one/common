@@ -1,9 +1,9 @@
 package one.rewind.io.requester.callback;
 
 import one.rewind.io.requester.account.Account;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 
 public interface AccountCallback {
 
-	void run(ChromeDriverAgent agent, Account account);
+	void run(ChromeAgent agent, Account account);
 }

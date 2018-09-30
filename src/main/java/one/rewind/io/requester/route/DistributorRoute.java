@@ -1,7 +1,7 @@
 package one.rewind.io.requester.route;
 
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
-import one.rewind.io.requester.chrome.ChromeTaskScheduler;
+import one.rewind.io.requester.chrome.ChromeDistributor;
+import one.rewind.io.requester.scheduler.TaskScheduler;
 import one.rewind.io.server.Msg;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,7 +20,7 @@ public class DistributorRoute {
 
 		try {
 
-			Map<String, Object> info = ChromeDriverDistributor.getInstance().getInfo();
+			Map<String, Object> info = ChromeDistributor.getInstance().getInfo();
 
 			return new Msg<Map<String, Object>>(Msg.SUCCESS, info);
 		}
@@ -36,7 +36,7 @@ public class DistributorRoute {
 
 		try {
 
-			Map<String, ?> info = ChromeTaskScheduler.getInstance().getInfo();
+			Map<String, ?> info = TaskScheduler.getInstance().getInfo();
 
 			return new Msg<Map<String, ?>>(Msg.SUCCESS, info);
 		}

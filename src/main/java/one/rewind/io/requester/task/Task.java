@@ -1,13 +1,12 @@
 package one.rewind.io.requester.task;
 
-import com.google.common.collect.ImmutableMap;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.db.DaoManager;
-import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.callback.TaskValidator;
@@ -139,9 +138,10 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	public TaskValidator validator;
 
-	// 采集后回调
+	// 采集成功后回调
 	public List<TaskCallback<T>> doneCallbacks = new LinkedList<>();
 
+	// 采集成功后回调，生成下一级任务
 	public List<NextTaskGenerator<T>> nextTaskGenerators = new LinkedList<>();
 
 	// 采集异常回调
@@ -154,16 +154,6 @@ public class Task<T extends Task> implements Comparable<Task> {
 	// 创建时间
 	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
 	private Date create_time = new Date();
-
-	private boolean SAVE_SRC = true;
-
-	public void setSaveSrc( boolean SAVE_SRC ){
-		this.SAVE_SRC = SAVE_SRC;
-	}
-
-	public boolean getSaveSrc(){
-		return this.SAVE_SRC;
-	}
 
 	private Task() {}
 
@@ -227,11 +217,14 @@ public class Task<T extends Task> implements Comparable<Task> {
 		domain = URLUtil.getDomainName(url);
 
 		this.response = new Response();
-		this.id = StringUtil.MD5(url + "::" + post_data + "::" + cookies + "::" + System.currentTimeMillis());
+
+		// 此处生成ID
+		this.id = StringUtil.MD5(url + "-" + post_data + "-" + cookies + "-" + System.currentTimeMillis());
 
 		if (post_data != null && post_data.length() > 0) {
 			this.request_method = RequestMethod.POST;
-		} else {
+		}
+		else {
 			this.request_method = RequestMethod.GET;
 		}
 	}
@@ -405,7 +398,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 设定登录任务标识
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @return
 	 */
 	public Task setLoginTask() {
@@ -415,7 +408,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 判断是否为登录任务
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @return
 	 */
 	public boolean isLoginTask() {
@@ -424,7 +417,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 获取用户名
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @return
 	 */
 	public String getUsername() {
@@ -433,7 +426,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 设定用户名
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @param username
 	 * @return
 	 */
@@ -445,7 +438,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 设定请求过滤器
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * TODO 在使用MITM代理时，报错 io.netty.util.IllegalReferenceCountException: refCnt: 0, increment: 1
 	 * 使用 HttpFiltersSourceAdapter 则没有报错
 	 * 有可能是littleproxy自身问题
@@ -459,7 +452,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 获取请求过滤器
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @return
 	 */
 	public RequestFilter getRequestFilter() {
@@ -468,7 +461,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 设定返回过滤器
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @param filter
 	 * @return
 	 */
@@ -479,7 +472,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 获取返回过滤器
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @return
 	 */
 	public ResponseFilter getResponseFilter() {
@@ -519,7 +512,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 是否构建DOM
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @return
 	 */
 	public boolean buildDom() {
@@ -528,7 +521,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 设定构建DOM
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 */
 	public void setBuildDom() {
 		flags.add(Flag.BUILD_DOM);
@@ -536,7 +529,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 是否进行截屏
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @return
 	 */
 	public boolean shootScreen() {
@@ -686,7 +679,6 @@ public class Task<T extends Task> implements Comparable<Task> {
 	 */
 	public int getParamInt(String key) {
 		if (params.get(key) == null) return 0;
-		//return Integer.valueOf((int) params.get(key));
 		return NumberFormatUtil.parseInt(String.valueOf(params.get(key)));
 	}
 

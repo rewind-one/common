@@ -1,7 +1,7 @@
 package one.rewind.io.requester.chrome.action;
 
 import one.rewind.io.requester.account.Account;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 import org.openqa.selenium.WebElement;
 
 /**
@@ -9,7 +9,7 @@ import org.openqa.selenium.WebElement;
  */
 public class LoginAction extends Action {
 
-	public ChromeDriverAgent agent;
+	public ChromeAgent agent;
 
 	public String className;
 
@@ -87,7 +87,7 @@ public class LoginAction extends Action {
 	}
 
 	@Override
-	public boolean run(ChromeDriverAgent agent) {
+	public boolean run(ChromeAgent agent) {
 
 		this.agent = agent;
 

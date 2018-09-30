@@ -1,6 +1,6 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import org.apache.logging.log4j.LogManager;
@@ -12,7 +12,7 @@ public abstract class Action implements JSONable, ChromeAction {
 
 	public Action() {}
 
-	public boolean run(ChromeDriverAgent agent) {
+	public boolean run(ChromeAgent agent) {
 		return true;
 	}
 

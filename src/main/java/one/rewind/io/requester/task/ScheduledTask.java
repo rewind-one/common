@@ -1,7 +1,8 @@
 package one.rewind.io.requester.task;
 
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
-import one.rewind.io.requester.chrome.ChromeTaskScheduler;
+import one.rewind.io.requester.chrome.ChromeDistributor;
+import one.rewind.io.requester.chrome.ChromeTaskFactory;
+import one.rewind.io.requester.scheduler.TaskScheduler;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
@@ -12,9 +13,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class ScheduledChromeTask implements JSONable<ScheduledChromeTask>, Runnable {
+public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 
-	private static final Logger logger = LogManager.getLogger(ScheduledChromeTask.class.getName());
+	public static final Logger logger = LogManager.getLogger(ScheduledTask.class.getName());
 
 	// holder.class_name 和 holder.vars 定义
 	public String id;
@@ -34,26 +35,26 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask>, Runna
 	/**
 	 *
 	 */
-	public ScheduledChromeTask() {}
+	public ScheduledTask() {}
 
 	/**
-	 *
+	 * 初始化一个计划采集任务
 	 * @param holder
 	 * @param cron
 	 * @throws Exception
 	 */
-	public ScheduledChromeTask(TaskHolder holder, String cron) throws Exception {
+	public ScheduledTask(TaskHolder holder, String cron) throws Exception {
 
 		this(holder, Arrays.asList(cron));
 	}
 
 	/**
-	 *
+	 * 初始化一个计划采集任务
 	 * @param holder
-	 * @param crons
+	 * @param crons 递减 cron pattern
 	 * @throws Exception
 	 */
-	public ScheduledChromeTask(TaskHolder holder, List<String> crons) throws Exception {
+	public ScheduledTask(TaskHolder holder, List<String> crons) throws Exception {
 
 		this.id = holder.generateScheduledChromeTaskId();
 
@@ -80,7 +81,7 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask>, Runna
 	 * @throws Exception
 	 */
 	public Map<String, Object> start() throws Exception {
-		return ChromeTaskScheduler.getInstance().schedule(this);
+		return TaskScheduler.getInstance().schedule(this);
 	}
 
 	/**
@@ -93,7 +94,7 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask>, Runna
 			cron = crons.get(index + 1);
 		}
 
-		ChromeTaskScheduler.getInstance().scheduler.reschedule(scheduleId, cron);
+		TaskScheduler.getInstance().scheduler.reschedule(scheduleId, cron);
 	}
 
 	/**
@@ -102,9 +103,11 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask>, Runna
 	public void run() {
 
 		try {
+
 			TaskHolder new_holder = ChromeTaskFactory.getInstance().newHolder(holder);
 			new_holder.scheduled_task_id = this.id;
-			ChromeDriverDistributor.getInstance().submit(holder);
+			ChromeDistributor.getInstance().submit(holder);
+
 		} catch (Exception e) {
 			logger.error("Error submit scheduled task to distributor. ", e);
 		}
@@ -116,7 +119,7 @@ public class ScheduledChromeTask implements JSONable<ScheduledChromeTask>, Runna
 	 */
 	public void stop() throws Exception {
 
-		ChromeTaskScheduler.getInstance().unschedule(id);
+		TaskScheduler.getInstance().unschedule(id);
 	}
 
 	@Override

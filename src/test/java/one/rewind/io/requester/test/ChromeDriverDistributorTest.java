@@ -6,19 +6,19 @@ import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.docker.model.DockerHost;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
-import one.rewind.io.requester.chrome.ChromeTaskScheduler;
+import one.rewind.io.requester.chrome.ChromeAgent;
+import one.rewind.io.requester.chrome.ChromeDistributor;
+import one.rewind.io.requester.scheduler.TaskScheduler;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.chrome.action.RedirectAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
-import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.ChromeTaskFactory;
+import one.rewind.io.requester.chrome.ChromeTask;
+import one.rewind.io.requester.chrome.ChromeTaskFactory;
+import one.rewind.io.requester.task.ScheduledTask;
 import one.rewind.io.requester.task.TaskHolder;
-import one.rewind.io.requester.task.ScheduledChromeTask;
 import one.rewind.json.JSON;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +28,7 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Map;
 
-import static one.rewind.io.requester.chrome.ChromeDriverDistributor.buildBMProxy;
+import static one.rewind.io.requester.chrome.ChromeDistributor.buildBMProxy;
 
 public class ChromeDriverDistributorTest {
 
@@ -51,11 +51,11 @@ public class ChromeDriverDistributorTest {
 	@Test
 	public void basicTest() throws Exception {
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		for(int i=0; i<4; i++) {
 
-			ChromeDriverAgent agent = new ChromeDriverAgent();
+			ChromeAgent agent = new ChromeAgent();
 			distributor.addAgent(agent);
 		}
 
@@ -84,11 +84,11 @@ public class ChromeDriverDistributorTest {
 	@Test
 	public void recursiveTest() throws Exception {
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		for(int i=0; i<4; i++) {
 
-			ChromeDriverAgent agent = new ChromeDriverAgent();
+			ChromeAgent agent = new ChromeAgent();
 			distributor.addAgent(agent);
 		}
 
@@ -115,11 +115,11 @@ public class ChromeDriverDistributorTest {
 	@Test
 	public void scheduleTaskTest() throws Exception {
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		for(int i=0; i<4; i++) {
 
-			ChromeDriverAgent agent = new ChromeDriverAgent();
+			ChromeAgent agent = new ChromeAgent();
 			distributor.addAgent(agent);
 		}
 
@@ -128,7 +128,7 @@ public class ChromeDriverDistributorTest {
 		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
 				TestChromeTask.T3.class, ImmutableMap.of("k", String.valueOf(1950)));
 
-		Map<String, Object> info = ChromeTaskScheduler.getInstance().schedule(new ScheduledChromeTask(holder, "* * * * *"));
+		Map<String, Object> info = TaskScheduler.getInstance().schedule(new ScheduledTask(holder, "* * * * *"));
 
 		System.err.println(JSON.toPrettyJson(info));
 
@@ -140,21 +140,21 @@ public class ChromeDriverDistributorTest {
 	@Test
 	public void proxyTest() throws Exception {
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
-		ChromeDriverAgent agent1 = new ChromeDriverAgent(proxy);
+		ChromeAgent agent1 = new ChromeAgent(proxy);
 		distributor.addAgent(agent1);
 
 		proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
-		ChromeDriverAgent agent2 = new ChromeDriverAgent(proxy);
+		ChromeAgent agent2 = new ChromeAgent(proxy);
 		distributor.addAgent(agent2);
 		proxy = new ProxyImpl("118.190.133.34", 59998, "tfelab", "TfeLAB2@15");
-		ChromeDriverAgent agent3 = new ChromeDriverAgent(proxy);
+		ChromeAgent agent3 = new ChromeAgent(proxy);
 		distributor.addAgent(agent3);
 
 		proxy = new ProxyImpl("118.190.44.184", 59998, "tfelab", "TfeLAB2@15");
-		ChromeDriverAgent agent4 = new ChromeDriverAgent(proxy);
+		ChromeAgent agent4 = new ChromeAgent(proxy);
 		distributor.addAgent(agent4);
 
 		distributor.layout();
@@ -182,11 +182,11 @@ public class ChromeDriverDistributorTest {
 	@Test
 	public void ExceptionTest() throws Exception {
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		for(int i=0; i<1; i++) {
 
-			ChromeDriverAgent agent = new ChromeDriverAgent();
+			ChromeAgent agent = new ChromeAgent();
 			distributor.addAgent(agent);
 		}
 
@@ -236,12 +236,12 @@ public class ChromeDriverDistributorTest {
 
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
-		ChromeDriverAgent agent = new ChromeDriverAgent(container.getRemoteAddress(), container);
+		ChromeAgent agent = new ChromeAgent(container.getRemoteAddress(), container);
 
 		distributor.addAgent(agent);
-		//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
+		//ChromeAgent agent = new ChromeAgent(remoteAddress);
 
 		AccountImpl account_1 = new AccountImpl("zbj.com", "17600668061", "gcy116149");
 		AccountImpl account_2 = new AccountImpl("zbj.com", "15284809626", "123456");
@@ -286,13 +286,13 @@ public class ChromeDriverDistributorTest {
 	@Test
 	public void testProxyFailed() throws Exception {
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		Proxy proxy1 = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
 
 		Proxy proxy2 = new ProxyImpl("118.190.133.34", 59998, "tfelab", "TfeLAB2@15");
 
-		ChromeDriverAgent agent = new ChromeDriverAgent(proxy1);
+		ChromeAgent agent = new ChromeAgent(proxy1);
 
 		agent.addProxyFailedCallback((a, p, t) -> {
 
@@ -351,11 +351,11 @@ public class ChromeDriverDistributorTest {
 	@Test
 	public void testScheduledTask() throws Exception {
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		for(int i=0; i<1; i++) {
 
-			ChromeDriverAgent agent = new ChromeDriverAgent();
+			ChromeAgent agent = new ChromeAgent();
 			distributor.addAgent(agent);
 		}
 
@@ -373,11 +373,11 @@ public class ChromeDriverDistributorTest {
 	@Test
 	public void testScanTask() throws Exception {
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		for(int i=0; i<1; i++) {
 
-			ChromeDriverAgent agent = new ChromeDriverAgent();
+			ChromeAgent agent = new ChromeAgent();
 			distributor.addAgent(agent);
 		}
 

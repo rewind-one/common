@@ -1,13 +1,12 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 import one.rewind.io.requester.chrome.RemoteMouseEventSimulator;
 import one.rewind.opencv.OpenCVUtil;
 import one.rewind.simulator.mouse.MouseEventModeler;
 import one.rewind.simulator.mouse.MouseEventSimulator;
 import one.rewind.txt.StringUtil;
 import one.rewind.util.EnvUtil;
-import one.rewind.util.FileUtil;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -74,7 +73,7 @@ public class GeetestAction extends Action {
 
 	public GeetestAction() {}
 
-	public int getOffset(ChromeDriverAgent agent) throws IOException, InterruptedException {
+	public int getOffset(ChromeAgent agent) throws IOException, InterruptedException {
 
 		String ts = System.currentTimeMillis() + "-" + StringUtil.uuid();
 
@@ -133,7 +132,7 @@ public class GeetestAction extends Action {
 	 * @param sys_error_x 误差
 	 * @throws Exception
 	 */
-	private void mouseManipulate(ChromeDriverAgent agent, int offset, int sys_error_x) throws Exception {
+	private void mouseManipulate(ChromeAgent agent, int offset, int sys_error_x) throws Exception {
 
 		if (offset != -1) {
 			// TODO
@@ -169,7 +168,7 @@ public class GeetestAction extends Action {
 	 * 滑块验证
 	 * @throws Exception
 	 */
-	private void bypass(ChromeDriverAgent agent) throws Exception {
+	private void bypass(ChromeAgent agent) throws Exception {
 
 		logger.info("Retry:{}", geetest_retry_count);
 
@@ -247,7 +246,7 @@ public class GeetestAction extends Action {
 		}
 	}
 
-	public boolean run(ChromeDriverAgent agent) {
+	public boolean run(ChromeAgent agent) {
 
 		try {
 			bypass(agent);

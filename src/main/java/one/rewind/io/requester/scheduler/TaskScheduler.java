@@ -1,9 +1,9 @@
-package one.rewind.io.requester.chrome;
+package one.rewind.io.requester.scheduler;
 
 import it.sauronsoftware.cron4j.Scheduler;
-import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.basic.BasicRequester;
+import one.rewind.io.requester.task.ScheduledTask;
 import one.rewind.io.requester.task.TaskHolder;
-import one.rewind.io.requester.task.ScheduledChromeTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -12,23 +12,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static one.rewind.io.requester.chrome.ChromeDriverDistributor.LOCAL_IP;
+import static one.rewind.io.requester.chrome.ChromeDistributor.LOCAL_IP;
 
 /**
  * 调度器
  */
-public class ChromeTaskScheduler {
+public class TaskScheduler {
 
 	private static final Logger logger = LogManager.getLogger(BasicRequester.class.getName());
 
-	protected static ChromeTaskScheduler instance;
+	protected static TaskScheduler instance;
 
-	public static ChromeTaskScheduler getInstance() {
+	public static TaskScheduler getInstance() {
 
 		if (instance == null) {
 			synchronized (BasicRequester.class) {
 				if (instance == null) {
-					instance = new ChromeTaskScheduler();
+					instance = new TaskScheduler();
 				}
 			}
 		}
@@ -41,13 +41,13 @@ public class ChromeTaskScheduler {
 	/**
 	 * 使用Redis保存Task
 	 */
-	//public RMap<String, ScheduledChromeTask> scheduledTasks;
-	public ConcurrentHashMap<String, ScheduledChromeTask> scheduledTasks = new ConcurrentHashMap<>();
+	//public RMap<String, ScheduledTask> scheduledTasks;
+	public ConcurrentHashMap<String, ScheduledTask> scheduledTasks = new ConcurrentHashMap<>();
 
 	/**
 	 *
 	 */
-	private ChromeTaskScheduler() {
+	private TaskScheduler() {
 
 		//scheduledTasks = RedissonAdapter.redisson.getMap("scheduled-tasks");
 
@@ -55,7 +55,7 @@ public class ChromeTaskScheduler {
 		this.scheduler = new Scheduler();
 		scheduler.start();
 
-		/*for(ScheduledChromeTask task : scheduledTasks.values()) {
+		/*for(ScheduledTask task : scheduledTasks.values()) {
 			try {
 				this.schedule(task);
 			} catch (Exception e) {
@@ -76,7 +76,7 @@ public class ChromeTaskScheduler {
 			throw new Exception("No such id:" + id + ".");
 		}
 
-		ScheduledChromeTask task = scheduledTasks.get(id);
+		ScheduledTask task = scheduledTasks.get(id);
 		task.degenerate();
 	}
 
@@ -85,7 +85,7 @@ public class ChromeTaskScheduler {
 	 * @param task
 	 * @return
 	 */
-	public synchronized Map<String, Object> schedule(ScheduledChromeTask task) throws Exception {
+	public synchronized Map<String, Object> schedule(ScheduledTask task) throws Exception {
 
 		if(scheduledTasks.containsKey(task.id)) throw new Exception("Task:" + task.id + " already scheduled.");
 
@@ -113,7 +113,7 @@ public class ChromeTaskScheduler {
 	 */
 	public synchronized Map<String, Object> schedule(TaskHolder holder, String cron) throws Exception {
 
-		ScheduledChromeTask task = new ScheduledChromeTask(holder, cron);
+		ScheduledTask task = new ScheduledTask(holder, cron);
 		return schedule(task);
 	}
 
@@ -126,7 +126,7 @@ public class ChromeTaskScheduler {
 	 */
 	public synchronized Map<String, Object> schedule(TaskHolder holder, List<String> crons) throws Exception {
 
-		ScheduledChromeTask task = new ScheduledChromeTask(holder, crons);
+		ScheduledTask task = new ScheduledTask(holder, crons);
 		return schedule(task);
 	}
 
@@ -145,7 +145,7 @@ public class ChromeTaskScheduler {
 	 * @param id
 	 * @return
 	 */
-	public ScheduledChromeTask getScheduledTask(String id) {
+	public ScheduledTask getScheduledTask(String id) {
 		return scheduledTasks.get(id);
 	}
 
@@ -161,7 +161,7 @@ public class ChromeTaskScheduler {
 			throw new Exception("No such id:" + id + ".");
 		}
 
-		ScheduledChromeTask task = scheduledTasks.get(id);
+		ScheduledTask task = scheduledTasks.get(id);
 
 		scheduler.deschedule(task.scheduleId);
 

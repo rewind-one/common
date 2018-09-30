@@ -1,6 +1,6 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 
 /**
  * 滚轮事件
@@ -15,7 +15,7 @@ public class ScrollAction extends Action {
 		this.value = value;
 	}
 
-	public boolean run(ChromeDriverAgent agent) {
+	public boolean run(ChromeAgent agent) {
 		try {
 			String setscroll = "document.documentElement.scrollTop=" + value;
 			agent.trigger(setscroll);

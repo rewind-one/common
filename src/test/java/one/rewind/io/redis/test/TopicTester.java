@@ -1,7 +1,7 @@
 package one.rewind.io.redis.test;
 
 import one.rewind.db.RedissonAdapter;
-import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.basic.BasicRequester;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.redisson.api.RPatternTopic;

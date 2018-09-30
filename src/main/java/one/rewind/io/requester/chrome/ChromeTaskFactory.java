@@ -1,6 +1,8 @@
-package one.rewind.io.requester.task;
+package one.rewind.io.requester.chrome;
 
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.task.Task;
+import one.rewind.io.requester.task.TaskBuilder;
+import one.rewind.io.requester.task.TaskHolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,7 +15,7 @@ import java.util.Map;
 /**
  *
  */
-public class ChromeTaskFactory {
+public class   	ChromeTaskFactory {
 
 	//
 	private static ChromeTaskFactory instance;
@@ -31,7 +33,7 @@ public class ChromeTaskFactory {
 	public static ChromeTaskFactory getInstance() {
 
 		if (instance == null) {
-			synchronized (ChromeDriverDistributor.class) {
+			synchronized (ChromeDistributor.class) {
 				if (instance == null) {
 					instance = new ChromeTaskFactory();
 				}

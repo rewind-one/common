@@ -2,7 +2,7 @@ package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
 import one.rewind.io.requester.exception.ProxyException;
-import one.rewind.io.requester.task.ChromeTask;
+import one.rewind.io.requester.chrome.ChromeTask;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;

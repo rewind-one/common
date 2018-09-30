@@ -8,16 +8,14 @@ import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
-import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.route.ChromeTaskRoute;
 import one.rewind.io.requester.route.DistributorRoute;
-import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.io.server.MsgTransformer;
-import one.rewind.json.JSON;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,11 +32,11 @@ import java.util.stream.Collectors;
 
 import static spark.Spark.*;
 
-public class ChromeDriverDistributor {
+public class ChromeDistributor {
 
-	public static ChromeDriverDistributor instance;
+	public static ChromeDistributor instance;
 
-	public static final Logger logger = LogManager.getLogger(ChromeDriverDistributor.class.getName());
+	public static final Logger logger = LogManager.getLogger(ChromeDistributor.class.getName());
 
 	// 连接超时时间
 	public static int CONNECT_TIMEOUT;
@@ -67,12 +65,12 @@ public class ChromeDriverDistributor {
 	 *
 	 * @return
 	 */
-	public static ChromeDriverDistributor getInstance() {
+	public static ChromeDistributor getInstance() {
 
 		if (instance == null) {
-			synchronized (ChromeDriverDistributor.class) {
+			synchronized (ChromeDistributor.class) {
 				if (instance == null) {
-					instance = new ChromeDriverDistributor();
+					instance = new ChromeDistributor();
 				}
 			}
 		}
@@ -82,14 +80,14 @@ public class ChromeDriverDistributor {
 
 	// 任务队列
 	// TODO 使用RBlockingQueue
-	public ConcurrentHashMap<ChromeDriverAgent, PriorityBlockingQueue<TaskHolder>> queues
+	public ConcurrentHashMap<ChromeAgent, PriorityBlockingQueue<TaskHolder>> queues
 			= new ConcurrentHashMap<>();
 
 	// 域名-账户 Agent 映射
-	public Map<String, ChromeDriverAgent> domain_account_agent_map = new HashMap<>();
+	public Map<String, ChromeAgent> domain_account_agent_map = new HashMap<>();
 
 	// 域名 Agent列表 映射
-	public Map<String, List<ChromeDriverAgent>> domain_agent_map = new HashMap<>();
+	public Map<String, List<ChromeAgent>> domain_agent_map = new HashMap<>();
 
 	// 任务 Wrapper 线程池
 	ThreadPoolExecutor executor = new ThreadPoolExecutor(
@@ -119,15 +117,15 @@ public class ChromeDriverDistributor {
 	/**
 	 * 初始化
 	 */
-	public ChromeDriverDistributor() {
+	public ChromeDistributor() {
 
 		executor.setThreadFactory(new ThreadFactoryBuilder()
-				.setNameFormat("ChromeDriverDistributor-Worker-%d").build());
+				.setNameFormat("ChromeDistributor-Worker-%d").build());
 
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
 		post_executor.setThreadFactory(new ThreadFactoryBuilder()
-				.setNameFormat("ChromeDriverDistributor-PostWorker-%d").build());
+				.setNameFormat("ChromeDistributor-PostWorker-%d").build());
 
 		buildHttpApiServer();
 
@@ -177,7 +175,7 @@ public class ChromeDriverDistributor {
 	 * 添加Agent
 	 * @param agent
 	 */
-	public void addAgent(ChromeDriverAgent agent)
+	public void addAgent(ChromeAgent agent)
 			throws ChromeDriverException.IllegalStatusException, InterruptedException
 	{
 
@@ -276,7 +274,7 @@ public class ChromeDriverDistributor {
 	public synchronized void layout() {
 
 		int localAgentCount = 0;
-		for(ChromeDriverAgent agent : queues.keySet()) {
+		for(ChromeAgent agent : queues.keySet()) {
 
 			if(!agent.isRemote())
 				localAgentCount ++;
@@ -286,7 +284,7 @@ public class ChromeDriverDistributor {
 
 		int gap = 600 / (int) Math.ceil(localAgentCount/4);
 		int i = 0;
-		for(ChromeDriverAgent agent : queues.keySet()) {
+		for(ChromeAgent agent : queues.keySet()) {
 
 			if(!agent.isRemote()) {
 				Random r = new Random();
@@ -312,7 +310,7 @@ public class ChromeDriverDistributor {
 		String username = holder.username;
 		String account_key = domain + "-" + username;
 
-		ChromeDriverAgent agent;
+		ChromeAgent agent;
 
 		// 特定用户的采集任务
 		if(holder.username != null && holder.username.length() > 0) {
@@ -342,7 +340,7 @@ public class ChromeDriverDistributor {
 				int queue_size = queues.get(a).size();
 				return Maps.immutableEntry(a, queue_size);
 			})
-			.sorted(Map.Entry.<ChromeDriverAgent, Integer>comparingByValue())
+			.sorted(Map.Entry.<ChromeAgent, Integer>comparingByValue())
 			.limit(1)
 			.map(Map.Entry::getKey)
 			.collect(Collectors.toList())
@@ -365,7 +363,7 @@ public class ChromeDriverDistributor {
 				int queue_size = queues.get(a).size();
 				return Maps.immutableEntry(a, queue_size);
 			})
-			.sorted(Map.Entry.<ChromeDriverAgent, Integer>comparingByValue())
+			.sorted(Map.Entry.<ChromeAgent, Integer>comparingByValue())
 			.limit(1)
 			.map(Map.Entry::getKey)
 			.collect(Collectors.toList())
@@ -399,7 +397,7 @@ public class ChromeDriverDistributor {
 	 * @param holder
 	 * @param agent
 	 */
-	public void submit(TaskHolder holder, ChromeDriverAgent agent) {
+	public void submit(TaskHolder holder, ChromeAgent agent) {
 
 		// 生成指派信息
 		if(agent != null) {
@@ -421,7 +419,7 @@ public class ChromeDriverDistributor {
 	 * @return
 	 * @throws InterruptedException
 	 */
-	public ChromeTask distribute(ChromeDriverAgent agent) throws InterruptedException {
+	public ChromeTask distribute(ChromeAgent agent) throws InterruptedException {
 
 		TaskHolder holder = queues.get(agent).take();
 
@@ -482,7 +480,7 @@ public class ChromeDriverDistributor {
 
 		List<Map<String, Object>> agent_info_list = new ArrayList<>();
 
-		for(ChromeDriverAgent agent : queues.keySet()) {
+		for(ChromeAgent agent : queues.keySet()) {
 
 			Map<String, Object> agent_info = agent.getInfo();
 			agent_info.put("queueSize", queues.get(agent).size());
@@ -508,7 +506,7 @@ public class ChromeDriverDistributor {
 	public void close() throws Exception {
 
 		executor.shutdown();
-		for(ChromeDriverAgent agent : queues.keySet()) {
+		for(ChromeAgent agent : queues.keySet()) {
 			agent.clearTerminatedCallbacks();
 			agent.destroy();
 		}

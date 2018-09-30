@@ -3,11 +3,10 @@ package one.rewind.io.requester.test;
 import com.google.common.collect.ImmutableMap;
 import one.rewind.io.requester.HttpTaskSubmitter;
 import one.rewind.io.requester.RestfulRequester;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.json.JSON;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +33,7 @@ public class RestfulRequestManagerTest {
 	@Test
 	public void httpSubmit() throws Exception {
 
-		ChromeDriverDistributor.getInstance();
+		ChromeDistributor.getInstance();
 
 		HttpTaskSubmitter.getInstance().submit(TestChromeTask.T5.class.getName(), JSON.toJson(ImmutableMap.of("q" ,"ip")));
 

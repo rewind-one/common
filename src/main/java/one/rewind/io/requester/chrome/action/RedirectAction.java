@@ -1,6 +1,6 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 
 public class RedirectAction extends Action {
 
@@ -10,7 +10,7 @@ public class RedirectAction extends Action {
 		this.url = url;
 	}
 
-	public boolean run(ChromeDriverAgent agent) {
+	public boolean run(ChromeAgent agent) {
 
 		agent.getDriver().navigate().to(url);
 

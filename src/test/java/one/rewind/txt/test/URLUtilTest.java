@@ -1,6 +1,6 @@
 package one.rewind.txt.test;
 
-import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.task.Task;
 import one.rewind.txt.URLUtil;
 import org.junit.Test;

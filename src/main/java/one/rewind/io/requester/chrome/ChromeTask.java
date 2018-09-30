@@ -1,12 +1,15 @@
-package one.rewind.io.requester.task;
+package one.rewind.io.requester.chrome;
 
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import one.rewind.io.requester.callback.TaskCallback;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeTaskScheduler;
+import one.rewind.io.requester.scheduler.TaskScheduler;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
+import one.rewind.io.requester.task.ScheduledTask;
+import one.rewind.io.requester.task.Task;
+import one.rewind.io.requester.task.TaskBuilder;
+import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.txt.StringUtil;
 
 import java.net.MalformedURLException;
@@ -49,7 +52,7 @@ public class ChromeTask extends Task<ChromeTask> {
 			));
 
 		} catch (Exception e) {
-			ChromeDriverAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
+			ChromeAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
 		}
 	}
 
@@ -82,7 +85,7 @@ public class ChromeTask extends Task<ChromeTask> {
 			));
 
 		} catch (Exception e) {
-			ChromeDriverAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
+			ChromeAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
 		}
 	}
 
@@ -162,8 +165,8 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * 从Scheduler 找对应的 ScheduledTask
 	 * @return
 	 */
-	public ScheduledChromeTask getScheduledChromeTask() {
-		return holder == null ? null : ChromeTaskScheduler.getInstance().getScheduledTask(holder.generateScheduledChromeTaskId());
+	public ScheduledTask getScheduledChromeTask() {
+		return holder == null ? null : TaskScheduler.getInstance().getScheduledTask(holder.generateScheduledChromeTaskId());
 	}
 
 	/**
@@ -178,7 +181,7 @@ public class ChromeTask extends Task<ChromeTask> {
 
 	/**
 	 * 获取前置操作
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @return
 	 */
 	public List<ChromeAction> getActions() {
@@ -197,7 +200,7 @@ public class ChromeTask extends Task<ChromeTask> {
 
 	/**
 	 * 添加前置操作
-	 * ChromeDriverAgent 专用
+	 * ChromeAgent 专用
 	 * @param action
 	 * @return
 	 */

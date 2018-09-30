@@ -1,13 +1,13 @@
 package one.rewind.io.requester.task;
 
-import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 import one.rewind.db.DBName;
-import one.rewind.db.DaoManager;
+import one.rewind.db.Model;
+import one.rewind.io.requester.chrome.ChromeTask;
+import one.rewind.io.requester.chrome.ChromeTaskFactory;
 import one.rewind.json.JSON;
-import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
 
 import java.lang.reflect.InvocationTargetException;
@@ -16,23 +16,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ChromeTask 序列化对象
+ * Task 序列化对象
  * @author scisaga@gmail.com
  * @date 2018/08/03
  */
 @DBName(value = "requester")
 @DatabaseTable(tableName = "tasks")
-public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> {
-
-	// 生成 Task 时 复用这个 id
-	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, id = true)
-	public String id;
+public class TaskHolder extends Model implements Comparable<TaskHolder> {
 
 	// 生成 Holder 的 task_id 可以为空
 	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
 	public String generate_task_id;
 
-	// 如果由 ScheduledChromeTask 生成 会包含这个ID
+	// 如果由 ScheduledTask 生成 会包含这个ID
 	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
 	public String scheduled_task_id;
 
@@ -66,7 +62,6 @@ public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> 
 	// 优先级
 	@DatabaseField(dataType = DataType.ENUM_STRING, width = 32, canBeNull = false)
 	public Task.Priority priority = Task.Priority.MEDIUM;
-
 
 	// 任务是否已经完成
 	@DatabaseField(dataType = DataType.BOOLEAN, canBeNull = false)
@@ -162,37 +157,6 @@ public class TaskHolder implements Comparable<TaskHolder>, JSONable<TaskHolder> 
 		this.trace = trace;
 	}
 
-	/**
-	 * 插入新代理记录
-	 * @return
-	 * @throws Exception
-	 */
-	public boolean insert() throws Exception{
-
-		Dao dao = DaoManager.getDao(this.getClass());
-
-		if (dao.create(this) == 1) {
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * 更新代理记录
-	 * @return
-	 * @throws Exception
-	 */
-	public boolean update() throws Exception{
-
-		Dao dao = DaoManager.getDao(this.getClass());
-
-		if (dao.update(this) == 1) {
-			return true;
-		}
-
-		return false;
-	}
 
 	/**
 	 * 生成ChromeTask

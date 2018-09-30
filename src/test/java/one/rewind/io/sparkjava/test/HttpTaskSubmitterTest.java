@@ -2,10 +2,9 @@ package one.rewind.io.sparkjava.test;
 
 import com.google.common.collect.ImmutableMap;
 import one.rewind.io.requester.HttpTaskSubmitter;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.chrome.ChromeAgent;
+import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.exception.ChromeDriverException;
-import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.io.requester.test.TestChromeTask;
 import one.rewind.io.server.Msg;
 import one.rewind.json.JSON;
@@ -32,11 +31,11 @@ public class HttpTaskSubmitterTest {
 		Class.forName(TestChromeTask.T4.class.getName());
 		Class.forName(TestChromeTask.T5.class.getName());
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		for(int i=0; i<1; i++) {
 
-			ChromeDriverAgent agent = new ChromeDriverAgent();
+			ChromeAgent agent = new ChromeAgent();
 			distributor.addAgent(agent);
 		}
 		HttpTaskSubmitter.getInstance().submit(TestChromeTask.T1.class.getName(), JSON.toJson(ImmutableMap.of("q", String.valueOf(1950))));

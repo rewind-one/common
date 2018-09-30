@@ -1,5 +1,7 @@
 package one.rewind.io.requester.task;
 
+import one.rewind.json.JSON;
+import one.rewind.json.JSONable;
 import one.rewind.txt.URLUtil;
 
 import java.util.HashMap;
@@ -9,7 +11,11 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TaskBuilder {
+/**
+ * TaskBuilder
+ * 用于生成Task url
+ */
+public class TaskBuilder implements JSONable<TaskBuilder> {
 
 	// 变量表达式
 	public static String varPattern = "[\\w\\W][\\w\\W\\d\\_]*";
@@ -164,5 +170,10 @@ public class TaskBuilder {
 		}
 
 		return init;
+	}
+
+	@Override
+	public String toJSON() {
+		return JSON.toJson(this);
 	}
 }

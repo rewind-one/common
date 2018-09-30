@@ -1,7 +1,7 @@
 package one.rewind.io.requester.chrome.action;
 
 import one.rewind.io.requester.account.Account;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 
 /**
  * 登录脚本 bypass GeeTest
@@ -44,7 +44,7 @@ public class LoginWithGeetestAction extends LoginAction {
 	 *
 	 * @param agent
 	 */
-	public boolean run(ChromeDriverAgent agent) {
+	public boolean run(ChromeAgent agent) {
 
 		this.agent = agent;
 

@@ -4,16 +4,16 @@ import com.google.common.collect.ImmutableMap;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.docker.model.DockerHost;
 import one.rewind.io.requester.account.AccountImpl;
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
-import one.rewind.io.requester.chrome.ChromeDriverDistributor;
+import one.rewind.io.requester.chrome.ChromeAgent;
+import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.chrome.action.RedirectAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
-import one.rewind.io.requester.task.ChromeTask;
-import one.rewind.io.requester.task.ChromeTaskFactory;
+import one.rewind.io.requester.chrome.ChromeTask;
+import one.rewind.io.requester.chrome.ChromeTaskFactory;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.json.JSON;
 import org.junit.Before;
@@ -74,9 +74,9 @@ public class ChromeDriverDistributorRemoteTest {
 		ChromeDriverDockerContainer container =
 				new ChromeDriverDockerContainer(host, "ChromeContainer-10.0.0.50-1", 31001, 32001);
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
-		ChromeDriverAgent agent = new ChromeDriverAgent(container.getRemoteAddress(), container);
+		ChromeAgent agent = new ChromeAgent(container.getRemoteAddress(), container);
 
 		distributor.addAgent(agent);
 
@@ -107,7 +107,7 @@ public class ChromeDriverDistributorRemoteTest {
 			containers.add(host.createChromeDriverDockerContainer());
 		}
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		//final Proxy proxy = new ProxyImpl("10.0.0.51", 49999, null, null);
 
@@ -125,8 +125,8 @@ public class ChromeDriverDistributorRemoteTest {
 
 					/*CountDownLatch latch = new CountDownLatch(1);*/
 
-					ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container/*, proxy*/);
-					//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
+					ChromeAgent agent = new ChromeAgent(remoteAddress, container/*, proxy*/);
+					//ChromeAgent agent = new ChromeAgent(remoteAddress);
 
 					ChromeTask task = new ChromeTask("https://login.zbj.com/login");
 
@@ -172,13 +172,13 @@ public class ChromeDriverDistributorRemoteTest {
 
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		// final Proxy proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
 
 		final URL remoteAddress = container.getRemoteAddress();
 
-		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container);
+		ChromeAgent agent = new ChromeAgent(remoteAddress, container);
 
 		distributor.addAgent(agent);
 
@@ -205,7 +205,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		Proxy proxy1 = new ProxyImpl("***", 59998, "***", "***@15");
 
@@ -217,7 +217,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		final URL remoteAddress = container.getRemoteAddress();
 
-		ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress, container, proxy1);
+		ChromeAgent agent = new ChromeAgent(remoteAddress, container, proxy1);
 
 		agent.addProxyFailedCallback((a, p, t) -> {
 
@@ -264,12 +264,12 @@ public class ChromeDriverDistributorRemoteTest {
 
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
 
-		ChromeDriverDistributor distributor = ChromeDriverDistributor.getInstance();
+		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
-		ChromeDriverAgent agent = new ChromeDriverAgent(container.getRemoteAddress(), container);
+		ChromeAgent agent = new ChromeAgent(container.getRemoteAddress(), container);
 
 		distributor.addAgent(agent);
-		//ChromeDriverAgent agent = new ChromeDriverAgent(remoteAddress);
+		//ChromeAgent agent = new ChromeAgent(remoteAddress);
 
 		AccountImpl account_1 = new AccountImpl("zbj.com", "17600668061", "gcy116149");
 		AccountImpl account_2 = new AccountImpl("zbj.com", "15284809626", "123456");

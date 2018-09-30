@@ -1,16 +1,12 @@
-package one.rewind.io.requester;
+package one.rewind.io.requester.basic;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.proxy.IpDetector;
 import one.rewind.io.requester.proxy.Proxy;
-import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.task.Task;
-import one.rewind.json.JSON;
-import one.rewind.txt.DateFormatUtil;
 import one.rewind.util.Configs;
-import one.rewind.util.FileUtil;
 import one.rewind.util.NetworkUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -1,7 +1,6 @@
-package one.rewind.io.requester;
+package one.rewind.io.requester.basic;
 
 import com.typesafe.config.Config;
-import one.rewind.io.requester.cookie.CookiesHolderManager;
 import one.rewind.io.requester.proxy.ProxyAuthenticator;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.util.CertAutoInstaller;
@@ -62,7 +61,7 @@ public class BasicRequester {
 
 	}
 
-	CookiesHolderManager cookiesHolderManager = null;
+	CookiesManager cookiesManager = null;
 
 	/**
 	 * 单例模式
@@ -85,7 +84,7 @@ public class BasicRequester {
 	 *
 	 */
 	private BasicRequester() {
-		cookiesHolderManager = new CookiesHolderManager();
+		cookiesManager = new CookiesManager();
 	}
 
 	/**
@@ -495,14 +494,14 @@ public class BasicRequester {
 			try {
 
 				String cookies = null;
-				CookiesHolderManager.CookiesHolder cookiesHolder = null;
+				CookiesManager.CookiesHolder cookiesHolder = null;
 
 				String host = task.getProxy() == null ? "" : task.getProxy().getHost();
 
 				if(task.getCookies() != null) {
 					cookies = task.getCookies();
 				} else {
-					cookiesHolder = cookiesHolderManager.getCookiesHolder(host, task.getDomain());
+					cookiesHolder = cookiesManager.getCookiesHolder(host, task.getDomain());
 					cookies = cookiesHolder == null? null : cookiesHolder.getCookie();
 				}
 
@@ -603,16 +602,16 @@ public class BasicRequester {
 							newCookies += key + "=" + cookie_map.get(key) + "; ";
 						}
 
-						newCookies = CookiesHolderManager.mergeCookies(cookies, newCookies);
+						newCookies = CookiesManager.mergeCookies(cookies, newCookies);
 						task.getResponse().setCookies(newCookies);
 
 						if(task.getCookies() == null) {
 							if(cookiesHolder != null) {
 								cookiesHolder.setCookie(newCookies);
 							} else {
-								cookiesHolder = new CookiesHolderManager.CookiesHolder(newCookies);
+								cookiesHolder = new CookiesManager.CookiesHolder(newCookies);
 							}
-							cookiesHolderManager.addCookiesHolder(host, task.getDomain(), cookiesHolder);
+							cookiesManager.addCookiesHolder(host, task.getDomain(), cookiesHolder);
 						}
 					}
 				}

@@ -1,6 +1,6 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 
 
 /**
@@ -18,7 +18,7 @@ public class ExecAction extends Action {
 		this.script = script;
 	}
 
-	public boolean run(ChromeDriverAgent agent) {
+	public boolean run(ChromeAgent agent) {
 
 		if(script != null & script.length() > 0) {
 			agent.trigger(script);

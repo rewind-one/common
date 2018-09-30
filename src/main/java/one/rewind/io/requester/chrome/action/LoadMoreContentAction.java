@@ -1,6 +1,6 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
@@ -18,7 +18,7 @@ public class LoadMoreContentAction extends Action {
 		this.morePath = morePath;
 	}
 
-    public boolean run(ChromeDriverAgent agent) {
+    public boolean run(ChromeAgent agent) {
 
 	    //循环验证点击加载更多，加载全部页面
 	    int clickCount = 0;

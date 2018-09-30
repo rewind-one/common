@@ -1,11 +1,9 @@
 package one.rewind.io.sparkjava.test;
 
-import com.google.common.collect.ImmutableMap;
-import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.server.Msg;
 import one.rewind.io.server.MsgTransformer;
-import one.rewind.json.JSON;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,7 +14,6 @@ import java.util.HashMap;
 import static spark.Spark.before;
 import static spark.Spark.post;
 import static spark.Spark.port;
-import static spark.route.HttpMethod.post;
 
 public class SparkJavaTest {
 

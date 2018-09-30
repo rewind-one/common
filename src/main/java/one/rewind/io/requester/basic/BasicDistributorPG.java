@@ -1,4 +1,4 @@
-package one.rewind.io.requester;
+package one.rewind.io.requester.basic;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import one.rewind.io.requester.task.Task;

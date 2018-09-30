@@ -1,8 +1,7 @@
 package one.rewind.io.requester.test;
 
-import one.rewind.io.requester.BasicDistributor;
+import one.rewind.io.requester.basic.BasicDistributor;
 import one.rewind.io.requester.proxy.Proxy;
-import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.Task;
 import org.jsoup.nodes.Element;
 import org.junit.After;

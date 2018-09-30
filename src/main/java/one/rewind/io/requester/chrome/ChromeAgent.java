@@ -7,7 +7,7 @@ import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.client.ClientUtil;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
-import one.rewind.io.requester.BasicRequester;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.callback.AccountCallback;
 import one.rewind.io.requester.callback.ChromeDriverAgentCallback;
@@ -18,7 +18,6 @@ import one.rewind.io.requester.chrome.action.LoginAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
-import one.rewind.io.requester.task.ChromeTask;
 import one.rewind.io.requester.util.DocumentSettleCondition;
 import one.rewind.io.ssh.RemoteShell;
 import one.rewind.util.Configs;
@@ -63,16 +62,16 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static one.rewind.io.requester.chrome.ChromeDriverDistributor.LOCAL_IP;
+import static one.rewind.io.requester.chrome.ChromeDistributor.LOCAL_IP;
 
 /**
  * Chrome请求器
  * 复用
  * karajan@2017.9.17
  */
-public class ChromeDriverAgent {
+public class ChromeAgent {
 
-	public static final Logger logger = LogManager.getLogger(ChromeDriverAgent.class.getName());
+	public static final Logger logger = LogManager.getLogger(ChromeAgent.class.getName());
 
 	// 获取元素超时时间
 	private static int GET_ELEMENT_TIMEOUT = 3;
@@ -114,7 +113,7 @@ public class ChromeDriverAgent {
 	}
 
 	// 所有实例的列表
-	public static final List<ChromeDriverAgent> instances = new ArrayList<>();
+	public static final List<ChromeAgent> instances = new ArrayList<>();
 
 	// 名称
 	public String name;
@@ -311,7 +310,7 @@ public class ChromeDriverAgent {
 
 		public ChangeProxy(one.rewind.io.requester.proxy.Proxy proxy) {
 			this.proxy = proxy;
-			ChromeDriverAgent.this.proxy = proxy;
+			ChromeAgent.this.proxy = proxy;
 		}
 
 		public Void call() throws ProxyException.Failed {
@@ -325,7 +324,7 @@ public class ChromeDriverAgent {
 				bmProxy.stop();
 			}
 
-			bmProxy = ChromeDriverDistributor.buildBMProxy(bmProxy_port, proxy);
+			bmProxy = ChromeDistributor.buildBMProxy(bmProxy_port, proxy);
 
 			logger.info("Change to {}:{}", proxy.host, proxy.port);
 
@@ -370,7 +369,7 @@ public class ChromeDriverAgent {
 
 					bmProxy.stop();
 
-					bmProxy = ChromeDriverDistributor.buildBMProxy(bmProxy_port, proxy);
+					bmProxy = ChromeDistributor.buildBMProxy(bmProxy_port, proxy);
 
 					logger.info("Restart BMProxy done.");
 				}
@@ -401,7 +400,7 @@ public class ChromeDriverAgent {
 				for(ChromeAction action : task.getActions()) {
 
 					// 当前线程执行 action
-					boolean currentActionSuccess = action.run(ChromeDriverAgent.this);
+					boolean currentActionSuccess = action.run(ChromeAgent.this);
 
 					// 分domain记录当前Chrome登陆的账户
 					// 一个 Chrome 一个 domain 下只能记录一个 账户
@@ -426,7 +425,7 @@ public class ChromeDriverAgent {
 
 				// 对内容进行验证
 				if(task.validator != null)
-					task.validator.run(ChromeDriverAgent.this, task);
+					task.validator.run(ChromeAgent.this, task);
 
 				if(task.shootScreen()) {
 					task.getResponse().setScreenshot(driver.getScreenshotAs(OutputType.BYTES));
@@ -443,13 +442,13 @@ public class ChromeDriverAgent {
 			// 停止页面加载
 			// driver.executeScript("window.stop()");
 
-			if(ChromeDriverAgent.this.requestFilterEnabled) {
+			if(ChromeAgent.this.requestFilterEnabled) {
 				setProxyRequestFilter((request, contents, messageInfo) -> {
 					return null;
 				});
 			}
 
-			if(ChromeDriverAgent.this.responseFilterEnabled) {
+			if(ChromeAgent.this.responseFilterEnabled) {
 				setProxyResponseFilter((response, contents, messageInfo) -> {
 
 				});
@@ -463,7 +462,7 @@ public class ChromeDriverAgent {
 	 *
 	 * @param flags
 	 */
-	public ChromeDriverAgent(Flag... flags) {
+	public ChromeAgent(Flag... flags) {
 		this(null, null, null, flags);
 	}
 
@@ -472,7 +471,7 @@ public class ChromeDriverAgent {
 	 * @param remoteAddress
 	 * @param flags
 	 */
-	public ChromeDriverAgent(URL remoteAddress, RemoteShell remoteShell, Flag... flags) {
+	public ChromeAgent(URL remoteAddress, RemoteShell remoteShell, Flag... flags) {
 		this(remoteAddress, remoteShell, null, flags);
 	}
 
@@ -481,7 +480,7 @@ public class ChromeDriverAgent {
 	 * @param proxy
 	 * @param flags
 	 */
-	public ChromeDriverAgent(one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
+	public ChromeAgent(one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
 		this(null, null, proxy, flags);
 	}
 
@@ -490,7 +489,7 @@ public class ChromeDriverAgent {
 	 * @param proxy 代理
 	 * @param flags 启动标签
 	 */
-	public ChromeDriverAgent(URL remoteAddress, RemoteShell remoteShell, one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
+	public ChromeAgent(URL remoteAddress, RemoteShell remoteShell, one.rewind.io.requester.proxy.Proxy proxy, Flag... flags) {
 
 		status = Status.INIT;
 
@@ -500,8 +499,8 @@ public class ChromeDriverAgent {
 		this.flags = new HashSet<Flag>(Arrays.asList(flags));
 
 		synchronized (instances) {
-			instances.add(ChromeDriverAgent.this);
-			name = "ChromeDriverAgent-" + instances.size();
+			instances.add(ChromeAgent.this);
+			name = "ChromeAgent-" + instances.size();
 		}
 
 		// 初始化单线程执行器
@@ -513,7 +512,7 @@ public class ChromeDriverAgent {
 	/**
 	 * 启动
 	 */
-	public synchronized ChromeDriverAgent start() throws ChromeDriverException.IllegalStatusException, InterruptedException {
+	public synchronized ChromeAgent start() throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
 		if(!(status == Status.INIT || status == Status.TERMINATED)) {
 			throw new ChromeDriverException.IllegalStatusException();
@@ -617,7 +616,7 @@ public class ChromeDriverAgent {
 
 		executor.shutdown();
 
-		instances.remove(ChromeDriverAgent.this);
+		instances.remove(ChromeAgent.this);
 
 		if(proxy != null) {
 			proxy.status = one.rewind.io.requester.proxy.Proxy.Status.Free;
@@ -665,7 +664,7 @@ public class ChromeDriverAgent {
 
 			Proxy seleniumProxy;
 
-			bmProxy = ChromeDriverDistributor.buildBMProxy(proxy);
+			bmProxy = ChromeDistributor.buildBMProxy(proxy);
 			bmProxy_port = bmProxy.getPort();
 
 			// 重载 本地代理服务器网络地址 InetAddress.getLocalHost()
@@ -748,7 +747,7 @@ public class ChromeDriverAgent {
 
 							HttpRequest httpRequest = (HttpRequest) httpObject;
 
-							String type = ChromeDriverDistributor.getInstance().responseTypeCache.get(httpRequest.uri());
+							String type = ChromeDistributor.getInstance().responseTypeCache.get(httpRequest.uri());
 
 							if(type != null &&
 								(
@@ -786,7 +785,7 @@ public class ChromeDriverAgent {
 
 				/*System.err.println(contentType + "\t" + uri);*/
 
-				ChromeDriverDistributor.getInstance().responseTypeCache.put(uri, contentType);
+				ChromeDistributor.getInstance().responseTypeCache.put(uri, contentType);
 			}
 		});
 	}
@@ -1052,7 +1051,7 @@ public class ChromeDriverAgent {
 	 */
 	public void submit(ChromeTask task) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
-		submit(task, ChromeDriverDistributor.CONNECT_TIMEOUT + ChromeDriverDistributor.READ_TIMEOUT, false);
+		submit(task, ChromeDistributor.CONNECT_TIMEOUT + ChromeDistributor.READ_TIMEOUT, false);
 	}
 
 	/**
@@ -1061,7 +1060,7 @@ public class ChromeDriverAgent {
 	 */
 	public void submit(ChromeTask task, boolean ignoreIdleCallback) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
-		submit(task, ChromeDriverDistributor.CONNECT_TIMEOUT + ChromeDriverDistributor.READ_TIMEOUT, ignoreIdleCallback);
+		submit(task, ChromeDistributor.CONNECT_TIMEOUT + ChromeDistributor.READ_TIMEOUT, ignoreIdleCallback);
 	}
 
 	/**
@@ -1086,7 +1085,7 @@ public class ChromeDriverAgent {
 			status = Status.IDLE;
 
 			for(TaskCallback callback : task.doneCallbacks) {
-				ChromeDriverDistributor.getInstance().post_executor.submit(()->{
+				ChromeDistributor.getInstance().post_executor.submit(()->{
 					try {
 						callback.run(task);
 					} catch (Exception e) {
@@ -1258,7 +1257,7 @@ public class ChromeDriverAgent {
 	 */
 	private void runExceptionCallbacks(ChromeTask t) {
 		for(TaskCallback callback : t.exceptionCallbacks) {
-			ChromeDriverDistributor.getInstance().post_executor.submit(()->{
+			ChromeDistributor.getInstance().post_executor.submit(()->{
 				try {
 					callback.run(t);
 				} catch (Exception e) {
@@ -1352,7 +1351,7 @@ public class ChromeDriverAgent {
 	 * 新增加的最先执行
 	 * @param callback
 	 */
-	public ChromeDriverAgent addNewCallback(ChromeDriverAgentCallback callback) throws ChromeDriverException.IllegalStatusException {
+	public ChromeAgent addNewCallback(ChromeDriverAgentCallback callback) throws ChromeDriverException.IllegalStatusException {
 
 		if(status != Status.INIT) throw new ChromeDriverException.IllegalStatusException();
 
@@ -1365,7 +1364,7 @@ public class ChromeDriverAgent {
 	 *
 	 * @param callback
 	 */
-	public ChromeDriverAgent addIdleCallback(ChromeDriverAgentCallback callback) {
+	public ChromeAgent addIdleCallback(ChromeDriverAgentCallback callback) {
 
 		idleCallbacks.add(callback);
 		return this;
@@ -1375,13 +1374,13 @@ public class ChromeDriverAgent {
 	 *
 	 * @param callback
 	 */
-	public ChromeDriverAgent addTerminatedCallback(ChromeDriverAgentCallback callback) {
+	public ChromeAgent addTerminatedCallback(ChromeDriverAgentCallback callback) {
 
 		terminatedCallbacks.add(callback);
 		return this;
 	}
 
-	public ChromeDriverAgent clearTerminatedCallbacks() {
+	public ChromeAgent clearTerminatedCallbacks() {
 
 		this.terminatedCallbacks.clear();
 		return this;
@@ -1392,13 +1391,13 @@ public class ChromeDriverAgent {
 	 * @param callback
 	 * @return
 	 */
-	public ChromeDriverAgent addAccountFailedCallback(AccountCallback callback) {
+	public ChromeAgent addAccountFailedCallback(AccountCallback callback) {
 
 		accountFailedCallbacks.add(callback);
 		return this;
 	}
 
-	public ChromeDriverAgent addAccountFrozenCallback(AccountCallback callback) {
+	public ChromeAgent addAccountFrozenCallback(AccountCallback callback) {
 
 		accountFrozenCallbacks.add(callback);
 		return this;
@@ -1409,7 +1408,7 @@ public class ChromeDriverAgent {
 	 * @param callback
 	 * @return
 	 */
-	public ChromeDriverAgent addProxyFailedCallback(ProxyCallBack callback) {
+	public ChromeAgent addProxyFailedCallback(ProxyCallBack callback) {
 
 		proxyFailedCallbacks.add(callback);
 		return this;
@@ -1420,7 +1419,7 @@ public class ChromeDriverAgent {
 	 * @param callback
 	 * @return
 	 */
-	public ChromeDriverAgent addProxyTimeoutCallback(ProxyCallBack callback) {
+	public ChromeAgent addProxyTimeoutCallback(ProxyCallBack callback) {
 
 		proxyTimeoutCallbacks.add(callback);
 		return this;
@@ -1440,7 +1439,7 @@ public class ChromeDriverAgent {
 
 		if(proxy != null) info.put("proxy", proxy);
 
-		if(bmProxy_port != 0) info.put("localProxy", ChromeDriverDistributor.LOCAL_IP + ":" + bmProxy_port);
+		if(bmProxy_port != 0) info.put("localProxy", ChromeDistributor.LOCAL_IP + ":" + bmProxy_port);
 
 		if(remoteShell != null && remoteShell.getVncPort() != 0)
 			info.put("vncAddress", remoteShell.getHost() + ":" + remoteShell.getVncPort());

@@ -1,6 +1,6 @@
 package one.rewind.io.requester.chrome.action;
 
-import one.rewind.io.requester.chrome.ChromeDriverAgent;
+import one.rewind.io.requester.chrome.ChromeAgent;
 import one.rewind.json.JSON;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -21,7 +21,7 @@ public class MouseHoverAction extends Action {
 		this.elementCssPath = elementCssPath;
 	}
 
-	public boolean run( ChromeDriverAgent agent ) {
+	public boolean run( ChromeAgent agent ) {
 		// 获取 WebDriver
 		WebDriver driver = agent.getDriver();
 
