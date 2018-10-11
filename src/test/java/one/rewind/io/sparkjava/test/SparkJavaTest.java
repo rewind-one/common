@@ -1,6 +1,5 @@
 package one.rewind.io.sparkjava.test;
 
-import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.server.Msg;
 import one.rewind.io.server.MsgTransformer;

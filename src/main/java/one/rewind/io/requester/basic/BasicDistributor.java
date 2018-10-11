@@ -1,43 +1,30 @@
 package one.rewind.io.requester.basic;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.j256.ormlite.stmt.query.In;
+import one.rewind.db.RedissonAdapter;
 import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.proxy.IpDetector;
 import one.rewind.io.requester.proxy.Proxy;
+import one.rewind.io.requester.proxy.ProxyChannel;
 import one.rewind.io.requester.task.Task;
+import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.util.Configs;
 import one.rewind.util.NetworkUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.redisson.api.RMap;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class BasicDistributor extends Thread {
+public class BasicDistributor {
 
 	static final Logger logger = LogManager.getLogger(BasicDistributor.class.getName());
 
-	protected static BasicDistributor instance;
-
-	/**
-	 *
-	 * @return
-	 */
-	public static BasicDistributor getInstance() {
-
-		if (instance == null) {
-			synchronized (BasicDistributor.class) {
-				if (instance == null) {
-					instance = new BasicDistributor();
-					instance.setName("BasicDistributor");
-					instance.start();
-				}
-			}
-		}
-
-		return instance;
-	}
+	public static BasicDistributor Instance;
 
 	public static String LOCAL_IP = IpDetector.getIp() + " :: " + NetworkUtil.getLocalIp();
 
@@ -48,291 +35,398 @@ public class BasicDistributor extends Thread {
 	static int CONNECT_TIMEOUT = 20000;
 
 	// 重试次数
-	static int RETRY_LIMIT = 12;
+	static int RETRY_LIMIT = 100;
 
 	static {
+
 		try {
+
 			REQUEST_PER_SECOND_LIMIT = Configs.getConfig(BasicRequester.class).getInt("requestPerSecondLimit");
 			CONNECT_TIMEOUT = Configs.getConfig(BasicRequester.class).getInt("connectTimeout");
+
 		} catch (Exception e) {
 			logger.error("Error load config, ", e);
 		}
 	}
 
-	Proxy proxy = null;
+	public Operator operator;
 
-	// 上一次请求时间
-	public long lastRequestTime = System.currentTimeMillis();
+	public List<Operator> operators = new ArrayList<>();
 
 	// 已经执行完的任务特征缓存
-	public ConcurrentHashMap<String, Long> fingerprints = new ConcurrentHashMap<>();
+	public RMap<String, Long> fingerprints = RedissonAdapter.redisson.getMap("WX-Fingerprints");
 
-	// 任务队列
-	PriorityBlockingQueue<Task> queue = new PriorityBlockingQueue();
-
-	// 是否执行完的标识
-	private volatile boolean done = false;
-
-	// 线程池执行器
-	ThreadPoolExecutor executor =  new ThreadPoolExecutor(
-			20 * REQUEST_PER_SECOND_LIMIT,
-			40 * REQUEST_PER_SECOND_LIMIT,
-			0, TimeUnit.MICROSECONDS,
-			new LinkedBlockingQueue<>());
-
+	// 任务队列 TODO --> redisson
+	public PriorityBlockingQueue<Task> queue = new PriorityBlockingQueue();
 
 	/**
-	 * 私有构造器
+	 *
+	 * @return
 	 */
+	public static BasicDistributor getInstance() {
+
+		if (Instance == null) {
+			synchronized (BasicDistributor.class) {
+				if (Instance == null) {
+					Instance = new BasicDistributor();
+				}
+			}
+		}
+
+		return Instance;
+	}
+
 	public BasicDistributor() {
 
-		executor.setThreadFactory(
-				new ThreadFactoryBuilder()
-						.setNameFormat("BasicDistributor-%d")
-						.build());
+		operator = new Operator(null);
+		operator.start();
+
+		Timer timer = new Timer();
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				logger.info("Queue: {}", queue.size());
+			}
+		}, 10000, 10000);
 	}
 
 	/**
 	 *
+	 * @param channel
 	 */
-	public void run() {
+	public void addOperator(ProxyChannel channel) {
 
-		while(!done) {
+		operator.setDone();
+		operator = null;
 
-			Task t = null;
-
-			try {
-
-				t = queue.take();
-
-				executor.submit(new RequestWrapper(t));
-
-				waits();
-
-				logger.info("[{} / {} / {}]", executor.getActiveCount(), executor.getQueue().size(), queue.size());
-
-			} catch (Exception e) {
-				logger.error("{}", t.toJSON(), e);
-			}
-		}
+		Operator op = new Operator(channel);
+		operators.add(op);
+		op.start();
 	}
 
 	/**
 	 * 提交任务
 	 * @param t
 	 */
-	public void submit(Task t, BlockingQueue<Task> queue) {
+	public synchronized boolean submit(TaskHolder t, BlockingQueue queue) throws InterruptedException {
 
 		if(!fingerprints.containsKey(t.getFingerprint())) {
 
-			queue.add(t);
+			queue.put(t);
+			return true;
+		}
 
-		} else {
+		else {
 
 			// 上一次采集时间
 			long lts = fingerprints.get(t.getFingerprint());
 
 			long ts = System.currentTimeMillis();
 
-			if(ts - lts >= t.MIN_INTERVAL / 10) {
-				queue.add(t);
+			// 通过反射获取最小采集间隔
+			Class<? extends Task> clazz = t.getClass();
+			long interval = 0;
+			try {
+				Field field = clazz.getField("MIN_INTERVAL");
+				interval = field.getLong(clazz);
+			} catch (NoSuchFieldException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+
+			logger.info("Interval:{}", interval);
+
+			//
+			if(ts - lts >= interval / 2) {
+				queue.put(t);
+				return true;
 			} else {
-				logger.warn("Duplicate fingerprints {}:[{}] --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.getUrl());
+				logger.warn("Duplicate fingerprints {}:[{}] --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.url);
+				return false;
 			}
 		}
 	}
 
-	/**
-	 * 提交任务
-	 * @param t
-	 */
-	public void submit(Task t) {
-
-		submit(t, queue);
+	public void submit(TaskHolder th) throws InterruptedException {
+		submit(th, queue);
 	}
 
 	/**
-	 * 设置代理
-	 * @param proxy
+	 *
 	 */
-	public void setProxy(Proxy proxy) {
-		this.proxy = proxy;
-	}
+	public class Operator extends Thread {
 
-	/**
-	 * 计数
-	 * TODO 未实现
-	 */
-	public void count() {
+		ProxyChannel channel;
 
-	}
+		Proxy proxy;
 
-	/**
-	 * 设置结束
-	 */
-	public void setDone() {
-		this.done = true;
-	}
+		long lastRequestTime = System.currentTimeMillis();
 
-	/**
-	 * 任务等待
-	 * @throws InterruptedException
-	 */
-	public synchronized void waits() throws InterruptedException {
+		// 是否执行完的标识
+		private volatile boolean done = false;
 
-		long wait_time = lastRequestTime + (long) Math.ceil(1000D / (double) REQUEST_PER_SECOND_LIMIT) - System.currentTimeMillis();
+		// 线程池执行器
+		ThreadPoolExecutor executor =  new ThreadPoolExecutor(
+				20,
+				80,
+				0, TimeUnit.MICROSECONDS,
+				new LinkedBlockingQueue<>());
 
-		if(wait_time > 0) {
-
-			logger.info("Wait {} ms.", wait_time);
-			Thread.sleep(wait_time);
-
-		}
-
-		lastRequestTime = System.currentTimeMillis();
-	}
-
-	/**
-	 * 请求封装
-	 */
-	class RequestWrapper implements Runnable {
-
-		// 任务
-		public Task<Task> t;
-
-		// 验证异常
-		public boolean validatorException = false;
-
-		// 采集异常
-		public boolean fetchException = false;
-
-		// 重试
-		public boolean retry = false;
-
-		/**
-		 * 构造方法
-		 * @param t
-		 */
-		RequestWrapper(Task t) {
-			this.t = t;
+		public Operator() {
+			this(null);
 		}
 
 		/**
 		 *
-		 * @param nt
 		 */
-		public void submit(Task nt) {
+		public Operator(ProxyChannel channel) {
 
-			nt.removeHeader("Proxy-Switch-Ip");
-			nt.getExceptions().clear();
+			String name = "Operator";
 
-			BasicDistributor.this.submit(nt);
+			if(channel != null) {
+				name = "Operator-Ch" + channel.id;
+			}
+
+			setName(name);
+
+			executor.setThreadFactory(
+					new ThreadFactoryBuilder()
+							.setNameFormat(name + "-%d")
+							.build());
+
+			this.channel = channel;
 		}
 
-		@Override
+		public void setProxy(Proxy proxy) {
+			this.proxy = proxy;
+		}
+
+		/**
+		 * 任务等待
+		 * @throws InterruptedException
+		 */
+		public synchronized void waits() throws InterruptedException {
+
+			double requestPerSecond = REQUEST_PER_SECOND_LIMIT;
+			if(channel != null) {
+				lastRequestTime = channel.lastRequsetTime;
+				requestPerSecond = channel.requestPerSecond;
+			}
+
+			long wait_time = lastRequestTime + (long) Math.ceil(1000D / requestPerSecond) - System.currentTimeMillis();
+
+			if (wait_time > 0) {
+
+				logger.info("Wait {} ms.", wait_time);
+				Thread.sleep(wait_time);
+			}
+
+			this.lastRequestTime = System.currentTimeMillis();
+
+			if(channel != null) {
+				channel.lastRequsetTime = this.lastRequestTime;
+			}
+		}
+
+		/**
+		 *
+		 */
 		public void run() {
 
-			if(t.switchProxy()) {
-				t.addHeader("Proxy-Switch-Ip","yes");
-				logger.info("Change proxy {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
-			}
+			while(!done) {
 
-			// 二次去重
-			if(fingerprints.containsKey(t.getFingerprint())) {
-
-				// 上一次采集时间
-				long lts = fingerprints.get(t.getFingerprint());
-
-				long ts = System.currentTimeMillis();
-
-				if(ts - lts < t.MIN_INTERVAL) {
-					logger.warn("Duplicate fingerprints {}:[{}] --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.getUrl());
-					return;
-				}
-			}
-
-			// 下一级任务
-			List<Task> nts = new ArrayList<>();
-
-			t.setProxy(proxy);
-
-			BasicRequester.getInstance().submit(t, CONNECT_TIMEOUT);
-
-			// A Validator 验证
-			try {
-				if(t.validator != null)
-					t.validator.run(null, t);
-
-			} catch (Exception e) {
-
-				logger.error("Validator exception {}:[{}], ", t.getClass().getSimpleName(), t.getFingerprint(), e);
-				validatorException = true;
-				retry = true;
-			}
-
-			// B1 异常处理
-			if (t.getExceptions().size() > 0) {
-
-				for(Throwable e : t.getExceptions()) {
-					logger.error("Fetch Error {}:[{}], {}", t.getClass().getSimpleName(), t.getFingerprint(), e.getMessage());
-				}
-
-				fetchException = true;
-				retry = true;
-			}
-			// B2 成功执行 执行 callbacks 生成下一级任务
-			else {
+				Task t = null;
 
 				try {
 
-					for (TaskCallback tc : t.doneCallbacks) {
-						tc.run(t);
-					}
+					t = queue.poll(100, TimeUnit.MILLISECONDS);
 
-					for (NextTaskGenerator ntg : t.nextTaskGenerators) {
-						ntg.run(t, nts);
-					}
+					if(t != null) {
 
-					// 计数
-					count();
+						waits();
 
-					// 提交下一级任务
-					for(Task nt : nts) {
-						submit(nt);
+						if (channel != null) {
+							t.setProxy(channel.proxy);
+						}
+						else if (proxy != null) {
+							t.setProxy(proxy);
+						}
+
+						executor.submit(new RequestWrapper(t));
+
+						logger.info("[{} / {} / {}]", executor.getActiveCount(), executor.getQueue().size(), queue.size());
 					}
 
 				} catch (Exception e) {
-
-					logger.error("Error exec callbacks {}:[{}], ", t.getClass().getSimpleName(), t.getFingerprint(), e);
-
-					fetchException = true;
-					retry = true;
+					logger.error("Error get task, ", e);
 				}
-			}
-
-			// C1 异常 重试
-			if(retry) {
-
-				if(t.getRetryCount() < RETRY_LIMIT) {
-
-					logger.warn("Retry {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
-
-					t.addRetryCount();
-					submit(t); // 非阻塞方法
-
-				} else {
-
-					logger.warn("Exceed retry limit, {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
-					// TODO 数据库建表
-					// t.insert();
-				}
-			}
-			// C2 成功执行
-			else {
-				fingerprints.put(t.getFingerprint(), new Date().getTime());
-				logger.info("{}:[{}] done --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.getDuration());
 			}
 		}
+
+		/**
+		 * 计数
+		 * TODO 未实现
+		 */
+		public void count(boolean success) {
+
+		}
+
+		/**
+		 * 设置结束
+		 */
+		public void setDone() {
+			this.done = true;
+		}
+
+		/**
+		 * 请求封装
+		 */
+		class RequestWrapper implements Runnable {
+
+			// 任务
+			public Task<Task> t;
+
+			// 验证异常
+			public boolean validatorException = false;
+
+			// 采集异常
+			public boolean fetchException = false;
+
+			// 重试
+			public boolean retry = false;
+
+			/**
+			 * 构造方法
+			 * @param t
+			 */
+			RequestWrapper(Task t) {
+				this.t = t;
+			}
+
+			/**
+			 *
+			 * @param nt
+			 */
+			public void submit(Task nt) throws InterruptedException {
+
+				nt.removeHeader("Proxy-Switch-Ip");
+				nt.exception = null;
+
+				BasicDistributor.this.submit(nt);
+			}
+
+			@Override
+			public void run() {
+
+				try {
+
+					// 二次去重
+					if (fingerprints.containsKey(t.getFingerprint())) {
+
+						// 上一次采集时间
+						long lts = fingerprints.get(t.getFingerprint());
+
+						long ts = System.currentTimeMillis();
+
+						if (ts - lts < t.MIN_INTERVAL) {
+							logger.warn("Duplicate fingerprints {}:[{}] --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.url);
+							return;
+						}
+					}
+
+					// 下一级任务
+					List<Task> nts = new ArrayList<>();
+
+					BasicRequester.getInstance().submit(t, CONNECT_TIMEOUT);
+
+					// A Validator 验证
+					try {
+						if (t.validator != null)
+							t.validator.run(null, t);
+
+					} catch (Exception e) {
+
+						logger.error("Validator exception {}:[{}], ", t.getClass().getSimpleName(), t.getFingerprint(), e);
+						validatorException = true;
+						retry = true;
+					}
+
+					// B 异常处理
+					if (t.exception != null) {
+
+						logger.error("Fetch Error {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint(), t.exception);
+
+						fetchException = true;
+						retry = true;
+					}
+
+					// C 成功执行 执行 callbacks 生成下一级任务
+					if (!validatorException && !fetchException) {
+
+						try {
+
+							for (TaskCallback tc : t.doneCallbacks) {
+								tc.run(t);
+							}
+
+							for (NextTaskGenerator ntg : t.nextTaskGenerators) {
+								ntg.run(t, nts);
+							}
+
+							// 计数
+							count(false);
+
+							// 提交下一级任务
+							for (Task nt : nts) {
+								submit(nt);
+							}
+
+						} catch (Exception e) {
+
+							logger.error("Error exec callbacks {}:[{}], ", t.getClass().getSimpleName(), t.getFingerprint(), e);
+							retry = true;
+						}
+					}
+
+					// C1 异常 重试
+					if (retry) {
+
+						count(false);
+
+						if (t.getRetryCount() < RETRY_LIMIT) {
+
+							logger.warn("Retry {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
+
+							t.addRetryCount();
+
+							try {
+								submit(t); // 非阻塞方法
+							} catch (InterruptedException e) {
+								logger.warn("Error submit task, {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint(), e);
+							}
+
+						} else {
+
+							logger.warn("Exceed retry limit, {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
+							// TODO 数据库建表
+							// t.insert();
+						}
+					}
+					// C2 成功执行
+					else {
+
+						count(true);
+						fingerprints.put(t.getFingerprint(), new Date().getTime());
+						logger.info("{}:[{}] done --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.getDuration());
+					}
+
+				} catch (Exception ex) {
+					logger.error("Unhandled exception, ", ex);
+				}
+
+			}
+		}
+
+
 	}
 
 	/**

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.chrome.ChromeTask;
-import one.rewind.io.requester.chrome.ChromeTaskFactory;
+import one.rewind.io.requester.scheduler.ScheduledTask;
 import one.rewind.io.requester.scheduler.TaskScheduler;
 import one.rewind.io.requester.task.*;
 import one.rewind.io.server.Msg;

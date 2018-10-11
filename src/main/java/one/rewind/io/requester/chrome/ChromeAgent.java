@@ -7,7 +7,6 @@ import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.client.ClientUtil;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
-import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.callback.AccountCallback;
 import one.rewind.io.requester.callback.ChromeDriverAgentCallback;

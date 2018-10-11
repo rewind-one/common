@@ -1,8 +1,6 @@
 package one.rewind.io.requester.scheduler;
 
 import it.sauronsoftware.cron4j.Scheduler;
-import one.rewind.io.requester.basic.BasicRequester;
-import one.rewind.io.requester.task.ScheduledTask;
 import one.rewind.io.requester.task.TaskHolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,14 +17,14 @@ import static one.rewind.io.requester.chrome.ChromeDistributor.LOCAL_IP;
  */
 public class TaskScheduler {
 
-	private static final Logger logger = LogManager.getLogger(BasicRequester.class.getName());
+	private static final Logger logger = LogManager.getLogger(TaskScheduler.class.getName());
 
 	protected static TaskScheduler instance;
 
 	public static TaskScheduler getInstance() {
 
 		if (instance == null) {
-			synchronized (BasicRequester.class) {
+			synchronized (TaskScheduler.class) {
 				if (instance == null) {
 					instance = new TaskScheduler();
 				}

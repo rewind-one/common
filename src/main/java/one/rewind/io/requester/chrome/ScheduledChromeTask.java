@@ -1,6 +1,6 @@
 package one.rewind.io.requester.chrome;
 
-import one.rewind.io.requester.task.ScheduledTask;
+import one.rewind.io.requester.scheduler.ScheduledTask;
 import one.rewind.io.requester.task.TaskHolder;
 
 public class ScheduledChromeTask extends ScheduledTask {

@@ -18,7 +18,7 @@ import java.util.List;
 
 public abstract class Proxy implements JSONable<Proxy> {
 
-	private static final Logger logger = LogManager.getLogger(Proxy.class.getName());
+	static final Logger logger = LogManager.getLogger(Proxy.class.getName());
 
 	@DatabaseField(dataType = DataType.INTEGER, canBeNull = false, generatedId = true)
 	public int id;

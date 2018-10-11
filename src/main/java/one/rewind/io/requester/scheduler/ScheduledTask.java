@@ -1,8 +1,8 @@
-package one.rewind.io.requester.task;
+package one.rewind.io.requester.scheduler;
 
 import one.rewind.io.requester.chrome.ChromeDistributor;
-import one.rewind.io.requester.chrome.ChromeTaskFactory;
-import one.rewind.io.requester.scheduler.TaskScheduler;
+import one.rewind.io.requester.parser.TemplateManager;
+import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
@@ -33,7 +33,7 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 	public TaskHolder holder;
 
 	/**
-	 *
+	 * 
 	 */
 	public ScheduledTask() {}
 
@@ -56,7 +56,7 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 	 */
 	public ScheduledTask(TaskHolder holder, List<String> crons) throws Exception {
 
-		this.id = holder.generateScheduledChromeTaskId();
+		this.id = holder.generateScheduledTaskId();
 
 		for (String cron_ : crons) {
 			if (!StringUtil.validCron(cron_)) {
@@ -104,8 +104,10 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 
 		try {
 
-			TaskHolder new_holder = ChromeTaskFactory.getInstance().newHolder(holder);
+			TaskHolder new_holder = TemplateManager.getInstance().newHolder(holder);
 			new_holder.scheduled_task_id = this.id;
+
+			// TODO
 			ChromeDistributor.getInstance().submit(holder);
 
 		} catch (Exception e) {

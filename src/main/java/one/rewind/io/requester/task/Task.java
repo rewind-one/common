@@ -1,18 +1,12 @@
 package one.rewind.io.requester.task;
 
-import com.j256.ormlite.dao.Dao;
-import com.j256.ormlite.field.DataType;
-import com.j256.ormlite.field.DatabaseField;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
-import one.rewind.db.DaoManager;
-import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.callback.TaskValidator;
-import one.rewind.json.JSON;
+import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.txt.ChineseChar;
-import one.rewind.txt.NumberFormatUtil;
 import one.rewind.txt.StringUtil;
 import one.rewind.txt.URLUtil;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -31,6 +25,9 @@ import java.util.*;
  */
 public class Task<T extends Task> implements Comparable<Task> {
 
+	/**
+	 * 任务优先级
+	 */
 	public enum Priority {
 		LOWEST,
 		LOWER,
@@ -41,6 +38,9 @@ public class Task<T extends Task> implements Comparable<Task> {
 		HIGHEST
 	}
 
+	/**
+	 * 任务的请求方法
+	 */
 	public static enum RequestMethod {
 		GET,
 		POST,
@@ -51,91 +51,90 @@ public class Task<T extends Task> implements Comparable<Task> {
 		OPTIONS
 	}
 
+	/**
+	 * 任务的额外标签
+	 */
 	public static enum Flag {
-		PRE_PROC,
+		PRE_PROC, // 是否进行预处理
 		SHOOT_SCREEN,
 		BUILD_DOM,
 		SWITCH_PROXY
 	}
 
+	/**
+	 * 相同fingerprint的最小请求间隔
+	 */
 	public static long MIN_INTERVAL = 0;
 
-	@DatabaseField(dataType = DataType.STRING, width = 32, id = true)
+	// id
 	public String id;
 
-	@DatabaseField(dataType = DataType.ENUM_INTEGER, width = 2, canBeNull = false)
+	// 优先级
 	private Priority priority = Priority.MEDIUM;
 
-	@DatabaseField(dataType = DataType.STRING, width = 4096)
-	private String url;
+	// 域名
+	public String domain;
 
-	@DatabaseField(dataType = DataType.STRING, width = 16)
+	// url
+	public String url;
+
+	// BasicRequester
+	// 请求方法
 	private RequestMethod request_method;
 
-	@DatabaseField(dataType = DataType.SERIALIZABLE)
+	// BasicRequester
+	// 请求头
 	private Map<String, String> headers;
 
-	@DatabaseField(dataType = DataType.LONG_STRING)
+	// BasicRequester
+	// POST data
 	private String post_data;
 
-	@DatabaseField(dataType = DataType.STRING, width = 4096)
+	// BasicRequester
+	// Cookie 信息
 	private String cookies;
 
-	@DatabaseField(dataType = DataType.STRING, width = 4096)
+	// BasicRequester
+	// 引用URL
 	private String ref;
 
-	@DatabaseField(dataType = DataType.STRING, width = 256)
-	private String domain;
-
-	@DatabaseField(dataType = DataType.SERIALIZABLE)
-	private Map<String, Object> params = new HashMap<>();
-
-	@DatabaseField(dataType = DataType.STRING, width = 256)
-	private String requester_class = BasicRequester.class.getSimpleName();
-
-	@DatabaseField(dataType = DataType.BOOLEAN)
+	// 是否需要登录 --> 可以放在Holder中
 	private boolean login_task = false;
 
-	// 账户信息
-	@DatabaseField(dataType = DataType.STRING, width = 256)
+	// 账户信息 --> 可以放在Holder中
 	private String username;
 
-	// 代理出口信息
-	@DatabaseField(dataType = DataType.SERIALIZABLE)
-	private one.rewind.io.requester.proxy.Proxy proxy;
+	// Holder 信息
+	public TaskHolder holder;
 
-	// 参数
-	@DatabaseField(dataType = DataType.SERIALIZABLE)
+	// 代理信息
+	private Proxy proxy;
+
+	// 参数表
 	private List<Flag> flags = new ArrayList<>();
 
+	// BasicRequester
 	// 请求过滤器
 	private RequestFilter requestFilter;
 
+	// BasicRequester
 	// 响应过滤器
 	private ResponseFilter responseFilter;
 
 	// 返回对象
 	private transient Response response = new Response();
 
-	// 记录参数
-	@DatabaseField(dataType = DataType.DATE)
-	private Date start_time;
-
-	// 总执行时间
-	@DatabaseField(dataType = DataType.LONG)
-	private long duration = 0;
-
 	// 是否需要重试
 	private transient boolean retry = false;
 
 	// 重试次数
-	@DatabaseField(dataType = DataType.INTEGER)
 	private int retryCount = 0;
 
 	// 任务指定步骤 当 step = 1 时 不生成下一步任务
 	// step = 0 不进行任何限制
 	private int step = 0;
 
+	// 任务验证器
 	public TaskValidator validator;
 
 	// 采集成功后回调
@@ -147,22 +146,26 @@ public class Task<T extends Task> implements Comparable<Task> {
 	// 采集异常回调
 	public List<TaskCallback<T>> exceptionCallbacks = new LinkedList<>();
 
-	// 异常记录
-	@DatabaseField(dataType = DataType.SERIALIZABLE)
-	private ArrayList<Throwable> exceptions = new ArrayList<>();
+	// 异常信息，不用记录多个
+	public Throwable exception;
 
 	// 创建时间
-	@DatabaseField(dataType = DataType.DATE, canBeNull = false)
 	private Date create_time = new Date();
+
+	// 任务开始采集时间
+	public Date start_time;
+
+	// 总执行时间
+	private long duration = 0;
 
 	private Task() {}
 
 	/**
 	 * 简单 GET 请求
 	 *
-	 * @param url url地址
-	 * @throws MalformedURLException
-	 * @throws URISyntaxException
+	 * @param url URL
+	 * @throws MalformedURLException URL协议异常
+	 * @throws URISyntaxException URL格式异常
 	 */
 	public Task(String url) throws MalformedURLException, URISyntaxException {
 		this(url, null);
@@ -171,10 +174,10 @@ public class Task<T extends Task> implements Comparable<Task> {
 	/**
 	 * 简单 POST 请求
 	 *
-	 * @param url       url 地址
-	 * @param post_data post data 字符串格式
-	 * @throws MalformedURLException
-	 * @throws URISyntaxException
+	 * @param url URL
+	 * @param post_data PostData
+	 * @throws MalformedURLException URL协议异常
+	 * @throws URISyntaxException URL格式异常
 	 */
 	public Task(String url, String post_data) throws MalformedURLException, URISyntaxException {
 
@@ -184,12 +187,12 @@ public class Task<T extends Task> implements Comparable<Task> {
 	/**
 	 * 需要 Cookie 的 POST 请求
 	 *
-	 * @param url
-	 * @param post_data
-	 * @param cookies
-	 * @param ref
-	 * @throws MalformedURLException
-	 * @throws URISyntaxException
+	 * @param url URL
+	 * @param post_data PostData
+	 * @param cookies Cookies
+	 * @param ref Ref URL
+	 * @throws MalformedURLException URL协议异常
+	 * @throws URISyntaxException URL格式异常
 	 */
 	public Task(String url, String post_data, String cookies, String ref) throws MalformedURLException, URISyntaxException {
 
@@ -199,13 +202,13 @@ public class Task<T extends Task> implements Comparable<Task> {
 	/**
 	 * 完整参数请求
 	 *
-	 * @param url
-	 * @param headers
-	 * @param post_data
-	 * @param cookies
-	 * @param ref
-	 * @throws MalformedURLException
-	 * @throws URISyntaxException
+	 * @param url URL
+	 * @param headers Header
+	 * @param post_data PostData
+	 * @param cookies Cookies
+	 * @param ref Ref URL
+	 * @throws MalformedURLException URL协议异常
+	 * @throws URISyntaxException URL格式异常
 	 */
 	public Task(String url, HashMap<String, String> headers, String post_data, String cookies, String ref) throws MalformedURLException, URISyntaxException {
 
@@ -230,84 +233,64 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 * 获取ID
-	 * @return
-	 */
-	public String getId() {
-		return this.id;
-	}
-
-	/**
-	 * 获取URL
-	 * @return
-	 */
-	public String getUrl() {
-		return url;
-	}
-
-	/**
-	 * 设置URL
-	 * @param url
-	 */
-	public void setUrl(String url) {
-		this.url = url;
-	}
-
-	/**
-	 * 获取HTTP请求方法
 	 * 仅对BasicRequester有效
-	 * @return
+	 * @return HTTP请求方法
 	 */
 	public String getRequestMethod() {
 		return request_method.name();
 	}
 
 	/**
-	 * 设定请求方法
 	 * 仅对BasicRequester有效
-	 * @param request_method
+	 * @param request_method 请求方法
+	 * @return Self
 	 */
-	public void setRequestMethod(RequestMethod request_method) {
+	public Task setRequestMethod(RequestMethod request_method) {
 		this.request_method = request_method;
+		return this;
 	}
 
 	/**
 	 * 设定POST请求方法
 	 * 仅对BasicRequester有效
+	 * @return Self
 	 */
-	public void setPost() {
+	public Task setPost() {
 		this.request_method = RequestMethod.POST;
+		return this;
 	}
 
 	/**
 	 * 设定PUT请求方法
 	 * 仅对BasicRequester有效
+	 * @return Self
 	 */
-	public void setPut() {
+	public Task setPut() {
 		this.request_method = RequestMethod.PUT;
+		return this;
 	}
 
 	/**
 	 * 设定DELETE请求方法
 	 * 仅对BasicRequester有效
+	 * @return Self
 	 */
-	public void setDelete() {
+	public Task setDelete() {
 		this.request_method = RequestMethod.DELETE;
+		return this;
 	}
 
 	/**
-	 * 获取HEADER
 	 * 仅对BasicRequester有效
-	 * @return
+	 * @return HEADER
 	 */
 	public Map<String, String> getHeaders() {
 		return headers;
 	}
 
 	/**
-	 * 设定HEADER
 	 * 仅对BasicRequester有效
-	 * @param headers
+	 * @param headers HEADER
 	 */
 	public Task setHeaders(Map<String, String> headers) {
 		this.headers = headers;
@@ -315,9 +298,9 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 *
-	 * @param k
-	 * @param v
+	 * 设定Header中特定键值对
+	 * @param k key
+	 * @param v value
 	 * @return
 	 */
 	public Task addHeader(String k, String v) {
@@ -327,9 +310,8 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 *
-	 * @param k
-	 * @return
+	 * @param k key
+	 * @return Header中 k 对应的值
 	 */
 	public Task removeHeader(String k) {
 		if(headers == null) return this;
@@ -338,43 +320,49 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 * 获取POST DATA
 	 * 仅对BasicRequester有效
-	 * @return
+	 * @return post_data
 	 */
 	public String getPost_data() {
 		return post_data;
 	}
 
 	/**
-	 * 获取Cookies
-	 * 仅对BasicRequester有效
-	 * @return
+	 * @param cookies Cookies
+	 * @return Self
+	 */
+	public Task setCookies(String cookies) {
+		this.cookies = cookies;
+		return this;
+	}
+
+	/**
+	 * @return Cookies
 	 */
 	public String getCookies() {
 		return cookies;
 	}
 
 	/**
+	 * @param ref Ref URL
+	 * @return Self
+	 */
+	public Task setRef(String ref) {
+		this.ref = ref;
+		return this;
+	}
+
+	/**
 	 * 获取Reference
-	 * 仅对BasicRequester有效
-	 * @return
+	 * @return Ref url
 	 */
 	public String getRef() {
 		return ref;
 	}
 
 	/**
-	 * 仅对BasicRequester有效
-	 * @param ref
-	 */
-	public void setRef(String ref) {
-		this.ref = ref;
-	}
-
-	/**
 	 * 获取Domain
-	 * @return
+	 * @return domain
 	 */
 	public String getDomain() {
 		return domain;
@@ -382,24 +370,26 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 获取Proxy
-	 * @return
+	 * @return proxy
 	 */
-	public one.rewind.io.requester.proxy.Proxy getProxy() {
+	public Proxy getProxy() {
 		return proxy;
 	}
 
 	/**
 	 * 设定Proxy
-	 * @param proxy
+	 * @param proxy proxy
+	 * @return Self
 	 */
-	public void setProxy(one.rewind.io.requester.proxy.Proxy proxy) {
+	public Task setProxy(Proxy proxy) {
 		this.proxy = proxy;
+		return this;
 	}
 
 	/**
 	 * 设定登录任务标识
 	 * ChromeAgent 专用
-	 * @return
+	 * @return Self
 	 */
 	public Task setLoginTask() {
 		this.login_task = true;
@@ -416,19 +406,10 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 * 获取用户名
-	 * ChromeAgent 专用
-	 * @return
-	 */
-	public String getUsername() {
-		return this.username;
-	}
-
-	/**
 	 * 设定用户名
 	 * ChromeAgent 专用
-	 * @param username
-	 * @return
+	 * @param username 用户名
+	 * @return Self
 	 */
 	public Task setUsername(String username) {
 		this.username = username;
@@ -437,13 +418,22 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
+	 * 获取用户名
+	 * ChromeAgent 专用
+	 * @return 用户名
+	 */
+	public String getUsername() {
+		return this.username;
+	}
+
+	/**
 	 * 设定请求过滤器
 	 * ChromeAgent 专用
 	 * TODO 在使用MITM代理时，报错 io.netty.util.IllegalReferenceCountException: refCnt: 0, increment: 1
 	 * 使用 HttpFiltersSourceAdapter 则没有报错
 	 * 有可能是littleproxy自身问题
-	 * @param filter
-	 * @return
+	 * @param filter 请求过滤器
+	 * @return Self
 	 */
 	public Task setRequestFilter(RequestFilter filter) {
 		this.requestFilter = filter;
@@ -453,7 +443,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 	/**
 	 * 获取请求过滤器
 	 * ChromeAgent 专用
-	 * @return
+	 * @return 请求过滤器
 	 */
 	public RequestFilter getRequestFilter() {
 		return this.requestFilter;
@@ -462,8 +452,8 @@ public class Task<T extends Task> implements Comparable<Task> {
 	/**
 	 * 设定返回过滤器
 	 * ChromeAgent 专用
-	 * @param filter
-	 * @return
+	 * @param filter 返回过滤器
+	 * @return Self
 	 */
 	public Task setResponseFilter(ResponseFilter filter) {
 		this.responseFilter = filter;
@@ -473,7 +463,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 	/**
 	 * 获取返回过滤器
 	 * ChromeAgent 专用
-	 * @return
+	 * @return 返回过滤器
 	 */
 	public ResponseFilter getResponseFilter() {
 		return this.responseFilter;
@@ -481,78 +471,79 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 获得返回对象
-	 * @return
+	 * @return 返回对象
 	 */
 	public Response getResponse() {
 		return response;
 	}
 
 	/**
-	 * 是否前置处理
-	 * @return
+	 * 设定前置处理
+	 * @return Self
+	 */
+	public Task setPreProc() {
+		flags.add(Flag.PRE_PROC);
+		return this;
+	}
+
+	/**
+	 * @return 是否前置处理
 	 */
 	public boolean preProc() {
 		return flags.contains(Flag.PRE_PROC);
 	}
 
 	/**
-	 * 设定前置处理
+	 * 设定切换代理
+	 * @return Self
 	 */
-	public void setPreProc() {
-		flags.add(Flag.PRE_PROC);
+	public Task setSwitchProxy() {
+		flags.add(Flag.SWITCH_PROXY);
+		return this;
 	}
 
+	/**
+	 * @return 是否切换代理
+	 */
 	public boolean switchProxy() {
 		return flags.contains(Flag.SWITCH_PROXY);
 	}
 
-	public void setSwitchProxy() {
-		flags.add(Flag.SWITCH_PROXY);
+	/**
+	 * 设定构建DOM
+	 * @return Self
+	 */
+	public Task setBuildDom() {
+		flags.add(Flag.BUILD_DOM);
+		return this;
 	}
 
 	/**
-	 * 是否构建DOM
-	 * ChromeAgent 专用
-	 * @return
+	 * @return 是否构建DOM
 	 */
 	public boolean buildDom() {
 		return flags.contains(Flag.BUILD_DOM);
 	}
 
 	/**
-	 * 设定构建DOM
-	 * ChromeAgent 专用
+	 * 设定进行截屏
+	 * @return Self
 	 */
-	public void setBuildDom() {
-		flags.add(Flag.BUILD_DOM);
+	public Task setShootScreen() {
+		flags.contains(Flag.SHOOT_SCREEN);
+		return this;
 	}
 
 	/**
-	 * 是否进行截屏
-	 * ChromeAgent 专用
-	 * @return
+	 * @return 是否进行截屏
 	 */
 	public boolean shootScreen() {
 		return flags.contains(Flag.SHOOT_SCREEN);
 	}
 
 	/**
-	 * 设定进行截屏
-	 */
-	public void setShootScreen() {
-		flags.contains(Flag.SHOOT_SCREEN);
-	}
-
-	/**
-	 * 设定开始时间
-	 */
-	public void setStartTime() {
-		this.start_time = new Date();
-	}
-
-	/**
 	 * 获取用时
-	 * @return
+	 * @return 任务执行时长
 	 */
 	public long getDuration() {
 		return duration;
@@ -560,46 +551,50 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 设定用时
+	 * @return Self
 	 */
-	public void setDuration() {
+	public Task setDuration() {
 		this.duration = System.currentTimeMillis() - this.start_time.getTime();
+		return this;
 	}
 
 	/**
 	 * 设定重试
+	 * @return Self
 	 */
-	public void setRetry() {
+	public Task setRetry() {
 		this.retry = true;
+		return this;
 	}
 
 	/**
-	 * 判断重试
-	 * @return
+	 * @return 任务是否需要重试
 	 */
 	public boolean needRetry() {
 		return this.retry;
 	}
 
 	/**
-	 * 设定重试
+	 * 设定最大执行步骤
+	 * @param step 当前所剩执行步数
+	 * @return Self
 	 */
-	public void setStep(int step) {
+	public Task setStep(int step) {
 		this.step = step;
+		return this;
 	}
 
 	/**
-	 * 判断重试
-	 * @return
+	 * @return 当前所剩执行步数
 	 */
-	public synchronized int getStep() {
+	public int getStep() {
 		return this.step;
 	}
 
 	/**
-	 * 设置验证器
-	 * TODO 默认应该没有ChromeDriverAgent对象
-	 * @param validator
-	 * @return
+	 * 设置内容验证器
+	 * @param validator 内容验证器
+	 * @return Self
 	 */
 	public Task setValidator(TaskValidator validator) {
 		this.validator = validator;
@@ -607,139 +602,44 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 * 生成JSON
-	 * @return
+	 * 增加重试次数
+	 * @return Self
 	 */
-	public String toJSON() {
-		return JSON.toJson(this);
+	public Task addRetryCount() {
+		this.retryCount ++;
+		return this;
 	}
 
 	/**
-	 * 获取重试次数
-	 * @return
+	 * @return 重试次数
 	 */
 	public int getRetryCount() {
 		return retryCount;
 	}
 
 	/**
-	 * 增加重试次数
-	 */
-	public void addRetryCount() {
-		this.retryCount ++;
-	}
-
-	/**
-	 * 获取请求器类名
-	 * @return
-	 */
-	public String getRequester_class() {
-		return requester_class;
-	}
-
-	/**
-	 * 设置请求器类名
-	 * @param requester_class
-	 */
-	public void setRequester_class(String requester_class) {
-		this.requester_class = requester_class;
-	}
-
-	/**
-	 * 获取异常列表
-	 * @return
-	 */
-	public List<Throwable> getExceptions() {
-		return exceptions;
-	}
-
-	/**
-	 * 添加Exception
-	 * @param e
-	 */
-	public void addExceptions(Throwable e) {
-		this.exceptions.add(e);
-	}
-
-	/**
-	 * 获取字符串类型参数
-	 * @param key
-	 * @return
-	 */
-	public String getParamString(String key) {
-		if (params.get(key) == null) return null;
-
-		return String.valueOf(params.get(key));
-	}
-
-	/**
-	 * 获取Int类型参数
-	 * @param key
-	 * @return
-	 */
-	public int getParamInt(String key) {
-		if (params.get(key) == null) return 0;
-		return NumberFormatUtil.parseInt(String.valueOf(params.get(key)));
-	}
-
-	/**
-	 * 设置参数
-	 * @param key
-	 * @param object
-	 */
-	public Task param(String key, Object object) {
-		this.params.put(key, object);
-		return this;
-	}
-
-	/**
-	 *
-	 * @return
+	 * 获取任务指纹信息
+	 * @return 指纹字串
 	 */
 	public String getFingerprint() {
 
-		if(params.keySet().size() == 0) {
-			return id;
-		}
-		else {
-
-			String src = "[" + domain + ":" + username + "];";
-
-			for(String key : params.keySet()) {
-				src += key + ":" + params.get(key) + ";";
-			}
-
-			return StringUtil.MD5(src);
-		}
-	}
-
-	/**
-	 * 保存到数据库
-	 * @return
-	 * @throws Exception
-	 */
-	public boolean insert() throws Exception {
-
-		Dao dao = DaoManager.getDao(this.getClass());
-
-		if (dao.create(this) == 1) {
-			return true;
-		}
-
-		return false;
+		String src = "[" + domain + ":" + username + "] " + url;
+		return StringUtil.MD5(src);
 	}
 
 	/**
 	 * 设定优先级
-	 * @param priority
+	 * @param priority 优先级
+	 * @return Self
 	 */
-	public void setPriority(Priority priority) {
+	public Task setPriority(Priority priority) {
 		this.priority = priority;
+		return this;
 	}
 
 	/**
 	 * 获取优先级
-	 * @return
+	 * @return 优先级
 	 */
 	public Priority getPriority() {
 		return priority;
@@ -748,8 +648,8 @@ public class Task<T extends Task> implements Comparable<Task> {
 	/**
 	 * 优先级比较
 	 *
-	 * @param another
-	 * @return
+	 * @param another 另外一个任务
+	 * @return 排序
 	 */
 	public int compareTo(Task another) {
 
@@ -764,8 +664,8 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 增加完成回调
-	 * @param callback
-	 * @return
+	 * @param callback 完成回调
+	 * @return Self
 	 */
 	public Task addDoneCallback(TaskCallback<T> callback) {
 		if (this.doneCallbacks == null) this.doneCallbacks = new LinkedList<>();
@@ -774,9 +674,9 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 *
-	 * @param ntg
-	 * @return
+	 * 增加下一集任务生成器
+	 * @param ntg 任务生成器
+	 * @return Self
 	 */
 	public Task addNextTaskGenerator(NextTaskGenerator<T> ntg) {
 		if (this.nextTaskGenerators == null) this.nextTaskGenerators = new LinkedList<>();
@@ -786,8 +686,8 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	/**
 	 * 添加采集异常回调
-	 * @param callback
-	 * @return
+	 * @param callback 异常回调
+	 * @return Self
 	 */
 	public Task addExceptionCallback(TaskCallback<T> callback) {
 		if (this.exceptionCallbacks == null) this.exceptionCallbacks = new LinkedList<>();
@@ -796,7 +696,15 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 *
+	 * 返回当前的Holder
+	 * @return
+	 */
+	public TaskHolder getHolder() {
+		return holder;
+	}
+
+	/**
+	 * 任务请求返回对象封装
 	 */
 	public class Response {
 
@@ -830,7 +738,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 		/**
 		 * 获取Header
 		 *
-		 * @return
+		 * @return Header
 		 */
 		public Map<String, List<String>> getHeader() {
 			return header;
@@ -839,25 +747,25 @@ public class Task<T extends Task> implements Comparable<Task> {
 		/**
 		 * 设置Header
 		 *
-		 * @param header
+		 * @param header Header
 		 */
 		public void setHeader(Map<String, List<String>> header) {
 			this.header = header;
 		}
 
 		/**
-		 * 获取源文件
+		 * 获取二进制字节数组
 		 *
-		 * @return
+		 * @return 字节数组
 		 */
 		public byte[] getSrc() {
 			return src;
 		}
 
 		/**
-		 * 设置源文件
+		 * 设置二进制字节数组
 		 *
-		 * @param src
+		 * @param src 字节数组
 		 */
 		public void setSrc(byte[] src) {
 			this.src = src;
@@ -866,7 +774,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 		/**
 		 * 获取编码
 		 *
-		 * @return
+		 * @return 编码
 		 */
 		public String getEncoding() {
 			return encoding;
@@ -875,16 +783,16 @@ public class Task<T extends Task> implements Comparable<Task> {
 		/**
 		 * 设置编码
 		 *
-		 * @param encoding
+		 * @param encoding 编码
 		 */
 		public void setEncoding(String encoding) {
 			this.encoding = encoding;
 		}
 
 		/**
-		 * 获取返回cookie
+		 * 获取返回cookies
 		 *
-		 * @return
+		 * @return Cookies
 		 */
 		public String getCookies() {
 			return cookies;
@@ -893,68 +801,71 @@ public class Task<T extends Task> implements Comparable<Task> {
 		/**
 		 * 设置cookie
 		 *
-		 * @param cookies
+		 * @param cookies Cookies
 		 */
 		public void setCookies(String cookies) {
 			this.cookies = cookies;
 		}
 
 		/**
-		 * 判断 Task 中 Action是否已经执行完毕
+		 * 判断 Task 中 Action 是否已经执行完毕
 		 *
-		 * @return
+		 * @return Actions是否执行完毕
 		 */
 		public boolean isActionDone() {
 			return actionDone;
 		}
 
 		/**
-		 * @param actionDone
+		 * @param actionDone Actions是否执行完毕
 		 */
 		public void setActionDone(boolean actionDone) {
 			this.actionDone = actionDone;
 		}
 
 		/**
-		 * @return
+		 * @return 返回文本
 		 */
 		public String getText() {
 			return text;
 		}
 
 		/**
-		 * @return
+		 * @return 截图字节数组
 		 */
 		public byte[] getScreenshot() {
 			return screenshot;
 		}
 
 		/**
-		 * @param screenshot
+		 * @param screenshot 截图字节数组
 		 */
 		public void setScreenshot(byte[] screenshot) {
 			this.screenshot = screenshot;
 		}
 
 		/**
-		 * @param key
-		 * @param value
+		 * 设定返回变量键值，RequestFilter/ResponseFilter使用
+		 * @param key key
+		 * @param value value
 		 */
 		public void setVar(String key, String value) {
 			vars.put(key, value);
 		}
 
 		/**
-		 * @param key
-		 * @return
+		 * 获取变量
+		 * @param key key
+		 * @return value
 		 */
 		public String getVar(String key) {
 			return vars.get(key);
 		}
 
 		/**
-		 * @param key
-		 * @return
+		 * 获取整形变量
+		 * @param key key
+		 * @return value
 		 */
 		public int getIntVar(String key) {
 			return Integer.parseInt(vars.get(key));
@@ -963,7 +874,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 		/**
 		 * 判断 Response 是否为文本
 		 *
-		 * @return
+		 * @return Response内容是否为文本
 		 */
 		public boolean isText() {
 
@@ -1003,7 +914,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 		 * 文本内容预处理
 		 *
 		 * @param input 原始文本
-		 * @throws UnsupportedEncodingException
+		 * @throws UnsupportedEncodingException 编码不支持
 		 */
 		public void setText(String input) throws UnsupportedEncodingException {
 
@@ -1034,7 +945,7 @@ public class Task<T extends Task> implements Comparable<Task> {
 		/**
 		 * 文本内容预处理
 		 *
-		 * @throws UnsupportedEncodingException
+		 * @throws UnsupportedEncodingException 编码不支持
 		 */
 		public void setText() {
 			String input = null;
@@ -1047,19 +958,18 @@ public class Task<T extends Task> implements Comparable<Task> {
 		}
 
 		/**
-		 *
-		 * @throws UnsupportedEncodingException
+		 * 构建Document
+		 * @throws UnsupportedEncodingException 编码不支持
 		 */
 		public void buildDom() throws UnsupportedEncodingException {
-
 			if (src != null && src.length > 0) {
 				doc = Jsoup.parse(BasicRequester.autoDecode(src, encoding));
 			}
 		}
 
 		/**
-		 * 获取文档
-		 * @return
+		 * 获取Document
+		 * @return Document
 		 */
 		public Document getDoc() {
 			return doc;

@@ -1,15 +1,24 @@
 package one.rewind.io.requester.basic;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import one.rewind.io.requester.exception.ProxyException;
+import one.rewind.io.requester.proxy.ProxyChannel;
 import one.rewind.io.requester.task.Task;
 
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class BasicDistributorPG extends BasicDistributor {
+
+	public static long DefaultChangeIpInterval = 1200;
+
+	public volatile boolean switchProxy = false;
+
+	static ConcurrentHashMap<String, Long> bannedIps = new ConcurrentHashMap<>();
+
+	private volatile boolean done = false;
 
 	/**
 	 *
@@ -17,31 +26,75 @@ public class BasicDistributorPG extends BasicDistributor {
 	 */
 	public static BasicDistributor getInstance() {
 
-		if (instance == null) {
+		if(Channel_Instances.size() > 0) throw new IllegalStateException("Can't get instance after add proxy channel.");
+
+		if (Instance == null) {
 			synchronized (BasicDistributor.class) {
-				if (instance == null) {
-					instance = new BasicDistributorPG();
-					instance.setName("BasicDistributorPG");
-					instance.start();
+				if (Instance == null) {
+					Instance = new BasicDistributorPG();
+					Instance.start();
 				}
 			}
 		}
 
-		return instance;
+		return Instance;
 	}
 
-	private volatile boolean done = false;
+	/**
+	 *
+	 * @param channel
+	 */
+	public static void addProxyChannel(ProxyChannel channel) {
 
-	// 上一次更换代理时间
-	public long lastChangeIpTime = System.currentTimeMillis();
+		if(Instance != null) Instance.setDone();
+
+		BasicDistributorPG distributorPG = new BasicDistributorPG(channel);
+
+		Channel_Instances.add(distributorPG);
+
+		distributorPG.start();
+	}
+
+	public BasicDistributorPG() {
+		this(null);
+	}
 
 	/**
-	 * 私有构造器
+	 *
 	 */
-	private BasicDistributorPG() {
+	public BasicDistributorPG(ProxyChannel channel) {
 
-		executor.setThreadFactory(new ThreadFactoryBuilder()
-				.setNameFormat("BasicDistributorPG-%d").build());
+		String name = "BasicDistributorPG";
+
+		if(channel != null) {
+			name = "BasicDistributorPG-Ch" + channel.id;
+		}
+
+		setName(name);
+
+		executor.setThreadFactory(
+				new ThreadFactoryBuilder()
+						.setNameFormat(name + "-%d")
+						.build());
+
+		this.channel = channel;
+	}
+
+	/**
+	 *
+	 * @param channel
+	 * @throws ProxyException.Failed
+	 * @throws MalformedURLException
+	 * @throws InterruptedException
+	 * @throws URISyntaxException
+	 */
+	public synchronized void changeIp(ProxyChannel channel) throws ProxyException.Failed, MalformedURLException, InterruptedException, URISyntaxException {
+
+		String ip = channel.changeIp();
+
+		if(bannedIps.contains(ip) && System.currentTimeMillis() - bannedIps.get(ip) < 5 * 60 * 1000) {
+			changeIp(channel);
+		}
 	}
 
 	/**
@@ -55,57 +108,43 @@ public class BasicDistributorPG extends BasicDistributor {
 
 			try {
 
-				t = queue.take();
+				t = queue.poll(100, TimeUnit.MILLISECONDS);
 
-				if(t.switchProxy()) {
+				if(t != null) {
 
-					logger.info("*RG {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
+					if (t.switchProxy()) {
 
-					RequestGroupWrapper gw = new RequestGroupWrapper(t);
-					executor.submit(gw);
+						RequestGroupWrapper gw = new RequestGroupWrapper(t, channel);
+						executor.submit(gw);
 
-					gw.phaser.arriveAndAwaitAdvance();
-					gw.done = true;
+						//logger.info("*Phaser {}", gw.phaser.getUnarrivedParties());
 
-					logger.info("RG* {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
+						gw.phaser.arriveAndAwaitAdvance();
+						gw.done = true;
 
-				} else {
+					} else {
 
-					executor.submit(new RequestWrapper(t));
-					waits();
+						// 不应该在主线程执行
+						if (switchProxy) {
+							changeIp(channel);
+							switchProxy = false;
+						}
 
+						waits();
+
+						t.setProxy(channel.proxy);
+
+						executor.submit(new RequestWrapper(t));
+					}
+
+					logger.info("[{} / {} / {}]", executor.getActiveCount(), executor.getQueue().size(), queue.size());
 				}
-
-				logger.info("[{} / {} / {}]", executor.getActiveCount(), executor.getQueue().size(), queue.size());
 
 			} catch (Exception e) {
 
-				logger.error("{}", t.toJSON(), e);
+				logger.error("Error get task, ", e);
 			}
 		}
-	}
-
-	/**
-	 * 切换IP任务等待
-	 * @throws InterruptedException
-	 */
-	public synchronized void waitForChangeProxy() throws InterruptedException {
-
-		// 获取当前时间
-		long ct = System.currentTimeMillis();
-
-		// 计算两次换IP时间间隔
-		long ts = ct - lastChangeIpTime;
-
-		// 若时间间隔过短， 进行延时
-		if(ts < 1200) {
-			ts = 1200;
-			Thread.sleep(ts);
-			logger.info("Wait for change proxy: {} ms", ts);
-		}
-
-		// 记录此次换IP时间
-		lastChangeIpTime = System.currentTimeMillis();
 	}
 
 	/**
@@ -114,8 +153,14 @@ public class BasicDistributorPG extends BasicDistributor {
 	 */
 	class RequestGroupWrapper implements Runnable {
 
+		String className;
+
+		String fingerprint;
+
 		// 请求组内部任务对接
 		BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
+
+		ProxyChannel channel;
 
 		// 同步控制
 		Phaser phaser;
@@ -123,7 +168,9 @@ public class BasicDistributorPG extends BasicDistributor {
 		// 单个请求的共同请求头，第一个任务随机生成，后续任务复用
 		Map<String, String> commonHeader;
 
-		public volatile boolean switchProxy = false;
+		String cookies;
+
+		public volatile boolean switchProxy = true;
 
 		// 终止标志位
 		private volatile boolean done = false;
@@ -131,7 +178,14 @@ public class BasicDistributorPG extends BasicDistributor {
 		/**
 		 * 构造器
 		 */
-		public RequestGroupWrapper(Task t) throws InterruptedException {
+		public RequestGroupWrapper(Task t, ProxyChannel channel) throws InterruptedException {
+
+			this.channel = channel;
+			this.className = t.getClass().getSimpleName();
+			this.fingerprint = t.getFingerprint();
+
+			logger.info("*RG {}:[{}]", className, fingerprint);
+
 			queue.put(t);
 			commonHeader = t.getHeaders();
 			phaser = new Phaser(2);
@@ -146,35 +200,45 @@ public class BasicDistributorPG extends BasicDistributor {
 
 				try {
 
-					Task t = queue.poll(1, TimeUnit.SECONDS);
+					Task t = queue.poll(100, TimeUnit.MILLISECONDS);
 
 					if(t != null) {
+
+
+						if(switchProxy) {
+
+							changeIp(channel);
+
+							switchProxy = false;
+							cookies = null;
+						}
+
+						waits();
+
+						t.setProxy(channel.proxy);
+
+						if(commonHeader != null) {
+							if (cookies != null) {
+								commonHeader.put("Cookie", cookies);
+							} else {
+								commonHeader.remove("Cookie");
+							}
+						}
 
 						// 设置header
 						t.setHeaders(commonHeader);
 
-						if(switchProxy) {
-
-							t.addHeader("Proxy-Switch-Ip","yes");
-							waitForChangeProxy(); // TODO
-							switchProxy = false;
-						}
-
-						// 切换代理等待
-						if(t.switchProxy()) {
-							waitForChangeProxy();
-						}
-
 						// 执行任务
 						executor.submit(new RequestWrapper(t, this));
-
-						waits();
 					}
 
 				} catch (Exception e) {
 					logger.error("Error poll task, ", e);
+					return;
 				}
 			}
+
+			logger.info("RG* {}:[{}]", className, fingerprint);
 		}
 	}
 
@@ -208,26 +272,28 @@ public class BasicDistributorPG extends BasicDistributor {
 		 * @param nt
 		 * @throws InterruptedException
 		 */
-		public void submit(Task nt) {
+		public void submit(Task nt) throws InterruptedException {
 
-			nt.removeHeader("Proxy-Switch-Ip");
-			nt.getExceptions().clear();
+			// nt.removeHeader("Proxy-Switch-Ip");
+			nt.setHeaders(BasicDistributor.genHeaders("mp.weixin.qq.com"));
+			nt.exception = null;
 
-			if(nt.switchProxy()) {
+			// RequestGroup的第一个任务，失败重试的情况，当前 RequestGroup 被废弃
+			// 生成的新任务 需要切换IP
+			if(nt.switchProxy() || requestGroup == null) {
 
-				logger.info("Submit to main queue.");
+				logger.info("Submit to main queue, {}:[{}]", nt.getClass().getSimpleName(), nt.getFingerprint());
 
-				BasicDistributorPG.this.submit(nt);
+				BasicDistributorPG.submit(nt);
 			}
 			// 不需要更新代理的任务，添加到GroupWrapper队列
 			else {
 
-				logger.info("Submit to RG queue.");
+				logger.info("Submit to RG queue, {}:[{}]", nt.getClass().getSimpleName(), nt.getFingerprint());
 
-				BasicDistributorPG.this.submit(nt, requestGroup.queue);
+				if(BasicDistributorPG.submit(nt, requestGroup.queue)) {
 
-				// 更新phaser计数
-				if(requestGroup != null) {
+					// 更新phaser计数
 					requestGroup.phaser.register();
 				}
 			}
@@ -239,18 +305,31 @@ public class BasicDistributorPG extends BasicDistributor {
 			super.run();
 
 			// 如果出现验证异常
-			if(validatorException || t.getExceptions().size() > 0) {
+			if(validatorException || t.exception != null) {
+
+				logger.info("Set RG switch proxy");
 
 				// Request Group 中
 				if(requestGroup != null) {
 					requestGroup.switchProxy = true;
-					logger.info("Set RG switch proxy");
+				} else {
+					switchProxy = true;
 				}
+
+				// 之前的IP 一小时内不用
+				logger.info("{} banned for 10 min", requestGroup.channel.currentIp);
+				bannedIps.put(requestGroup.channel.currentIp, System.currentTimeMillis());
+
 			}
 
 			// Request Group 中 同IP
 			if(requestGroup != null) {
+
+				if(requestGroup.cookies == null)
+					requestGroup.cookies = t.getResponse().getCookies();
+
 				requestGroup.phaser.arriveAndDeregister();
+				//logger.info("Phaser* {}", requestGroup.phaser.getUnarrivedParties());
 			}
 		}
 	}

@@ -4,9 +4,8 @@ import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 import one.rewind.db.DBName;
-import one.rewind.db.Model;
-import one.rewind.io.requester.chrome.ChromeTask;
-import one.rewind.io.requester.chrome.ChromeTaskFactory;
+import one.rewind.db.model.ModelD;
+import one.rewind.io.requester.parser.TemplateManager;
 import one.rewind.json.JSON;
 import one.rewind.txt.StringUtil;
 
@@ -22,7 +21,7 @@ import java.util.Map;
  */
 @DBName(value = "requester")
 @DatabaseTable(tableName = "tasks")
-public class TaskHolder extends Model implements Comparable<TaskHolder> {
+public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 
 	// 生成 Holder 的 task_id 可以为空
 	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
@@ -33,8 +32,14 @@ public class TaskHolder extends Model implements Comparable<TaskHolder> {
 	public String scheduled_task_id;
 
 	// 类名
+	// 根据类名注册Builder 生成 Task时 会用到
 	@DatabaseField(dataType = DataType.STRING, width = 128, canBeNull = false)
 	public String class_name;
+
+	// 模板ID
+	// 根据模板生成Task时使用
+	@DatabaseField(dataType = DataType.INTEGER, width = 11)
+	public int template_id;
 
 	// 域名
 	@DatabaseField(dataType = DataType.STRING, width = 256, canBeNull = false)
@@ -48,12 +53,8 @@ public class TaskHolder extends Model implements Comparable<TaskHolder> {
 	@DatabaseField(dataType = DataType.STRING, width = 128)
 	public String username;
 
-	// 初始参数
+	// 初始参数 TODO 未进行序列化定义
 	public Map<String, Object> vars;
-
-	// URL
-	@DatabaseField(dataType = DataType.STRING, width = 1024, canBeNull = false)
-	public String url;
 
 	// 步长
 	@DatabaseField(dataType = DataType.INTEGER, width = 5, canBeNull = false)
@@ -100,17 +101,16 @@ public class TaskHolder extends Model implements Comparable<TaskHolder> {
 	 * @param class_name
 	 * @param domain
 	 * @param vars
-	 * @param url
 	 * @param login_task
 	 * @param username
 	 * @param step
 	 * @param priority
 	 */
 	public TaskHolder(
-			String class_name, String domain, Map<String, Object> vars, String url, boolean login_task, String username, int step, Task.Priority priority
+			String class_name, String domain, Map<String, Object> vars, boolean login_task, String username, int step, Task.Priority priority
 	) {
 
-		this(class_name, domain, vars, url, login_task, username, step, priority, null, null, null);
+		this(class_name, 0, domain, vars, login_task, username, step, priority, null, null, null);
 	}
 
 	/**
@@ -118,7 +118,6 @@ public class TaskHolder extends Model implements Comparable<TaskHolder> {
 	 * @param class_name
 	 * @param domain
 	 * @param vars
-	 * @param url
 	 * @param login_task
 	 * @param username
 	 * @param step
@@ -128,16 +127,16 @@ public class TaskHolder extends Model implements Comparable<TaskHolder> {
 	 * @param trace
 	 */
 	public TaskHolder(
-		String class_name, String domain, Map<String, Object> vars, String url, boolean login_task, String username, int step, Task.Priority priority,
+		String class_name, int template_id, String domain, Map<String, Object> vars, boolean login_task, String username, int step, Task.Priority priority,
 		String generate_task_id,
 		String scheduled_task_id,
 		List<String> trace
 	) {
 
 		this.class_name = class_name;
+		this.template_id = template_id;
 		this.domain = domain;
 		this.vars = vars;
-		this.url = url;
 
 		this.need_login = login_task;
 
@@ -157,7 +156,6 @@ public class TaskHolder extends Model implements Comparable<TaskHolder> {
 		this.trace = trace;
 	}
 
-
 	/**
 	 * 生成ChromeTask
 	 * @return
@@ -166,15 +164,15 @@ public class TaskHolder extends Model implements Comparable<TaskHolder> {
 	 * @throws InvocationTargetException
 	 * @throws IllegalAccessException
 	 */
-	public ChromeTask build() throws Exception {
-		return ChromeTaskFactory.getInstance().buildTask(this);
+	public Task build() throws Exception {
+		return TemplateManager.getInstance().buildTask(this);
 	}
 
 	/**
 	 * 优先级 比较
 	 *
-	 * @param another
-	 * @return
+	 * @param another 另一个holder
+	 * @return 是否优先
 	 */
 	public int compareTo(TaskHolder another) {
 
@@ -188,13 +186,12 @@ public class TaskHolder extends Model implements Comparable<TaskHolder> {
 	}
 
 	/**
-	 * 若生成scheduledChromeTask
-	 * 其Id应调用此方法生成
-	 * @return
+	 * 若生成scheduledTask
+	 * 其Id应调用此方法生成，该ID具有唯一性
+	 * @return scheduledTaskId
 	 */
-	public String generateScheduledChromeTaskId() {
-
-		return StringUtil.MD5(this.class_name + "-" + JSON.toJson(this.vars));
+	public String generateScheduledTaskId() {
+		return StringUtil.MD5(this.class_name + ":" + this.template_id + ":" + JSON.toJson(this.vars));
 	}
 
 	/**

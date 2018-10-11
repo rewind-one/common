@@ -1,7 +1,6 @@
 package one.rewind.io.requester;
 
 import com.google.gson.reflect.TypeToken;
-import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.server.Msg;

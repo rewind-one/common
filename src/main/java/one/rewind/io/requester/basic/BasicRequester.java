@@ -4,8 +4,6 @@ import com.typesafe.config.Config;
 import one.rewind.io.requester.proxy.ProxyAuthenticator;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.util.CertAutoInstaller;
-import one.rewind.io.requester.util.ProxiedHttpsConnection;
-import one.rewind.txt.ChineseChar;
 import one.rewind.txt.URLUtil;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
@@ -116,15 +114,15 @@ public class BasicRequester {
 			future.get(timeout, TimeUnit.MILLISECONDS);
 		}
 		catch (InterruptedException e){
-			logger.error("Task {}, was interrupted, ", task.getUrl(), e);
+			logger.error("Task {}, was interrupted, ", task.url, e);
 		}
 		catch (TimeoutException e){
 			future.cancel(true);
-			logger.error("Task {}, ", task.getUrl(), e);
-			task.addExceptions(e);
+			logger.error("Task {}, ", task.url, e);
+			task.exception = e;
 		}
 		catch (ExecutionException e) {
-			logger.error("Task {}, ", task.getUrl(), e.getCause());
+			logger.error("Task {}, ", task.url, e.getCause());
 		}
 
 		wrapper.close();
@@ -250,11 +248,11 @@ public class BasicRequester {
 			}
 		}
 
-		try {
+		/*try {
 			text = ChineseChar.unicode2utf8(text);
 		} catch (Exception | Error e){
 			logger.error("Error convert unicode to utf8", e);
-		}
+		}*/
 
 		return text;
 	}
@@ -268,45 +266,6 @@ public class BasicRequester {
 	public static class ConnectionBuilder {
 
 		HttpURLConnection conn;
-
-		public ConnectionBuilder(String url, one.rewind.io.requester.proxy.Proxy proxy)  throws MalformedURLException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException {
-
-			if (proxy != null) {
-
-				Authenticator.setDefault(new ProxyAuthenticator(proxy.getUsername(), proxy.getPassword()));
-
-				if(url.matches("https://.*?") && proxy.getUsername() != null && proxy.getPassword() != null) {
-					conn = new ProxiedHttpsConnection(new URL(url), proxy.host, proxy.port, proxy.getUsername(), proxy.getPassword());
-
-				} else {
-					conn = (HttpURLConnection) new URL(url).openConnection(proxy.toProxy());
-				}
-
-				if (proxy.needAuth()) {
-					String headerKey = "Proxy-Authorization";
-					conn.addRequestProperty(headerKey, proxy.getAuthenticationHeader());
-				}
-
-			} else {
-				conn = (HttpURLConnection) new URL(url).openConnection();
-			}
-
-			if(url.matches("^https.+?$")) {
-				if(conn instanceof ProxiedHttpsConnection) {
-					//TODO
-				} else {
-					((HttpsURLConnection) conn).setSSLSocketFactory(CertAutoInstaller.getSSLFactory());
-				}
-			}
-
-			conn.setConnectTimeout(CONNECT_TIMEOUT);
-
-			conn.setReadTimeout(READ_TIMEOUT);
-
-			conn.setDoOutput(true);
-
-			conn.setRequestMethod("GET");
-		}
 
 		/**
 		 *
@@ -326,7 +285,7 @@ public class BasicRequester {
 				Authenticator.setDefault(new ProxyAuthenticator(proxy.getUsername(), proxy.getPassword()));
 
 				if(url.matches("https://.*?") && proxy.getUsername() != null && proxy.getPassword() != null) {
-					conn = new ProxiedHttpsConnection(new URL(url), proxy.host, proxy.port, proxy.getUsername(), proxy.getPassword());
+					conn = (HttpsURLConnection) new URL(url).openConnection(proxy.toProxy());
 				} else {
 					conn = (HttpURLConnection) new URL(url).openConnection(proxy.toProxy());
 				}
@@ -341,11 +300,7 @@ public class BasicRequester {
 			}
 
 			if(url.matches("^https.+?$")) {
-				if(conn instanceof ProxiedHttpsConnection) {
-					//TODO
-				} else {
-					((HttpsURLConnection) conn).setSSLSocketFactory(CertAutoInstaller.getSSLFactory());
-				}
+				((HttpsURLConnection) conn).setSSLSocketFactory(CertAutoInstaller.getSSLFactory());
 			}
 
 			conn.setConnectTimeout(CONNECT_TIMEOUT);
@@ -359,7 +314,6 @@ public class BasicRequester {
 			if(method.equals("POST")) {
 				conn.setDoInput(true);
 			}
-
 		}
 
 		/**
@@ -477,7 +431,7 @@ public class BasicRequester {
 		 */
 		public Wrapper(Task task) {
 			this.task = task;
-			task.setStartTime();
+			task.start_time = new Date();
 		}
 
 		/**
@@ -489,7 +443,7 @@ public class BasicRequester {
 
 			if(retry_count > 2) return;
 
-			logger.info(task.getUrl() + (task.getProxy() == null? "" : " via " + task.getProxy().getInfo()));
+			logger.info(task.url + (task.getProxy() == null? "" : " via " + task.getProxy().getInfo()));
 
 			try {
 
@@ -508,11 +462,11 @@ public class BasicRequester {
 				if(task.getHeaders() != null) {
 					headers = task.getHeaders();
 				} else {
-					headers = HeaderBuilder.build(task.getUrl(), cookies, task.getRef());
+					headers = HeaderBuilder.build(task.url, cookies, task.getRef());
 				}
 
 				ConnectionBuilder connBuilder =
-						new ConnectionBuilder(task.getUrl(), task.getProxy(), task.getRequestMethod());
+						new ConnectionBuilder(task.url, task.getProxy(), task.getRequestMethod());
 
 				connBuilder.withHeader(headers);
 				connBuilder.withPostData(task.getPost_data());
@@ -535,21 +489,21 @@ public class BasicRequester {
 
 					try {
 
-						CertAutoInstaller.installCert(task.getDomain(), URLUtil.getPort(task.getUrl()));
+						CertAutoInstaller.installCert(task.getDomain(), URLUtil.getPort(task.url));
 						// 重新获取
-						connBuilder = new ConnectionBuilder(task.getUrl(), task.getProxy(), task.getRequestMethod());
+						connBuilder = new ConnectionBuilder(task.url, task.getProxy(), task.getRequestMethod());
 						connBuilder.withHeader(headers);
 						connBuilder.withPostData(task.getPost_data());
 						conn = connBuilder.build();
 						inStream = new BufferedInputStream(conn.getInputStream());
 
 					} catch (Exception e1){
-						task.addExceptions(e1);
+						task.exception = e1;
 					}
 				}
 				catch (IOException e) {
 					logger.error("Error Code: {}", code);
-					task.addExceptions(e);
+					task.exception = e;
 					inStream = new BufferedInputStream(conn.getErrorStream());
 				}
 
@@ -579,6 +533,7 @@ public class BasicRequester {
 							}
 						}
 					}
+
 					/**
 					 * Set-Cookie
 					 */
@@ -603,6 +558,7 @@ public class BasicRequester {
 						}
 
 						newCookies = CookiesManager.mergeCookies(cookies, newCookies);
+						//System.err.print(newCookies);
 						task.getResponse().setCookies(newCookies);
 
 						if(task.getCookies() == null) {
@@ -640,8 +596,7 @@ public class BasicRequester {
 				}
 			}
 			catch (Exception e){
-				task.addExceptions(e);
-				// logger.error("", e);
+				task.exception = e;
 			}
 			finally {
 
@@ -666,7 +621,7 @@ public class BasicRequester {
 			Matcher m = p.matcher(task.getResponse().getText());
 
 			if(m.find()){
-				task.setUrl(m.group("T"));
+				task.url = m.group("T");
 				retry = true;
 			}
 		}
@@ -681,14 +636,14 @@ public class BasicRequester {
 					try {
 						bOutStream.close();
 					} catch (IOException e) {
-						task.addExceptions(e);
+						task.exception = e;
 					}
 				}
 				if (inStream != null) {
 					try {
 						inStream.close();
 					} catch (IOException e) {
-						task.addExceptions(e);
+						task.exception = e;
 					}
 				}
 				try {
@@ -696,7 +651,7 @@ public class BasicRequester {
 						conn.disconnect();
 					}
 				} catch (Exception e) {
-					task.addExceptions(e);
+					task.exception = e;
 				}
 
 				task.setDuration();

@@ -8,7 +8,6 @@ import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
-import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
@@ -429,7 +428,7 @@ public class ChromeDistributor {
 
 		try {
 
-			task = holder.build();
+			task = (ChromeTask) holder.build();
 
 			// 任务失败重试逻辑
 			task.addDoneCallback((t) -> {
@@ -447,7 +446,7 @@ public class ChromeDistributor {
 					else {
 
 						try {
-							t.insert();
+							t.holder.insert();
 						} catch (Exception e) {
 							logger.error(e);
 						}
@@ -455,7 +454,7 @@ public class ChromeDistributor {
 				}
 			});
 
-			logger.info("Task:{} Assign {}.", task.getUrl(), agent.name);
+			logger.info("Task:{} Assign {}.", task.url, agent.name);
 
 			taskCount++;
 

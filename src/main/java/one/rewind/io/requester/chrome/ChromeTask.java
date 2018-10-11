@@ -3,12 +3,11 @@ package one.rewind.io.requester.chrome;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import one.rewind.io.requester.callback.TaskCallback;
-import one.rewind.io.requester.scheduler.TaskScheduler;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
-import one.rewind.io.requester.task.ScheduledTask;
+import one.rewind.io.requester.parser.Builder;
+import one.rewind.io.requester.parser.TemplateManager;
 import one.rewind.io.requester.task.Task;
-import one.rewind.io.requester.task.TaskBuilder;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.txt.StringUtil;
 
@@ -25,6 +24,7 @@ public class ChromeTask extends Task<ChromeTask> {
 
 	// 执行动作列表
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
+
 	private List<ChromeAction> actions = new ArrayList<>();
 
 	// 标志位 是否采集图片
@@ -45,7 +45,7 @@ public class ChromeTask extends Task<ChromeTask> {
 
 		try {
 
-			ChromeTaskFactory.getInstance().builders.put(clazz, new TaskBuilder(
+			TemplateManager.getInstance().addBuilder(clazz, new Builder(
 					url_template,
 					init_map_class,
 					init_map_defaults
@@ -76,8 +76,9 @@ public class ChromeTask extends Task<ChromeTask> {
 
 		try {
 
-			ChromeTaskFactory.getInstance().builders.put(clazz, new TaskBuilder(
+			TemplateManager.getInstance().addBuilder(clazz, new Builder(
 					url_template,
+					null,
 					init_map_class,
 					init_map_defaults,
 					need_login,
@@ -162,14 +163,6 @@ public class ChromeTask extends Task<ChromeTask> {
 	}
 
 	/**
-	 * 从Scheduler 找对应的 ScheduledTask
-	 * @return
-	 */
-	public ScheduledTask getScheduledChromeTask() {
-		return holder == null ? null : TaskScheduler.getInstance().getScheduledTask(holder.generateScheduledChromeTaskId());
-	}
-
-	/**
 	 *
 	 * @param url
 	 * @throws MalformedURLException
@@ -231,16 +224,6 @@ public class ChromeTask extends Task<ChromeTask> {
 		return this;
 	}
 
-
-
-	/**
-	 * 返回当前的Holder
-	 * @return
-	 */
-	public TaskHolder getHolder() {
-		return holder;
-	}
-
 	/**
 	 *
 	 * @param init_map
@@ -262,8 +245,8 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @throws Exception
 	 */
 	public TaskHolder getHolder(
-		Class<? extends ChromeTask> clazz,
-		Map<String, Object> init_map
+			Class<? extends ChromeTask> clazz,
+			Map<String, Object> init_map
 	) throws Exception {
 
 		return getHolder(clazz, init_map, getPriority());
@@ -278,9 +261,9 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @throws Exception
 	 */
 	public TaskHolder getHolder(
-		Class<? extends ChromeTask> clazz,
-		Map<String, Object> init_map,
-		Priority priority
+			Class<? extends ChromeTask> clazz,
+			Map<String, Object> init_map,
+			Priority priority
 	) throws Exception {
 
 		int step = 0;
@@ -291,6 +274,6 @@ public class ChromeTask extends Task<ChromeTask> {
 			step = getStep() - 1;
 		}
 
-		return ChromeTaskFactory.getInstance().newHolder(holder, clazz, init_map, getUsername(), step, priority);
+		return TemplateManager.getInstance().newHolder(holder, clazz, 0, init_map, getUsername(), step, priority);
 	}
 }

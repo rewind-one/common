@@ -3,7 +3,7 @@ package one.rewind.io.requester.test;
 import com.google.common.collect.ImmutableMap;
 import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.chrome.ChromeTask;
-import one.rewind.io.requester.task.ScheduledTask;
+import one.rewind.io.requester.scheduler.ScheduledTask;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.json.JSON;
 import one.rewind.txt.DateFormatUtil;
