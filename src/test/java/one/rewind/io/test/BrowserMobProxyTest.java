@@ -5,6 +5,7 @@ import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.mitm.CertificateAndKeySource;
 import net.lightbody.bmp.mitm.PemFileCertificateSource;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.Task;
 import org.apache.logging.log4j.LogManager;
@@ -68,6 +69,5 @@ public class BrowserMobProxyTest {
 		t.setProxy(new ProxyImpl("127.0.0.1", proxyPort, "", ""));
 
 		BasicRequester.getInstance().submit(t);
-
 	}
 }

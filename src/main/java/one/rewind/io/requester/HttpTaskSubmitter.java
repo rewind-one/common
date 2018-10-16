@@ -1,6 +1,7 @@
 package one.rewind.io.requester;
 
 import com.google.gson.reflect.TypeToken;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.server.Msg;
@@ -38,15 +39,16 @@ public class HttpTaskSubmitter {
 	}
 
 	// ip
-	public static String host = "127.0.0.1";
+	public String host = "127.0.0.1";
 	// 端口
-	public static int port = 80;
+	public int port = 4567;
 
 	public HttpTaskSubmitter() {}
 
-	public HttpTaskSubmitter(String host, int port) {
+	public HttpTaskSubmitter setHostAndPort(String host, int port) {
 		this.host = host;
 		this.port = port;
+		return this;
 	}
 
 	/**
@@ -61,11 +63,13 @@ public class HttpTaskSubmitter {
 	 * @throws MalformedURLException
 	 * @throws URISyntaxException
 	 */
-	public Msg submit(String class_name, String username, String map_json, int step, String... cron) throws UnsupportedEncodingException, MalformedURLException, URISyntaxException {
+	public Msg submit(String class_name, int template_id, String username, String map_json, int step, String... cron) throws UnsupportedEncodingException, MalformedURLException, URISyntaxException {
 
 		String params = "";
 
 		params += "class_name=" + class_name;
+
+		params += "&template_id=" + template_id;
 
 		params += "&vars=" + map_json;
 

@@ -2,10 +2,10 @@ package one.rewind.io.requester.route;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import one.rewind.io.requester.Distributor;
 import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.chrome.ChromeTask;
-import one.rewind.io.requester.scheduler.ScheduledTask;
-import one.rewind.io.requester.scheduler.TaskScheduler;
+import one.rewind.io.requester.parser.TemplateManager;
 import one.rewind.io.requester.task.*;
 import one.rewind.io.server.Msg;
 import org.apache.logging.log4j.LogManager;
@@ -21,9 +21,9 @@ import java.util.Map;
 /**
  *
  */
-public class ChromeTaskRoute {
+public class ChromeDistributorRoute {
 
-	private static final Logger logger = LogManager.getLogger(ChromeTaskRoute.class.getName());
+	private static final Logger logger = LogManager.getLogger(ChromeDistributorRoute.class.getName());
 
 	public interface Filter {
 		void run(String class_name, String username) throws Exception;
@@ -32,7 +32,7 @@ public class ChromeTaskRoute {
 	public static Filter filter;
 
 	public static void setFilter(Filter filter) {
-		ChromeTaskRoute.filter = filter;
+		ChromeDistributorRoute.filter = filter;
 	}
 
 	// 执行任务，返回任务分派信息
@@ -43,6 +43,9 @@ public class ChromeTaskRoute {
 			// 任务类名
 			String class_name = request.queryParams("class_name");
 			Class<? extends ChromeTask> clazz = (Class<? extends ChromeTask>) Class.forName(class_name);
+
+			// template_id
+			int template_id = Integer.valueOf(request.queryParams("template_id"));
 
 			// 初始参数
 			String init_map_str = request.queryParams("vars");
@@ -66,33 +69,31 @@ public class ChromeTaskRoute {
 			}
 
 			// Create Holder
-			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(clazz, init_map, username, step);
+			TaskHolder holder = TemplateManager.getInstance().newHolder(clazz, template_id, init_map, username, step, null);
 
 			String[] cron = request.queryParamsValues("cron");
 
-			Map<String, Object> info = null;
+			Distributor.SubmitInfo info = null;
 
 			// A 周期性任务
 			// 加载到Scheduler
 			if(cron != null) {
-				if (cron.length ==1) {
-					ScheduledTask st = new ScheduledTask(holder, cron[0]);
-					info = TaskScheduler.getInstance().schedule(st);
+				if (cron.length == 1) {
+
+					info = ChromeDistributor.getInstance().schedule(holder, cron[0]);
 				}
 				else if (cron.length > 1) {
-					ScheduledTask st =  new ScheduledTask(holder, Arrays.asList(cron));
-					info = TaskScheduler.getInstance().schedule(st);
+					info = ChromeDistributor.getInstance().schedule(holder, Arrays.asList(cron));
 				}
 			}
 			// B 单步任务 Submit Holder
 			else {
 				holder.step = 1;
 				info = ChromeDistributor.getInstance().submit(holder);
-
 			}
 
 			// Return holder
-			return new Msg<Map<String, Object>>(Msg.SUCCESS, info);
+			return new Msg<Distributor.SubmitInfo>(Msg.SUCCESS, info);
 
 		}
 		catch (Exception e) {
@@ -107,12 +108,43 @@ public class ChromeTaskRoute {
 
 		try {
 
-			// 任务类名
+			// 任务id
 			String id = request.params(":id");
-
-			TaskScheduler.getInstance().unschedule(id);
+			ChromeDistributor.getInstance().unschedule(id);
 
 			return new Msg<>(Msg.SUCCESS);
+		}
+		catch (Exception e) {
+
+			logger.error("Error create/assign task. ", e);
+			return new Msg<>(Msg.ILLGEAL_PARAMETERS);
+		}
+	};
+
+	// 获取请求器状态信息
+	public static Route getInfo = (Request request, Response response) -> {
+
+		try {
+
+			Map<String, Object> info = ChromeDistributor.getInstance().getInfo();
+
+			return new Msg<Map<String, Object>>(Msg.SUCCESS, info);
+		}
+		catch (Exception e) {
+
+			logger.error("Error create/assign task. ", e);
+			return new Msg<>(Msg.ILLGEAL_PARAMETERS);
+		}
+	};
+
+	// 获取请求器状态信息
+	public static Route getSchedulerInfo = (Request request, Response response) -> {
+
+		try {
+
+			Map<String, ?> info = ChromeDistributor.getInstance().taskScheduler.getInfo();
+
+			return new Msg<Map<String, ?>>(Msg.SUCCESS, info);
 		}
 		catch (Exception e) {
 

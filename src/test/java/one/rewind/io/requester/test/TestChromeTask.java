@@ -143,17 +143,14 @@ public class TestChromeTask {
 
 				System.err.println(this.getDomain() + "\t" + System.currentTimeMillis() + "\t" + t.getResponse().getText().length());
 
-				ScheduledTask st = t.getScheduledChromeTask();
+				if(!ChromeDistributor.getInstance().taskScheduler.registered(t.holder.generateScheduledTaskId())) {
 
-				if(st == null) {
-
-					st = new ScheduledTask(t.getHolder(), crons);
-					st.start();
-
-					//TaskScheduler.getInstance().schedule(t.getHolder(this.vars), crons);
+					ChromeDistributor.getInstance().schedule(t.holder, crons);
 				}
 				else {
-					//
+
+					ScheduledTask st = ChromeDistributor.getInstance().taskScheduler.getScheduledTask(t.holder.generateScheduledTaskId());
+
 					if(System.currentTimeMillis() < DateFormatUtil.parseTime("2018-07-27 16:35:20").getTime()) {
 						st.degenerate();
 					} else {

@@ -1,11 +1,11 @@
 package one.rewind.io.requester.scheduler;
 
 import it.sauronsoftware.cron4j.Scheduler;
+import one.rewind.io.requester.Distributor;
 import one.rewind.io.requester.task.TaskHolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,20 +19,7 @@ public class TaskScheduler {
 
 	private static final Logger logger = LogManager.getLogger(TaskScheduler.class.getName());
 
-	protected static TaskScheduler instance;
-
-	public static TaskScheduler getInstance() {
-
-		if (instance == null) {
-			synchronized (TaskScheduler.class) {
-				if (instance == null) {
-					instance = new TaskScheduler();
-				}
-			}
-		}
-
-		return instance;
-	}
+	public Distributor distributor;
 
 	public Scheduler scheduler;
 
@@ -44,8 +31,9 @@ public class TaskScheduler {
 
 	/**
 	 *
+	 * @param distributor
 	 */
-	private TaskScheduler() {
+	public TaskScheduler(Distributor distributor) {
 
 		//scheduledTasks = RedissonAdapter.redisson.getMap("scheduled-tasks");
 
@@ -83,7 +71,7 @@ public class TaskScheduler {
 	 * @param task
 	 * @return
 	 */
-	public synchronized Map<String, Object> schedule(ScheduledTask task) throws Exception {
+	private synchronized Distributor.SubmitInfo schedule(ScheduledTask task) throws Exception {
 
 		if(scheduledTasks.containsKey(task.id)) throw new Exception("Task:" + task.id + " already scheduled.");
 
@@ -93,13 +81,7 @@ public class TaskScheduler {
 
 		scheduledTasks.put(task.id, task);
 
-		Map<String, Object> assignInfo = new HashMap<>();
-		assignInfo.put("localIp", LOCAL_IP);
-		assignInfo.put("domain", task.holder.domain);
-		assignInfo.put("account", task.holder.username);
-		assignInfo.put("id", task.id);
-
-		return assignInfo;
+		return new Distributor.SubmitInfo(LOCAL_IP, task.holder.domain, task.holder.username, task.id, null);
 	}
 
 	/**
@@ -109,9 +91,9 @@ public class TaskScheduler {
 	 * @return
 	 * @throws Exception
 	 */
-	public synchronized Map<String, Object> schedule(TaskHolder holder, String cron) throws Exception {
+	public Distributor.SubmitInfo schedule(TaskHolder holder, String cron) throws Exception {
 
-		ScheduledTask task = new ScheduledTask(holder, cron);
+		ScheduledTask task = new ScheduledTask(this, holder, cron);
 		return schedule(task);
 	}
 
@@ -122,9 +104,9 @@ public class TaskScheduler {
 	 * @return
 	 * @throws Exception
 	 */
-	public synchronized Map<String, Object> schedule(TaskHolder holder, List<String> crons) throws Exception {
+	public Distributor.SubmitInfo schedule(TaskHolder holder, List<String> crons) throws Exception {
 
-		ScheduledTask task = new ScheduledTask(holder, crons);
+		ScheduledTask task = new ScheduledTask(this, holder, crons);
 		return schedule(task);
 	}
 
@@ -165,6 +147,7 @@ public class TaskScheduler {
 
 		scheduledTasks.remove(id);
 	}
+
 
 	/**
 	 *

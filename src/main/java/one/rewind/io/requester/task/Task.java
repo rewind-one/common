@@ -2,6 +2,7 @@ package one.rewind.io.requester.task;
 
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.callback.TaskValidator;
@@ -9,7 +10,8 @@ import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.txt.ChineseChar;
 import one.rewind.txt.StringUtil;
 import one.rewind.txt.URLUtil;
-import org.apache.commons.lang3.StringEscapeUtils;
+
+import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -23,7 +25,7 @@ import java.util.*;
  * @author karajan
  *
  */
-public class Task<T extends Task> implements Comparable<Task> {
+public class Task<T extends Task> {
 
 	/**
 	 * 任务优先级
@@ -51,26 +53,8 @@ public class Task<T extends Task> implements Comparable<Task> {
 		OPTIONS
 	}
 
-	/**
-	 * 任务的额外标签
-	 */
-	public static enum Flag {
-		PRE_PROC, // 是否进行预处理
-		SHOOT_SCREEN,
-		BUILD_DOM,
-		SWITCH_PROXY
-	}
-
-	/**
-	 * 相同fingerprint的最小请求间隔
-	 */
-	public static long MIN_INTERVAL = 0;
-
 	// id
 	public String id;
-
-	// 优先级
-	private Priority priority = Priority.MEDIUM;
 
 	// 域名
 	public String domain;
@@ -110,9 +94,6 @@ public class Task<T extends Task> implements Comparable<Task> {
 	// 代理信息
 	private Proxy proxy;
 
-	// 参数表
-	private List<Flag> flags = new ArrayList<>();
-
 	// BasicRequester
 	// 请求过滤器
 	private RequestFilter requestFilter;
@@ -123,16 +104,6 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	// 返回对象
 	private transient Response response = new Response();
-
-	// 是否需要重试
-	private transient boolean retry = false;
-
-	// 重试次数
-	private int retryCount = 0;
-
-	// 任务指定步骤 当 step = 1 时 不生成下一步任务
-	// step = 0 不进行任何限制
-	private int step = 0;
 
 	// 任务验证器
 	public TaskValidator validator;
@@ -148,6 +119,9 @@ public class Task<T extends Task> implements Comparable<Task> {
 
 	// 异常信息，不用记录多个
 	public Throwable exception;
+
+	// 是否需要重试
+	public boolean needRetry = false;
 
 	// 创建时间
 	private Date create_time = new Date();
@@ -478,67 +452,31 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 * 设定前置处理
-	 * @return Self
-	 */
-	public Task setPreProc() {
-		flags.add(Flag.PRE_PROC);
-		return this;
-	}
-
-	/**
 	 * @return 是否前置处理
 	 */
 	public boolean preProc() {
-		return flags.contains(Flag.PRE_PROC);
-	}
-
-	/**
-	 * 设定切换代理
-	 * @return Self
-	 */
-	public Task setSwitchProxy() {
-		flags.add(Flag.SWITCH_PROXY);
-		return this;
+		return holder.flags.contains(TaskHolder.Flag.PRE_PROC);
 	}
 
 	/**
 	 * @return 是否切换代理
 	 */
 	public boolean switchProxy() {
-		return flags.contains(Flag.SWITCH_PROXY);
-	}
-
-	/**
-	 * 设定构建DOM
-	 * @return Self
-	 */
-	public Task setBuildDom() {
-		flags.add(Flag.BUILD_DOM);
-		return this;
+		return holder.flags.contains(TaskHolder.Flag.SWITCH_PROXY);
 	}
 
 	/**
 	 * @return 是否构建DOM
 	 */
 	public boolean buildDom() {
-		return flags.contains(Flag.BUILD_DOM);
-	}
-
-	/**
-	 * 设定进行截屏
-	 * @return Self
-	 */
-	public Task setShootScreen() {
-		flags.contains(Flag.SHOOT_SCREEN);
-		return this;
+		return holder.flags.contains(TaskHolder.Flag.BUILD_DOM);
 	}
 
 	/**
 	 * @return 是否进行截屏
 	 */
 	public boolean shootScreen() {
-		return flags.contains(Flag.SHOOT_SCREEN);
+		return holder.flags.contains(TaskHolder.Flag.SHOOT_SCREEN);
 	}
 
 	/**
@@ -559,39 +497,6 @@ public class Task<T extends Task> implements Comparable<Task> {
 	}
 
 	/**
-	 * 设定重试
-	 * @return Self
-	 */
-	public Task setRetry() {
-		this.retry = true;
-		return this;
-	}
-
-	/**
-	 * @return 任务是否需要重试
-	 */
-	public boolean needRetry() {
-		return this.retry;
-	}
-
-	/**
-	 * 设定最大执行步骤
-	 * @param step 当前所剩执行步数
-	 * @return Self
-	 */
-	public Task setStep(int step) {
-		this.step = step;
-		return this;
-	}
-
-	/**
-	 * @return 当前所剩执行步数
-	 */
-	public int getStep() {
-		return this.step;
-	}
-
-	/**
 	 * 设置内容验证器
 	 * @param validator 内容验证器
 	 * @return Self
@@ -599,67 +504,6 @@ public class Task<T extends Task> implements Comparable<Task> {
 	public Task setValidator(TaskValidator validator) {
 		this.validator = validator;
 		return this;
-	}
-
-	/**
-	 * 增加重试次数
-	 * @return Self
-	 */
-	public Task addRetryCount() {
-		this.retryCount ++;
-		return this;
-	}
-
-	/**
-	 * @return 重试次数
-	 */
-	public int getRetryCount() {
-		return retryCount;
-	}
-
-	/**
-	 * 获取任务指纹信息
-	 * @return 指纹字串
-	 */
-	public String getFingerprint() {
-
-		String src = "[" + domain + ":" + username + "] " + url;
-		return StringUtil.MD5(src);
-	}
-
-	/**
-	 * 设定优先级
-	 * @param priority 优先级
-	 * @return Self
-	 */
-	public Task setPriority(Priority priority) {
-		this.priority = priority;
-		return this;
-	}
-
-	/**
-	 * 获取优先级
-	 * @return 优先级
-	 */
-	public Priority getPriority() {
-		return priority;
-	}
-
-	/**
-	 * 优先级比较
-	 *
-	 * @param another 另外一个任务
-	 * @return 排序
-	 */
-	public int compareTo(Task another) {
-
-		final Priority me = this.getPriority();
-		final Priority it = another.getPriority();
-		if (me.ordinal() == it.ordinal()) {
-			return this.create_time.compareTo(another.create_time);
-		} else {
-			return it.ordinal() - me.ordinal();
-		}
 	}
 
 	/**
@@ -701,6 +545,35 @@ public class Task<T extends Task> implements Comparable<Task> {
 	 */
 	public TaskHolder getHolder() {
 		return holder;
+	}
+
+	private static <T> T cast(Object o, Class<T> clazz) {
+		return clazz != null && clazz.isInstance(o) ? clazz.cast(o) : null;
+	}
+
+	// init_map中支持的类型 int long float double String boolean
+	public int getIntFromVars(String key) {
+		return cast(holder.vars.get(key), Integer.class);
+	}
+
+	public Long getLongFromVars(String key) {
+		return cast(holder.vars.get(key), Long.class);
+	}
+
+	public float getFloatFromVars(String key) {
+		return cast(holder.vars.get(key), Float.class);
+	}
+
+	public double getDoubleFromVars(String key) {
+		return cast(holder.vars.get(key), Double.class);
+	}
+
+	public String getStringFromVars(String key) {
+		return cast(holder.vars.get(key), String.class);
+	}
+
+	public boolean getBooleanFromVars(String key) {
+		return cast(holder.vars.get(key), Boolean.class);
 	}
 
 	/**

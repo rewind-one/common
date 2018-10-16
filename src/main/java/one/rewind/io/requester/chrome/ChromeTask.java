@@ -31,7 +31,7 @@ public class ChromeTask extends Task<ChromeTask> {
 	public boolean noFetchImages = false;
 
 	/**
-	 *
+	 * 注册Builder
 	 * @param clazz
 	 * @param url_template
 	 * @param init_map_class
@@ -57,13 +57,44 @@ public class ChromeTask extends Task<ChromeTask> {
 	}
 
 	/**
-	 *
+	 * 注册Builder
+	 * @param clazz
+	 * @param url_template
+	 * @param init_map_class
+	 * @param init_map_defaults
+	 * @param min_interval
+	 */
+	public static void registerBuilder(
+			Class<? extends ChromeTask> clazz,
+			String url_template,
+			Map<String, Class> init_map_class,
+			Map<String, Object> init_map_defaults,
+			long min_interval
+	){
+
+		try {
+
+			TemplateManager.getInstance().addBuilder(clazz, new Builder(
+					url_template,
+					init_map_class,
+					init_map_defaults,
+					min_interval
+			));
+
+		} catch (Exception e) {
+			ChromeAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
+		}
+	}
+
+	/**
+	 * 注册Builder
 	 * @param clazz
 	 * @param url_template
 	 * @param init_map_class
 	 * @param init_map_defaults
 	 * @param need_login
 	 * @param base_priority
+	 * @param min_interval
 	 */
 	public static void registerBuilder(
 			Class<? extends ChromeTask> clazz,
@@ -71,7 +102,8 @@ public class ChromeTask extends Task<ChromeTask> {
 			Map<String, Class> init_map_class,
 			Map<String, Object> init_map_defaults,
 			boolean need_login,
-			Task.Priority base_priority
+			Task.Priority base_priority,
+			long min_interval
 	){
 
 		try {
@@ -81,6 +113,7 @@ public class ChromeTask extends Task<ChromeTask> {
 					null,
 					init_map_class,
 					init_map_defaults,
+					min_interval,
 					need_login,
 					base_priority
 			));
@@ -90,34 +123,7 @@ public class ChromeTask extends Task<ChromeTask> {
 		}
 	}
 
-	private static <T> T cast(Object o, Class<T> clazz) {
-		return clazz != null && clazz.isInstance(o) ? clazz.cast(o) : null;
-	}
 
-	// init_map中支持的类型 int long float double String boolean
-	public int getIntFromVars(String key) {
-		return cast(holder.vars.get(key), Integer.class);
-	}
-
-	public Long getLongFromVars(String key) {
-		return cast(holder.vars.get(key), Long.class);
-	}
-
-	public float getFloatFromVars(String key) {
-		return cast(holder.vars.get(key), Float.class);
-	}
-
-	public double getDoubleFromVars(String key) {
-		return cast(holder.vars.get(key), Double.class);
-	}
-
-	public String getStringFromVars(String key) {
-		return cast(holder.vars.get(key), String.class);
-	}
-
-	public boolean getBooleanFromVars(String key) {
-		return cast(holder.vars.get(key), Boolean.class);
-	}
 
 	/**
 	 *
@@ -129,37 +135,6 @@ public class ChromeTask extends Task<ChromeTask> {
 		map.putAll(holder.vars);
 		map.putAll(params);
 		return map;
-	}
-
-	/**
-	 *
-	 * @return
-	 */
-	public String getFingerprint() {
-
-		if(holder == null || holder.vars == null || holder.vars.keySet().size() == 0) {
-			return id;
-		}
-		else {
-
-			String src = "[" + holder.domain + ":" + holder.username + "];" + this.getClass().getSimpleName() + ";";
-
-			for(String key : holder.vars.keySet()) {
-				if(!key.equals("url"))
-					src += key + ":" + holder.vars.get(key) + ";";
-			}
-
-			return StringUtil.MD5(src);
-		}
-	}
-
-	/**
-	 * 手动设定id
-	 * @param id
-	 */
-	public ChromeTask setId(String id) {
-		this.id = id;
-		return this;
 	}
 
 	/**
@@ -225,7 +200,9 @@ public class ChromeTask extends Task<ChromeTask> {
 	}
 
 	/**
-	 *
+	 * 生成Holder
+	 * 任务执行过程中调用
+	 * 新 holder 的 class 与原 holder 的 class 相同
 	 * @param init_map
 	 * @return
 	 * @throws Exception
@@ -234,13 +211,15 @@ public class ChromeTask extends Task<ChromeTask> {
 			Map<String, Object> init_map
 	) throws Exception {
 
-		return getHolder(this.getClass(), init_map, getPriority());
+		return getHolder(this.getClass(), init_map);
 	}
 
 	/**
+	 * 生成Holder
 	 * 任务执行过程中调用
-	 * @param clazz
-	 * @param init_map
+	 *
+	 * @param clazz 新holder的class
+	 * @param init_map 初始参数表
 	 * @return
 	 * @throws Exception
 	 */
@@ -249,14 +228,16 @@ public class ChromeTask extends Task<ChromeTask> {
 			Map<String, Object> init_map
 	) throws Exception {
 
-		return getHolder(clazz, init_map, getPriority());
+		return getHolder(clazz, init_map, null);
 	}
 
 	/**
+	 * 生成Holder
 	 * 任务执行过程中调用
-	 * @param clazz
-	 * @param init_map
-	 * @param priority
+	 *
+	 * @param clazz 新holder class
+	 * @param init_map 初始参数表
+	 * @param priority 优先级
 	 * @return
 	 * @throws Exception
 	 */
@@ -268,10 +249,10 @@ public class ChromeTask extends Task<ChromeTask> {
 
 		int step = 0;
 
-		if(getStep() == 1 || getStep() < 0) {
+		if(holder.step == 1 || holder.step< 0) {
 			throw new TaskException.NoMoreStepException();
 		} else {
-			step = getStep() - 1;
+			step = holder.step - 1;
 		}
 
 		return TemplateManager.getInstance().newHolder(holder, clazz, 0, init_map, getUsername(), step, priority);

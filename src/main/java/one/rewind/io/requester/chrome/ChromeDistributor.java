@@ -2,22 +2,18 @@ package one.rewind.io.requester.chrome;
 
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.typesafe.config.Config;
 import io.netty.handler.codec.http.*;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.auth.AuthType;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
+import one.rewind.io.requester.Distributor;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
-import one.rewind.io.requester.route.ChromeTaskRoute;
-import one.rewind.io.requester.route.DistributorRoute;
+import one.rewind.io.requester.route.ChromeDistributorRoute;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.io.server.MsgTransformer;
-import one.rewind.util.Configs;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.littleshoot.proxy.HttpFilters;
 import org.littleshoot.proxy.HttpFiltersAdapter;
 import org.littleshoot.proxy.HttpFiltersSource;
@@ -31,34 +27,9 @@ import java.util.stream.Collectors;
 
 import static spark.Spark.*;
 
-public class ChromeDistributor {
+public class ChromeDistributor extends Distributor {
 
 	public static ChromeDistributor instance;
-
-	public static final Logger logger = LogManager.getLogger(ChromeDistributor.class.getName());
-
-	// 连接超时时间
-	public static int CONNECT_TIMEOUT;
-
-	// 读取超时时间
-	public static int READ_TIMEOUT;
-
-	// 本地IP
-	public static String LOCAL_IP;
-
-	// Web服务端口号
-	//public static int WEB_PORT = 80;
-
-	// 配置设定
-	static {
-
-		Config ioConfig = Configs.getConfig(BasicRequester.class);
-
-		CONNECT_TIMEOUT = ioConfig.getInt("connectTimeout");
-		READ_TIMEOUT = ioConfig.getInt("readTimeout");
-		LOCAL_IP = ioConfig.getString("requesterLocalIp");
-		// LOCAL_IP = NetworkUtil.getLocalIp();
-	}
 
 	/**
 	 *
@@ -135,29 +106,31 @@ public class ChromeDistributor {
 	 */
 	public void buildHttpApiServer() {
 
-		//port(WEB_PORT);
+		path("/chrome", () -> {
 
-		before("/*", (q, a) -> logger.info("Received api call"));
+			before("/*", (q, a) -> logger.info("Received api call"));
 
-		get("/distributor", DistributorRoute.getInfo, new MsgTransformer());
+			get("", ChromeDistributorRoute.getInfo, new MsgTransformer());
 
-		get("/scheduler", DistributorRoute.getSchedulerInfo, new MsgTransformer());
+			get("/scheduler", ChromeDistributorRoute.getSchedulerInfo, new MsgTransformer());
 
-		path("/task", () -> {
+			path("/task", () -> {
 
-			post("", ChromeTaskRoute.submit, new MsgTransformer());
+				post("", ChromeDistributorRoute.submit, new MsgTransformer());
 
-			post("/unschedule/:id", ChromeTaskRoute.unschedule, new MsgTransformer());
+				post("/unschedule/:id", ChromeDistributorRoute.unschedule, new MsgTransformer());
 
-		});
+			});
 
-		// 适用于跨域调用
-		after((request, response) -> {
+			// 适用于跨域调用
+			after((request, response) -> {
 
-			response.header("Access-Control-Allow-Origin", "*");
-			response.header("Access-Control-Allow-Methods", "POST, OPTIONS");
-			response.header("Access-Control-Allow-Headers", "X-Custom-Header");
-			response.header("Access-Control-Max-Age", "1000");
+				response.header("Access-Control-Allow-Origin", "*");
+				response.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+				response.header("Access-Control-Allow-Headers", "X-Custom-Header");
+				response.header("Access-Control-Max-Age", "1000");
+
+			});
 
 		});
 	}
@@ -302,7 +275,7 @@ public class ChromeDistributor {
 	 * @throws ChromeDriverException.NotFoundException
 	 * @throws AccountException.NotFound
 	 */
-	public Map<String, Object> submit(TaskHolder holder) throws Exception
+	public SubmitInfo submit(TaskHolder holder) throws Exception
 	{
 
 		String domain = holder.domain;
@@ -376,14 +349,7 @@ public class ChromeDistributor {
 
 			queues.get(agent).put(holder);
 
-			Map<String, Object> info = new HashMap<>();
-			info.put("localIp", LOCAL_IP);
-			info.put("agent", agent.getInfo());
-			info.put("domain", domain);
-			info.put("account", username);
-			info.put("id", holder.id);
-
-			return info;
+			return new SubmitInfo(LOCAL_IP, domain, username, holder.id, agent.getInfo());
 		}
 
 		logger.warn("Agent not found for task:{}-{}.", domain, username);
@@ -433,12 +399,12 @@ public class ChromeDistributor {
 			// 任务失败重试逻辑
 			task.addDoneCallback((t) -> {
 
-				if(t.needRetry()) {
+				if(t.needRetry) {
 
 					// 重试逻辑
-					if( t.getRetryCount() < 3 ) {
+					if( holder.retry_count < 3 ) {
 
-						t.addRetryCount();
+						holder.retry_count ++;
 						submit(holder);
 
 					}

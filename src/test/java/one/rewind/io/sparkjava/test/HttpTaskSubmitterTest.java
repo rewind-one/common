@@ -45,7 +45,7 @@ public class HttpTaskSubmitterTest {
 	public void submitterTest() throws ClassNotFoundException, MalformedURLException, UnsupportedEncodingException, URISyntaxException, InterruptedException {
 
 
-		Msg msg = HttpTaskSubmitter.getInstance().submit(TestChromeTask.T4.class.getName(), "", JSON.toJson(ImmutableMap.of("q", String.valueOf(1950))), 0, null);
+		Msg msg = HttpTaskSubmitter.getInstance().submit(TestChromeTask.T4.class.getName(), "", JSON.toJson(ImmutableMap.of("q", String.valueOf(1950))), 0);
 
 		System.err.println(JSON.toPrettyJson(msg));
 

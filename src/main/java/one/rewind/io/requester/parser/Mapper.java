@@ -3,7 +3,6 @@ package one.rewind.io.requester.parser;
 import one.rewind.db.model.ESIndex;
 import one.rewind.db.model.Model;
 import one.rewind.db.model.ModelD;
-import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
@@ -14,11 +13,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ *
+ */
 public class Mapper implements JSONable<Mapper> {
 
 	String modelClassName;
 
 	int templateId;
+
+	String path;
+
+	Field.Method method = Field.Method.Reg;
+
+	boolean multi = false;
 
 	// 字段解析规则
 	List<Field> fields = new ArrayList<>();
@@ -30,14 +38,48 @@ public class Mapper implements JSONable<Mapper> {
 
 	public Mapper() {}
 
-	public Mapper(String modelClassName) throws Exception {
+	/**
+	 *
+	 * @param modelClassName
+	 * @throws Exception
+	 */
+	public Mapper(String modelClassName, boolean multi, String path, Field.Method method) throws Exception {
 
 		Class<?> clazz = Class.forName(modelClassName);
 		if(! clazz.isAssignableFrom(Model.class)) throw new Exception("Model class name unrecognizable");
+		this.multi = multi;
+		this.path = path;
+		this.method = method;
 	}
 
-	public Mapper(int templateId) {
+	/**
+	 *
+	 * @param templateId
+	 */
+	public Mapper(int templateId, boolean multi, String path, Field.Method method) {
 		this.templateId = templateId;
+		this.multi = multi;
+		this.path = path;
+		this.method = method;
+	}
+
+	/**
+	 *
+	 * @param field
+	 * @return
+	 */
+	public Mapper addField(Field field) {
+		this.fields.add(field);
+		return this;
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public Mapper setMulti() {
+		this.multi = true;
+		return this;
 	}
 
 	/**
@@ -50,6 +92,7 @@ public class Mapper implements JSONable<Mapper> {
 
 		List<TaskHolder> nts = new ArrayList<>();
 
+		// 解析数据并保存
 		if(modelClassName != null) {
 
 			// 需要id赋值
@@ -63,10 +106,15 @@ public class Mapper implements JSONable<Mapper> {
 
 			((Model) model).insert();
 		}
+		// 生成下一级任务
 		else if(templateId != 0) {
 
 			Template tpl = TemplateManager.getInstance().getTemplate(templateId);
 			nts.add(tpl.newHolder(data));
+		}
+		// 测试用
+		else {
+			TemplateManager.logger.info(JSON.toPrettyJson(data));
 		}
 
 		return nts;

@@ -1,6 +1,5 @@
 package one.rewind.io.test;
 
-import one.rewind.io.requester.route.ChromeTaskRoute;
 import one.rewind.io.server.Msg;
 import one.rewind.io.server.MsgTransformer;
 import org.junit.Test;

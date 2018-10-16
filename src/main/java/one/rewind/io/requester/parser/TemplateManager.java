@@ -67,6 +67,12 @@ public class TemplateManager {
 		return templates.get(id);
 	}
 
+	/**
+	 *
+	 * @param clazz
+	 * @param builder
+	 * @return
+	 */
 	public TemplateManager addBuilder(Class<? extends ChromeTask> clazz, Builder builder) {
 		chrome_task_builders.put(clazz, builder);
 		return this;
@@ -82,10 +88,14 @@ public class TemplateManager {
 	}
 
 	/**
+	 * 生成新Holder I
 	 *
-	 * @param holder
-	 * @return
-	 * @throws Exception
+	 * 使用场景：周期任务生成
+	 *     ScheduledTask中包含了TaskHolder 生成新 TaskHolder时使用
+	 *     基本上就是复制原有Holder
+	 *
+	 * @param holder 被复制的Holder
+	 * @return 新的Holder
 	 */
 	public TaskHolder newHolder(
 			TaskHolder holder
@@ -95,12 +105,19 @@ public class TemplateManager {
 		if(trace == null) trace = new ArrayList<>();
 		trace.add(holder.id);
 
+		TaskHolder.Flag[] flag_array = new TaskHolder.Flag[holder.flags.size()];
+
 		return new TaskHolder(
-				holder.class_name, 0, holder.domain, holder.vars, holder.need_login, holder.username, holder.step, holder.priority,
-				holder.id, holder.scheduled_task_id, trace);
+				holder.class_name, holder.template_id, holder.domain, holder.vars, holder.need_login, holder.username, holder.step, holder.priority, holder.min_interval,
+				holder.id, holder.scheduled_task_id, trace,
+				holder.flags.toArray(flag_array));
 	}
 
 	/**
+	 * 生成新Holder II
+	 *
+	 * 使用场景：任务执行中，生成的新的Holder
+	 *     新的Holder 要包含原Holder 的 generate_task_id, scheduled_task_id, trace
 	 *
 	 * @param holder
 	 * @param clazz
@@ -109,7 +126,6 @@ public class TemplateManager {
 	 * @param step
 	 * @param priority
 	 * @return
-	 * @throws Exception
 	 */
 	public TaskHolder newHolder(
 			TaskHolder holder,
@@ -120,6 +136,8 @@ public class TemplateManager {
 			int step,
 			Task.Priority priority
 	) throws Exception {
+
+		TaskHolder.Flag[] flag_array = new TaskHolder.Flag[holder.flags.size()];
 
 		TaskHolder new_holder = newHolder(clazz, template_id, init_map, username, step, priority);
 
@@ -138,7 +156,31 @@ public class TemplateManager {
 	}
 
 	/**
-	 * 起始创建任务调用
+	 * 生成新Holder 0
+	 * 简化模式A
+	 * 使用场景：任意
+	 *
+	 * @param clazz
+	 * @param username
+	 * @param init_map
+	 * @param step
+	 * @return
+	 * @throws Exception
+	 */
+	public TaskHolder newHolder(
+			Class<? extends ChromeTask> clazz,
+			Map<String, Object> init_map,
+			String username,
+			int step
+	) throws Exception {
+
+		return newHolder(clazz, 0, init_map, username, step, null);
+	}
+
+	/**
+	 * 生成新Holder 0
+	 * 使用场景：任意
+	 *
 	 * @param clazz
 	 * @param init_map
 	 * @param username
@@ -190,29 +232,15 @@ public class TemplateManager {
 			priority = builder.base_priority;
 		}
 
-		return new TaskHolder(clazz.getName(), builder.domain, vars, builder.need_login, username, step, priority);
+		TaskHolder.Flag[] flag_array = new TaskHolder.Flag[builder.flags.size()];
+
+		return new TaskHolder(clazz.getName(), builder.domain, vars, builder.need_login, username, step, priority, builder.min_interval, builder.flags.toArray(flag_array));
 	}
 
 	/**
-	 * 起始创建任务调用
-	 * @param clazz
-	 * @param username
-	 * @param init_map
-	 * @param step
-	 * @return
-	 * @throws Exception
-	 */
-	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map,
-			String username,
-			int step
-	) throws Exception {
-
-		return newHolder(clazz, 0, init_map, username, step, null);
-	}
-
-	/**
+	 * 生成新Holder 0
+	 * 简化模式B
+	 * 使用场景：任意
 	 *
 	 * @param template_id
 	 * @param init_map
@@ -232,7 +260,10 @@ public class TemplateManager {
 	}
 
 	/**
-	 * 起始创建任务调用
+	 * 生成新Holder 0
+	 * 简化模式C
+	 * 使用场景：任意
+	 *
 	 * @param clazz
 	 * @param init_map
 	 * @param username
@@ -249,6 +280,9 @@ public class TemplateManager {
 	}
 
 	/**
+	 * 生成新Holder 0
+	 * 简化模式D
+	 * 使用场景：任意
 	 *
 	 * @param template_id
 	 * @param init_map
@@ -266,7 +300,10 @@ public class TemplateManager {
 	}
 
 	/**
-	 * 起始创建任务调用
+	 * 生成新Holder 0
+	 * 简化模式E
+	 * 使用场景：任意
+	 *
 	 * @param clazz
 	 * @param init_map
 	 * @param step
@@ -282,6 +319,17 @@ public class TemplateManager {
 		return newHolder(clazz, init_map, null, step);
 	}
 
+	/**
+	 * 生成新Holder 0
+	 * 简化模式F
+	 * 使用场景：任意
+	 *
+	 * @param template_id
+	 * @param init_map
+	 * @param step
+	 * @return
+	 * @throws Exception
+	 */
 	public TaskHolder newHolder(
 			int template_id,
 			Map<String, Object> init_map,
@@ -292,7 +340,10 @@ public class TemplateManager {
 	}
 
 	/**
-	 * 起始创建任务调用
+	 * 生成新Holder 0
+	 * 简化模式G
+	 * 使用场景：任意
+	 *
 	 * @param clazz
 	 * @param init_map
 	 * @return
@@ -307,6 +358,9 @@ public class TemplateManager {
 	}
 
 	/**
+	 * 生成新Holder 0
+	 * 简化模式H
+	 * 使用场景：任意
 	 *
 	 * @param template_id
 	 * @param init_map
@@ -322,6 +376,7 @@ public class TemplateManager {
 	}
 
 	/**
+	 * Holder --> Task
 	 *
 	 * @param holder
 	 * @return
@@ -375,8 +430,6 @@ public class TemplateManager {
 		// 验证 vars
 		if(builder.need_login) task.setLoginTask();
 		task.setUsername(holder.username);
-		task.setStep(holder.step);
-		task.setPriority(holder.priority);
 
 		// 设定关联ID
 		task.id = holder.id;

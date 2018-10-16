@@ -1,5 +1,6 @@
 package one.rewind.io.requester.proxy;
 
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.util.NetworkUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -106,7 +107,7 @@ public class ProxyValidator {
 				
 				if(url == null) url = BAIDU;
 				
-				conn = new BasicRequester.ConnectionBuilder(url, proxy).build();
+				conn = new BasicRequester.ConnectionBuilder(url, proxy, "GET").build();
 				code = conn.getResponseCode();
 				
 				if(code < 400) {
@@ -169,7 +170,7 @@ public class ProxyValidator {
 				try{
 					logger.info("Test Https --> {}", proxy.getInfo());
 					
-					conn = new BasicRequester.ConnectionBuilder(BAIDUS, proxy).build();
+					conn = new BasicRequester.ConnectionBuilder(BAIDUS, proxy, "GET").build();
 					
 					code = ((HttpsURLConnection) conn).getResponseCode();
 					
@@ -187,7 +188,7 @@ public class ProxyValidator {
 				try{
 					logger.info("Test GL --> {}", proxy.getInfo());
 					
-					conn = new BasicRequester.ConnectionBuilder(GOOGLE, proxy).build();
+					conn = new BasicRequester.ConnectionBuilder(GOOGLE, proxy, "GET").build();
 					
 					code = conn.getResponseCode();
 					if(code < 400 && checkContent(conn, "window.google")) {

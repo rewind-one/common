@@ -9,7 +9,7 @@ import java.util.*;
 
 public class Template implements JSONable<Template> {
 
-	int id;
+	public int id;
 
 	Builder builder;
 

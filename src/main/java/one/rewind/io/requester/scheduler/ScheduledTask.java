@@ -20,6 +20,8 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 	// holder.class_name 和 holder.vars 定义
 	public String id;
 
+	public TaskScheduler taskScheduler;
+
 	// cron4j 给出
 	public String scheduleId;
 
@@ -43,9 +45,9 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 	 * @param cron
 	 * @throws Exception
 	 */
-	public ScheduledTask(TaskHolder holder, String cron) throws Exception {
+	ScheduledTask(TaskScheduler taskScheduler, TaskHolder holder, String cron) throws Exception {
 
-		this(holder, Arrays.asList(cron));
+		this(taskScheduler, holder, Arrays.asList(cron));
 	}
 
 	/**
@@ -54,7 +56,9 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 	 * @param crons 递减 cron pattern
 	 * @throws Exception
 	 */
-	public ScheduledTask(TaskHolder holder, List<String> crons) throws Exception {
+	ScheduledTask(TaskScheduler taskScheduler, TaskHolder holder, List<String> crons) throws Exception {
+
+		this.taskScheduler = taskScheduler;
 
 		this.id = holder.generateScheduledTaskId();
 
@@ -77,24 +81,17 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 
 	/**
 	 *
-	 * @return
-	 * @throws Exception
 	 */
-	public Map<String, Object> start() throws Exception {
-		return TaskScheduler.getInstance().schedule(this);
-	}
+	public void degenerate() throws Exception {
 
-	/**
-	 *
-	 */
-	public void degenerate() {
+		taskScheduler.unschedule(id);
 
 		int index = crons.indexOf(cron);
 		if(index > -1 && index < crons.size() - 1) {
 			cron = crons.get(index + 1);
 		}
 
-		TaskScheduler.getInstance().scheduler.reschedule(scheduleId, cron);
+		taskScheduler.scheduler.reschedule(scheduleId, cron);
 	}
 
 	/**
@@ -106,9 +103,7 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 
 			TaskHolder new_holder = TemplateManager.getInstance().newHolder(holder);
 			new_holder.scheduled_task_id = this.id;
-
-			// TODO
-			ChromeDistributor.getInstance().submit(holder);
+			taskScheduler.distributor.submit(new_holder);
 
 		} catch (Exception e) {
 			logger.error("Error submit scheduled task to distributor. ", e);
@@ -121,7 +116,7 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 	 */
 	public void stop() throws Exception {
 
-		TaskScheduler.getInstance().unschedule(id);
+		taskScheduler.unschedule(id);
 	}
 
 	@Override

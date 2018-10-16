@@ -1,18 +1,23 @@
 package one.rewind.io.requester.task;
 
+import com.google.gson.reflect.TypeToken;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.field.FieldType;
+import com.j256.ormlite.field.SqlType;
+import com.j256.ormlite.field.types.StringType;
 import com.j256.ormlite.table.DatabaseTable;
 import one.rewind.db.DBName;
 import one.rewind.db.model.ModelD;
+import one.rewind.db.persister.JSONableListPersister;
+import one.rewind.db.persister.JSONableMapPersister;
 import one.rewind.io.requester.parser.TemplateManager;
 import one.rewind.json.JSON;
 import one.rewind.txt.StringUtil;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Type;
+import java.util.*;
 
 /**
  * Task 序列化对象
@@ -22,6 +27,16 @@ import java.util.Map;
 @DBName(value = "requester")
 @DatabaseTable(tableName = "tasks")
 public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
+
+	/**
+	 * 任务的额外标签
+	 */
+	public static enum Flag {
+		PRE_PROC, // 是否进行预处理
+		SHOOT_SCREEN,
+		BUILD_DOM,
+		SWITCH_PROXY
+	}
 
 	// 生成 Holder 的 task_id 可以为空
 	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
@@ -41,6 +56,18 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	@DatabaseField(dataType = DataType.INTEGER, width = 11)
 	public int template_id;
 
+	// 指纹信息 用于去重
+	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false)
+	public String fingerprint;
+
+	// 相同指纹信息的任务 最小采集间隔
+	@DatabaseField(dataType = DataType.INTEGER, width = 11)
+	public long min_interval = 0;
+
+	// 任务标签
+	@DatabaseField(persisterClass = JSONableFlagListPersister.class, width = 1024)
+	public List<Flag> flags = new ArrayList<>();
+
 	// 域名
 	@DatabaseField(dataType = DataType.STRING, width = 256, canBeNull = false)
 	public String domain;
@@ -53,10 +80,13 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	@DatabaseField(dataType = DataType.STRING, width = 128)
 	public String username;
 
-	// 初始参数 TODO 未进行序列化定义
+	// 初始参数
+	@DatabaseField(dataType = DataType.STRING, width = 4096, persisterClass = JSONableMapPersister.class)
 	public Map<String, Object> vars;
 
 	// 步长
+	// 任务指定步骤 当 step = 1 时 不生成下一步任务
+	// step = 0 不进行任何限制
 	@DatabaseField(dataType = DataType.INTEGER, width = 5, canBeNull = false)
 	public int step = 0;
 
@@ -72,7 +102,12 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	@DatabaseField(dataType = DataType.BOOLEAN, canBeNull = false)
 	public boolean all_done = false;
 
+	// 任务的重试次数
+	@DatabaseField(dataType = DataType.INTEGER, width = 5, canBeNull = false)
+	public int retry_count = 0;
+
 	// task_id trace
+	@DatabaseField(persisterClass = JSONableListPersister.class, width = 1024)
 	public List<String> trace;
 
 	// 创建时间
@@ -105,12 +140,14 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	 * @param username
 	 * @param step
 	 * @param priority
+	 * @param min_interval
 	 */
 	public TaskHolder(
-			String class_name, String domain, Map<String, Object> vars, boolean login_task, String username, int step, Task.Priority priority
+			String class_name, String domain, Map<String, Object> vars, boolean login_task, String username, int step, Task.Priority priority, long min_interval,
+			TaskHolder.Flag... flags
 	) {
 
-		this(class_name, 0, domain, vars, login_task, username, step, priority, null, null, null);
+		this(class_name, 0, domain, vars, login_task, username, step, priority, min_interval, null, null, null, flags);
 	}
 
 	/**
@@ -122,15 +159,18 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	 * @param username
 	 * @param step
 	 * @param priority
+	 * @param min_interval
 	 * @param generate_task_id
 	 * @param scheduled_task_id
 	 * @param trace
 	 */
 	public TaskHolder(
 		String class_name, int template_id, String domain, Map<String, Object> vars, boolean login_task, String username, int step, Task.Priority priority,
+		long min_interval,
 		String generate_task_id,
 		String scheduled_task_id,
-		List<String> trace
+		List<String> trace,
+		TaskHolder.Flag... flags
 	) {
 
 		this.class_name = class_name;
@@ -147,13 +187,38 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 
 		this.step = step;
 		this.priority = priority;
+		this.min_interval = min_interval;
 
 		// 定义 ID
-		this.id = StringUtil.MD5(class_name + "-" + JSON.toJson(vars) + "-" + System.currentTimeMillis());
+		this.genId();
 
 		this.generate_task_id = generate_task_id;
 		this.scheduled_task_id = scheduled_task_id;
 		this.trace = trace;
+
+		this.flags = Arrays.asList(flags);
+	}
+
+	/**
+	 * 指纹和id的区别是 id带有时间戳
+	 * @return Self
+	 */
+	private TaskHolder genId() {
+
+		Map<String, Object> vars_ = new HashMap<>();
+
+		for(String key : vars.keySet()) {
+			if(!key.equals("url"))
+				vars_.put(key, vars.get(key));
+		}
+
+		String feature = this.class_name + ":" + this.template_id + ":" + this.domain + ":" + this.username + ":" + JSON.toJson(vars_);
+
+		this.id = StringUtil.MD5(feature + "-" + System.currentTimeMillis());
+
+		this.fingerprint = StringUtil.MD5(feature);
+
+		return this;
 	}
 
 	/**
@@ -191,7 +256,45 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	 * @return scheduledTaskId
 	 */
 	public String generateScheduledTaskId() {
-		return StringUtil.MD5(this.class_name + ":" + this.template_id + ":" + JSON.toJson(this.vars));
+
+		Map<String, Object> vars_ = new HashMap<>();
+
+		for(String key : vars.keySet()) {
+			if(!key.equals("url"))
+				vars_.put(key, vars.get(key));
+		}
+
+		String feature = this.class_name + ":" + this.template_id + ":" + this.domain + ":" + this.username + ":" + JSON.toJson(vars_);
+
+		return StringUtil.MD5(feature);
+	}
+
+	/**
+	 * @return 是否前置处理
+	 */
+	public boolean preProc() {
+		return flags.contains(Flag.PRE_PROC);
+	}
+
+	/**
+	 * @return 是否切换代理
+	 */
+	public boolean switchProxy() {
+		return flags.contains(Flag.SWITCH_PROXY);
+	}
+
+	/**
+	 * @return 是否构建DOM
+	 */
+	public boolean buildDom() {
+		return flags.contains(Flag.BUILD_DOM);
+	}
+
+	/**
+	 * @return 是否进行截屏
+	 */
+	public boolean shootScreen() {
+		return flags.contains(Flag.SHOOT_SCREEN);
 	}
 
 	/**
@@ -202,4 +305,35 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 		return JSON.toJson(this);
 	}
 
+	/**
+	 *
+	 */
+	public static class JSONableFlagListPersister extends StringType {
+
+		private static final JSONableFlagListPersister INSTANCE = new JSONableFlagListPersister();
+
+		private JSONableFlagListPersister() {
+			super(SqlType.STRING, new Class<?>[] { List.class });
+		}
+
+		public static JSONableFlagListPersister getSingleton() {
+			return INSTANCE;
+		}
+
+		@Override
+		public Object javaToSqlArg(FieldType fieldType, Object javaObject) {
+
+			List list = (List) javaObject;
+
+			return list != null ? JSON.toJson(list) : null;
+		}
+
+		@Override
+		public Object sqlArgToJava(FieldType fieldType, Object sqlArg, int columnPos) {
+
+			Type type = new TypeToken<List<Flag>>() {}.getType();
+			List<Flag> list = JSON.fromJson((String)sqlArg, type);
+			return sqlArg != null ? list : null;
+		}
+	}
 }

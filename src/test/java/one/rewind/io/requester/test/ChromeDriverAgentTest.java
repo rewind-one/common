@@ -27,14 +27,13 @@ public class ChromeDriverAgentTest {
 
 		ChromeTask t = new ChromeTask("https://www.zbj.com/");
 
-		Proxy proxy = new ProxyImpl("scisaga.net", 60103, null, null);
-		//Proxy proxy = new ProxyImpl("tpda.cc", 60202, "sdyk", "sdyk");
+		Proxy proxy = new ProxyImpl("tpda.cc", 60202, "sdyk", "sdyk");
 
 		ChromeAgent agent = new ChromeAgent(proxy, ChromeAgent.Flag.MITM);
 
 		agent.start();
 
-/*		agent.setIdleCallback(()->{
+		/*agent.setIdleCallback(()->{
 			System.err.println("IDLE");
 		});*/
 

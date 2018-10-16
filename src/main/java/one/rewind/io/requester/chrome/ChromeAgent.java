@@ -8,6 +8,7 @@ import net.lightbody.bmp.client.ClientUtil;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.account.Account;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.callback.AccountCallback;
 import one.rewind.io.requester.callback.ChromeDriverAgentCallback;
 import one.rewind.io.requester.callback.ProxyCallBack;
@@ -237,7 +238,7 @@ public class ChromeAgent {
 			if(remoteAddress != null) {
 				driver = new RemoteWebDriver(remoteAddress, capabilities);
 			} else {
-				driver = new ChromeDriver(capabilities);
+				driver = new ChromeDriver(new ChromeOptions().merge(capabilities));
 			}
 
 			logger.info("Create chromedriver: [{}] done, cycle:{}", name, ++cycle);
@@ -347,7 +348,7 @@ public class ChromeAgent {
 		 */
 		Wrapper(ChromeTask task) {
 			this.task = task;
-			this.task.setStartTime();
+			this.task.start_time = new Date();
 		}
 
 		/**
@@ -355,7 +356,7 @@ public class ChromeAgent {
 		 */
 		public Void call() throws Exception {
 
-			logger.info("{}", task.getUrl());
+			logger.info("{}", task.url);
 
 			// 当使用Request/Response Filters时
 			// 需要重置bmProxy
@@ -388,8 +389,8 @@ public class ChromeAgent {
 				setProxyResponseFilter(task.getResponseFilter());
 			}
 
-			getUrl(task.getUrl());
-			waitPageLoad(task.getUrl());
+			getUrl(task.url);
+			waitPageLoad(task.url);
 
 			// 正常解析到页面
 			if(!driver.getCurrentUrl().matches("^data:.+?")) {
@@ -1088,7 +1089,7 @@ public class ChromeAgent {
 					try {
 						callback.run(task);
 					} catch (Exception e) {
-						logger.error("Error proc doneCallback, Task:{}. ", task.getUrl(), e);
+						logger.error("Error proc doneCallback, Task:{}. ", task.url, e);
 					}
 				});
 			}
@@ -1097,14 +1098,14 @@ public class ChromeAgent {
 				task.holder.done = true;
 			}
 
-			logger.info("Task done. {}", task.getUrl());
+			logger.info("Task done. {}", task.url);
 		}
 		// 超时终止
 		catch (InterruptedException e) {
 
-			logger.error("Task interrupted. {} ", task.getUrl(), e);
-			task.addExceptions(e.getCause());
-			task.setRetry();
+			logger.error("Task interrupted. {} ", task.url, e);
+			task.exception = e.getCause();
+			task.needRetry = true;
 
 		}
 		// 运行时异常
@@ -1112,10 +1113,8 @@ public class ChromeAgent {
 
 			logger.error("Task failed.");
 
-			task.addExceptions(ex.getCause());
-
-			// 重试机制
-			task.setRetry();
+			task.exception = ex.getCause();
+			task.needRetry = true;
 
 			try {
 				throw ex.getCause();
@@ -1231,7 +1230,7 @@ public class ChromeAgent {
 		}
 		catch (TimeoutException e) {
 
-			task.setRetry();
+			task.needRetry = true;
 			status = Status.IDLE;
 			taskFuture.cancel(true);
 			logger.error("{} Task timeout. ", name, e);
@@ -1260,7 +1259,7 @@ public class ChromeAgent {
 				try {
 					callback.run(t);
 				} catch (Exception e) {
-					logger.error("Error proc doneCallback, Task:{}. ", t.getUrl(), e);
+					logger.error("Error proc doneCallback, Task:{}. ", t.url, e);
 				}
 			});
 		}

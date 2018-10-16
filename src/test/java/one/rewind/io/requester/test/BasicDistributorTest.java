@@ -1,7 +1,11 @@
 package one.rewind.io.requester.test;
 
+import com.google.common.collect.ImmutableMap;
+import one.rewind.io.requester.basic.BasicDistributor;
+import one.rewind.io.requester.parser.*;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.task.Task;
+import one.rewind.io.requester.task.TaskHolder;
 import org.jsoup.nodes.Element;
 import org.junit.After;
 import org.junit.Before;
@@ -13,22 +17,39 @@ import java.net.URISyntaxException;
 public class BasicDistributorTest {
 
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		Proxy proxy = null;
 		//proxy = new ProxyImpl("reid.red", 60103, null, null);
-		BasicDistributor.getInstance().setProxy(proxy);
+		BasicDistributor.getInstance().addOperator(proxy);
+
+		Template tpl_1 = new Template(Builder.getBuilder("https://www.baidu.com/s?wd={{q}}"));
+		tpl_1.id = 1;
+		tpl_1.addMapper(
+			new Mapper(2).addField(new Field("q", "baidu"))
+		);
+
+		TemplateManager.getInstance().addTemplate(tpl_1);
+
+		Template tpl_2 = new Template(Builder.getBuilder("https://www.baidu.com/s?wd={{q}}"));
+		tpl_2.id = 2;
+		tpl_2.addMapper(
+			new Mapper(1).addField(new Field("q", "qq"))
+		);
+
+		Template tpl_3 = new Template(Builder.getBuilder("https://www.baidu.com/s?wd={{q}}"));
+		tpl_3.id = 2;
+		tpl_3.addMapper(
+				new Mapper(1).addField(new Field("q", "qq"))
+		);
 	}
 
 	@Test
-	public void testFingerprint() throws InterruptedException, MalformedURLException, URISyntaxException {
+	public void testFingerprint() throws Exception {
 
 		for(int i=0; i<10; i++) {
-			Task t = new Task("https://www.baidu.com");
-			t.param("Search", "1");
-			t.addDoneCallback((t_) -> {
-				System.err.println(t.getResponse().getSrc().length);
-			});
-			BasicDistributor.getInstance().submit(t);
+
+			TaskHolder taskHolder = TemplateManager.getInstance().getTemplate(1).newHolder(ImmutableMap.of("q", String.valueOf(i)));
+			BasicDistributor.getInstance().submit(taskHolder);
 		}
 	}
 

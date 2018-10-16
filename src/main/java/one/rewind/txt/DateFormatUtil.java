@@ -44,7 +44,7 @@ public class DateFormatUtil {
 	 * @throws ParseException
 	 */
 	@SuppressWarnings("deprecation")
-	public static Date parseTime(String in) throws ParseException {
+	public static Date parseTime(String in) {
 		
 		if (in == null) {
 			return new Date();

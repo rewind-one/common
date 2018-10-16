@@ -8,7 +8,7 @@ import org.redisson.api.RTopic;
 
 public class TopicTester {
 
-	private static final Logger logger = LogManager.getLogger(BasicRequester.class.getName());
+	private static final Logger logger = LogManager.getLogger(RedissonAdapter.class.getName());
 
 	RTopic<String> topic = RedissonAdapter.redisson.getTopic("topic.test");
 

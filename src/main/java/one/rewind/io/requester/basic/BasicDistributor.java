@@ -3,8 +3,10 @@ package one.rewind.io.requester.basic;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.j256.ormlite.stmt.query.In;
 import one.rewind.db.RedissonAdapter;
+import one.rewind.io.requester.Distributor;
 import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
+import one.rewind.io.requester.parser.TemplateManager;
 import one.rewind.io.requester.proxy.IpDetector;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyChannel;
@@ -20,7 +22,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class BasicDistributor {
+public class BasicDistributor extends Distributor {
 
 	static final Logger logger = LogManager.getLogger(BasicDistributor.class.getName());
 
@@ -49,16 +51,6 @@ public class BasicDistributor {
 		}
 	}
 
-	public Operator operator;
-
-	public List<Operator> operators = new ArrayList<>();
-
-	// 已经执行完的任务特征缓存
-	public RMap<String, Long> fingerprints = RedissonAdapter.redisson.getMap("WX-Fingerprints");
-
-	// 任务队列 TODO --> redisson
-	public PriorityBlockingQueue<Task> queue = new PriorityBlockingQueue();
-
 	/**
 	 *
 	 * @return
@@ -75,6 +67,16 @@ public class BasicDistributor {
 
 		return Instance;
 	}
+
+	public Operator operator;
+
+	public List<Operator> operators = new ArrayList<>();
+
+	// 已经执行完的任务特征缓存
+	public RMap<String, Long> fingerprints = RedissonAdapter.redisson.getMap("WX-Fingerprints");
+
+	// 任务队列 TODO --> redisson
+	public PriorityBlockingQueue<TaskHolder> queue = new PriorityBlockingQueue();
 
 	public BasicDistributor() {
 
@@ -94,7 +96,7 @@ public class BasicDistributor {
 	 *
 	 * @param channel
 	 */
-	public void addOperator(ProxyChannel channel) {
+	public BasicDistributor addOperator(ProxyChannel channel) {
 
 		operator.setDone();
 		operator = null;
@@ -102,52 +104,58 @@ public class BasicDistributor {
 		Operator op = new Operator(channel);
 		operators.add(op);
 		op.start();
+
+		return this;
+	}
+
+	/**
+	 *
+	 * @param proxy
+	 */
+	public BasicDistributor addOperator(Proxy proxy) {
+
+		operator.setDone();
+		operator = null;
+
+		Operator op = new Operator().setProxy(proxy);
+		operators.add(op);
+		op.start();
+
+		return this;
 	}
 
 	/**
 	 * 提交任务
-	 * @param t
+	 * @param th
 	 */
-	public synchronized boolean submit(TaskHolder t, BlockingQueue queue) throws InterruptedException {
+	public synchronized SubmitInfo submit(TaskHolder th, BlockingQueue queue) throws InterruptedException {
 
-		if(!fingerprints.containsKey(t.getFingerprint())) {
+		if(!fingerprints.containsKey(th.fingerprint)) {
 
-			queue.put(t);
-			return true;
+			queue.put(th);
+			return new SubmitInfo();
 		}
 
 		else {
 
 			// 上一次采集时间
-			long lts = fingerprints.get(t.getFingerprint());
+			long lts = fingerprints.get(th.fingerprint);
 
 			long ts = System.currentTimeMillis();
 
-			// 通过反射获取最小采集间隔
-			Class<? extends Task> clazz = t.getClass();
-			long interval = 0;
-			try {
-				Field field = clazz.getField("MIN_INTERVAL");
-				interval = field.getLong(clazz);
-			} catch (NoSuchFieldException | IllegalAccessException e) {
-				e.printStackTrace();
-			}
-
-			logger.info("Interval:{}", interval);
-
 			//
-			if(ts - lts >= interval / 2) {
-				queue.put(t);
-				return true;
+			if(ts - lts >= th.min_interval / 2) {
+				queue.put(th);
+				return new SubmitInfo();
 			} else {
-				logger.warn("Duplicate fingerprints {}:[{}] --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.url);
-				return false;
+				logger.warn("Duplicate fingerprints {}:[{}] --> {}:{}", th.class_name, th.template_id, th.domain, th.fingerprint);
+				return new SubmitInfo(false);
 			}
 		}
 	}
 
-	public void submit(TaskHolder th) throws InterruptedException {
-		submit(th, queue);
+	public SubmitInfo submit(TaskHolder th) throws InterruptedException {
+		return submit(th, queue);
 	}
 
 	/**
@@ -196,8 +204,14 @@ public class BasicDistributor {
 			this.channel = channel;
 		}
 
-		public void setProxy(Proxy proxy) {
+		/**
+		 *
+		 * @param proxy
+		 * @return
+		 */
+		public Operator setProxy(Proxy proxy) {
 			this.proxy = proxy;
+			return this;
 		}
 
 		/**
@@ -234,24 +248,17 @@ public class BasicDistributor {
 
 			while(!done) {
 
-				Task t = null;
+				TaskHolder th = null;
 
 				try {
 
-					t = queue.poll(100, TimeUnit.MILLISECONDS);
+					th = queue.poll(100, TimeUnit.MILLISECONDS);
 
-					if(t != null) {
+					if(th != null) {
 
 						waits();
 
-						if (channel != null) {
-							t.setProxy(channel.proxy);
-						}
-						else if (proxy != null) {
-							t.setProxy(proxy);
-						}
-
-						executor.submit(new RequestWrapper(t));
+						executor.submit(new RequestWrapper(th.build()));
 
 						logger.info("[{} / {} / {}]", executor.getActiveCount(), executor.getQueue().size(), queue.size());
 					}
@@ -298,20 +305,17 @@ public class BasicDistributor {
 			 * 构造方法
 			 * @param t
 			 */
-			RequestWrapper(Task t) {
+			RequestWrapper(Task<Task> t) {
 				this.t = t;
 			}
 
 			/**
 			 *
-			 * @param nt
+			 * @param nth
 			 */
-			public void submit(Task nt) throws InterruptedException {
+			public void submit(TaskHolder nth) throws InterruptedException {
 
-				nt.removeHeader("Proxy-Switch-Ip");
-				nt.exception = null;
-
-				BasicDistributor.this.submit(nt);
+				BasicDistributor.this.submit(nth);
 			}
 
 			@Override
@@ -319,22 +323,34 @@ public class BasicDistributor {
 
 				try {
 
+					String class_name = t.holder.class_name;
+					int template_id = t.holder.template_id;
+					String domain = t.holder.domain;
+					String fingerprint = t.holder.fingerprint;
+
 					// 二次去重
-					if (fingerprints.containsKey(t.getFingerprint())) {
+					if (fingerprints.containsKey(t.holder.fingerprint)) {
 
 						// 上一次采集时间
-						long lts = fingerprints.get(t.getFingerprint());
+						long lts = fingerprints.get(t.holder.fingerprint);
 
 						long ts = System.currentTimeMillis();
 
-						if (ts - lts < t.MIN_INTERVAL) {
-							logger.warn("Duplicate fingerprints {}:[{}] --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.url);
+						if (ts - lts < t.holder.min_interval) {
+							logger.warn("Duplicate fingerprints {}:[{}] --> {}:{}", class_name, template_id, domain, fingerprint);
 							return;
 						}
 					}
 
+					if (channel != null) {
+						t.setProxy(channel.proxy);
+					}
+					else if (proxy != null) {
+						t.setProxy(proxy);
+					}
+
 					// 下一级任务
-					List<Task> nts = new ArrayList<>();
+					List<TaskHolder> nths = new ArrayList<>();
 
 					BasicRequester.getInstance().submit(t, CONNECT_TIMEOUT);
 
@@ -345,7 +361,7 @@ public class BasicDistributor {
 
 					} catch (Exception e) {
 
-						logger.error("Validator exception {}:[{}], ", t.getClass().getSimpleName(), t.getFingerprint(), e);
+						logger.error("Validator exception {}:[{}] --> {}:{}, ", class_name, template_id, domain, fingerprint, e);
 						validatorException = true;
 						retry = true;
 					}
@@ -353,7 +369,7 @@ public class BasicDistributor {
 					// B 异常处理
 					if (t.exception != null) {
 
-						logger.error("Fetch Error {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint(), t.exception);
+						logger.error("Fetch Error {}:[{}] {}:[{}] --> {}:{}, ", class_name, template_id, domain, fingerprint, t.exception);
 
 						fetchException = true;
 						retry = true;
@@ -369,20 +385,20 @@ public class BasicDistributor {
 							}
 
 							for (NextTaskGenerator ntg : t.nextTaskGenerators) {
-								ntg.run(t, nts);
+								ntg.run(t, nths);
 							}
 
 							// 计数
 							count(false);
 
 							// 提交下一级任务
-							for (Task nt : nts) {
-								submit(nt);
+							for (TaskHolder nth : nths) {
+								submit(nth);
 							}
 
 						} catch (Exception e) {
 
-							logger.error("Error exec callbacks {}:[{}], ", t.getClass().getSimpleName(), t.getFingerprint(), e);
+							logger.error("Error exec callbacks {}:[{}] --> {}:{}, ", class_name, template_id, domain, fingerprint, e);
 							retry = true;
 						}
 					}
@@ -392,31 +408,31 @@ public class BasicDistributor {
 
 						count(false);
 
-						if (t.getRetryCount() < RETRY_LIMIT) {
+						if (t.holder.retry_count < RETRY_LIMIT) {
 
-							logger.warn("Retry {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
+							logger.warn("Retry {}:[{}] --> {}:{}", class_name, template_id, domain, fingerprint);
 
-							t.addRetryCount();
+							t.holder.retry_count ++;
 
 							try {
-								submit(t); // 非阻塞方法
+								submit(t.holder); // 非阻塞方法
 							} catch (InterruptedException e) {
-								logger.warn("Error submit task, {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint(), e);
+								logger.warn("Error submit task, {}:[{}] --> {}:{}", class_name, template_id, domain, fingerprint);
+								t.holder.insert(); // 失败保存数据库
 							}
 
 						} else {
 
-							logger.warn("Exceed retry limit, {}:[{}]", t.getClass().getSimpleName(), t.getFingerprint());
-							// TODO 数据库建表
-							// t.insert();
+							logger.warn("Exceed retry limit, {}:[{}] --> {}:{}", class_name, template_id, domain, fingerprint);
+							t.holder.insert(); // 失败保存数据库
 						}
 					}
 					// C2 成功执行
 					else {
 
 						count(true);
-						fingerprints.put(t.getFingerprint(), new Date().getTime());
-						logger.info("{}:[{}] done --> {}", t.getClass().getSimpleName(), t.getFingerprint(), t.getDuration());
+						fingerprints.put(fingerprint, new Date().getTime());
+						logger.info("{}:[{}] --> {}:{} done --> {}", class_name, template_id, domain, fingerprint, t.getDuration());
 					}
 
 				} catch (Exception ex) {
@@ -425,8 +441,6 @@ public class BasicDistributor {
 
 			}
 		}
-
-
 	}
 
 	/**

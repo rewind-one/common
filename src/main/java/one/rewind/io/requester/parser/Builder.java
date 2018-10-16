@@ -5,14 +5,15 @@ import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.URLUtil;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static one.rewind.io.requester.task.TaskHolder.Flag;
+
 /**
+ * TaskHolder 生成器
+ *
  * @author scisaga@gmail.com
  * @date 2018/10/9
  */
@@ -36,31 +37,43 @@ public class Builder implements JSONable<Builder> {
 	// domain
 	public String domain;
 
+	// 相同 fingerprint 最小采集间隔
+	public long min_interval = 0;
+
 	// 该任务是否需要登录
 	public boolean need_login = false;
 
 	// 任务的优先级
 	public Task.Priority base_priority = Task.Priority.MEDIUM;
 
+	// 任务标签
+	public List<Flag> flags = new ArrayList<>();
+
 	/**
+	 * 生成新的Builder
 	 *
 	 * @param url_template
 	 * @return
 	 * @throws Exception
 	 */
-	public static Builder getBuilder(String url_template) throws Exception {
+	public static Builder getBuilder(String url_template, Flag... flags) throws Exception {
 
-		return getBuilder(url_template, null);
+		return getBuilder(url_template, null, flags);
 	}
 
 	/**
+	 * 生成新的Builder
 	 *
 	 * @param url_template
 	 * @param post_data_template
 	 * @return
 	 * @throws Exception
 	 */
-	public static Builder getBuilder(String url_template, String post_data_template) throws Exception {
+	public static Builder getBuilder(
+			String url_template,
+			String post_data_template,
+			Flag... flags
+	) throws Exception {
 
 		Set<String> vars = Builder.getVarNames(url_template + post_data_template);
 
@@ -71,10 +84,26 @@ public class Builder implements JSONable<Builder> {
 			init_map_class.put(key, String.class);
 		}
 
-		return new Builder(url_template, post_data_template, init_map_class, init_map_defaults);
+		return new Builder(url_template, post_data_template, init_map_class, init_map_defaults, flags);
 	}
 
 	/**
+	 * 生成新的Builder
+	 *
+	 * @param url_template
+	 * @param init_map_class
+	 * @throws Exception
+	 */
+	public Builder(
+			String url_template,
+			Map<String, Class> init_map_class,
+			Flag... flags
+	) throws Exception {
+		this(url_template, null, init_map_class, new HashMap<String, Object>(), 0, false, Task.Priority.MEDIUM, flags);
+	}
+
+	/**
+	 * 生成新的Builder
 	 *
 	 * @param url_template
 	 * @param init_map_class
@@ -84,12 +113,14 @@ public class Builder implements JSONable<Builder> {
 	public Builder(
 			String url_template,
 			Map<String, Class> init_map_class,
-			Map<String, Object> init_map_defaults
+			Map<String, Object> init_map_defaults,
+			Flag... flags
 	) throws Exception {
-		this(url_template, null, init_map_class, init_map_defaults, false, Task.Priority.MEDIUM);
+		this(url_template, null, init_map_class, init_map_defaults, 0, false, Task.Priority.MEDIUM, flags);
 	}
 
 	/**
+	 * 生成新的Builder
 	 *
 	 * @param url_template
 	 * @param post_data_template
@@ -101,12 +132,52 @@ public class Builder implements JSONable<Builder> {
 			String url_template,
 			String post_data_template,
 			Map<String, Class> init_map_class,
-			Map<String, Object> init_map_defaults
+			Map<String, Object> init_map_defaults,
+			Flag... flags
 	) throws Exception {
-		this(url_template, post_data_template, init_map_class, init_map_defaults, false, Task.Priority.MEDIUM);
+		this(url_template, post_data_template, init_map_class, init_map_defaults, 0, false, Task.Priority.MEDIUM, flags);
 	}
 
 	/**
+	 * 生成新的Builder
+	 *
+	 * @param url_template
+	 * @param init_map_class
+	 * @param init_map_defaults
+	 * @throws Exception
+	 */
+	public Builder(
+			String url_template,
+			Map<String, Class> init_map_class,
+			Map<String, Object> init_map_defaults,
+			long min_interval,
+			Flag... flags
+	) throws Exception {
+		this(url_template, null, init_map_class, init_map_defaults, min_interval, false, Task.Priority.MEDIUM, flags);
+	}
+
+	/**
+	 * 生成新的Builder
+	 *
+	 * @param url_template
+	 * @param post_data_template
+	 * @param init_map_class
+	 * @param init_map_defaults
+	 * @throws Exception
+	 */
+	public Builder(
+			String url_template,
+			String post_data_template,
+			Map<String, Class> init_map_class,
+			Map<String, Object> init_map_defaults,
+			long min_interval,
+			Flag... flags
+	) throws Exception {
+		this(url_template, post_data_template, init_map_class, init_map_defaults, min_interval, false, Task.Priority.MEDIUM, flags);
+	}
+
+	/**
+	 * 生成新的Builder
 	 *
 	 * @param url_template
 	 * @param init_map_class
@@ -120,8 +191,10 @@ public class Builder implements JSONable<Builder> {
 			String post_data_template,
 			Map<String, Class> init_map_class,
 			Map<String, Object> init_map_defaults,
+			long min_interval,
 			boolean need_login,
-			Task.Priority base_priority
+			Task.Priority base_priority,
+			Flag... flags
 	) throws Exception {
 
 		// 验证class定义
@@ -160,11 +233,15 @@ public class Builder implements JSONable<Builder> {
 		this.init_map_class = init_map_class;
 		this.init_map_defaults = init_map_defaults;
 
+		this.min_interval = min_interval;
+
 		// TODO url_template 中应该有完整的域名，否则此处会抛异常
 		this.domain = URLUtil.getDomainName(url_template.replaceAll("\\{\\{|\\}\\}", ""));
 
 		this.need_login = need_login;
 		this.base_priority = base_priority;
+
+		this.flags = Arrays.asList(flags);
 	}
 
 	/**
