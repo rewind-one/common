@@ -1,4 +1,4 @@
-package one.rewind.io.test;
+package one.rewind.test;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

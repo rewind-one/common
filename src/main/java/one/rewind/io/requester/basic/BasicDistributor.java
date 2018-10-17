@@ -68,8 +68,10 @@ public class BasicDistributor extends Distributor {
 		return Instance;
 	}
 
+	// 默认执行器
 	public Operator operator;
 
+	// 配置代理的执行器列表
 	public List<Operator> operators = new ArrayList<>();
 
 	// 已经执行完的任务特征缓存
@@ -78,11 +80,15 @@ public class BasicDistributor extends Distributor {
 	// 任务队列 TODO --> redisson
 	public PriorityBlockingQueue<TaskHolder> queue = new PriorityBlockingQueue();
 
+	/**
+	 *
+	 */
 	public BasicDistributor() {
 
 		operator = new Operator(null);
 		operator.start();
 
+		// 每10s 打印队列中任务数量
 		Timer timer = new Timer();
 		timer.schedule(new TimerTask() {
 			@Override
@@ -93,7 +99,7 @@ public class BasicDistributor extends Distributor {
 	}
 
 	/**
-	 *
+	 * 添加一个配置代理隧道的Operator
 	 * @param channel
 	 */
 	public BasicDistributor addOperator(ProxyChannel channel) {
@@ -109,7 +115,7 @@ public class BasicDistributor extends Distributor {
 	}
 
 	/**
-	 *
+	 * 添加一个配置代理的Operator
 	 * @param proxy
 	 */
 	public BasicDistributor addOperator(Proxy proxy) {
@@ -126,6 +132,7 @@ public class BasicDistributor extends Distributor {
 
 	/**
 	 * 提交任务
+	 * 为了复用去重方法，此处可将queue作为一个输入变量
 	 * @param th
 	 */
 	public synchronized SubmitInfo submit(TaskHolder th, BlockingQueue queue) throws InterruptedException {
@@ -154,6 +161,12 @@ public class BasicDistributor extends Distributor {
 		}
 	}
 
+	/**
+	 * 默认提交方法
+	 * @param th
+	 * @return
+	 * @throws InterruptedException
+	 */
 	public SubmitInfo submit(TaskHolder th) throws InterruptedException {
 		return submit(th, queue);
 	}

@@ -9,7 +9,7 @@ import one.rewind.db.MongoDBAdapter;
 
 import java.util.List;
 
-public class DBTest {
+public class MongoDBTest {
 	@Test
 	public void testMongoDBAdapter() {
 

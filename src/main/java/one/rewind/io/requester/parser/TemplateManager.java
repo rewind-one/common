@@ -50,11 +50,15 @@ public class TemplateManager {
 
 	/**
 	 *
-	 * @param tpl
+	 * @param tpls
 	 * @return
 	 */
-	public TemplateManager addTemplate(Template tpl) {
-		templates.put(tpl.id, tpl);
+	public TemplateManager add(Template... tpls) {
+
+		for(Template tpl : tpls) {
+			templates.put(tpl.id, tpl);
+		}
+
 		return this;
 	}
 
@@ -63,7 +67,7 @@ public class TemplateManager {
 	 * @param id
 	 * @return
 	 */
-	public Template getTemplate(int id) {
+	public Template get(int id) {
 		return templates.get(id);
 	}
 
@@ -73,7 +77,7 @@ public class TemplateManager {
 	 * @param builder
 	 * @return
 	 */
-	public TemplateManager addBuilder(Class<? extends ChromeTask> clazz, Builder builder) {
+	public TemplateManager add(Class<? extends ChromeTask> clazz, Builder builder) {
 		chrome_task_builders.put(clazz, builder);
 		return this;
 	}
@@ -83,7 +87,7 @@ public class TemplateManager {
 	 * @param clazz
 	 * @return
 	 */
-	public Builder getBuilder(Class<? extends ChromeTask> clazz) {
+	public Builder get(Class<? extends ChromeTask> clazz) {
 		return chrome_task_builders.get(clazz);
 	}
 
@@ -137,8 +141,6 @@ public class TemplateManager {
 			Task.Priority priority
 	) throws Exception {
 
-		TaskHolder.Flag[] flag_array = new TaskHolder.Flag[holder.flags.size()];
-
 		TaskHolder new_holder = newHolder(clazz, template_id, init_map, username, step, priority);
 
 		if(holder != null) {
@@ -157,37 +159,15 @@ public class TemplateManager {
 
 	/**
 	 * 生成新Holder 0
-	 * 简化模式A
 	 * 使用场景：任意
 	 *
-	 * @param clazz
-	 * @param username
-	 * @param init_map
-	 * @param step
-	 * @return
-	 * @throws Exception
-	 */
-	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map,
-			String username,
-			int step
-	) throws Exception {
-
-		return newHolder(clazz, 0, init_map, username, step, null);
-	}
-
-	/**
-	 * 生成新Holder 0
-	 * 使用场景：任意
-	 *
-	 * @param clazz
-	 * @param init_map
-	 * @param username
-	 * @param step
-	 * @param priority
-	 * @return
-	 * @throws Exception
+	 * @param clazz 任务类
+	 * @param init_map 初始化map
+	 * @param username 用户名
+	 * @param step 最大可执行步骤
+	 * @param priority 优先级
+	 * @return TaskHolder
+	 * @throws Exception 异常
 	 */
 	public TaskHolder newHolder(
 			Class<? extends Task> clazz,
@@ -203,7 +183,7 @@ public class TemplateManager {
 		if(clazz.getSimpleName().equals(Task.class.getSimpleName())) {
 
 			// get template
-			Template tpl = this.getTemplate(template_id);
+			Template tpl = this.get(template_id);
 
 			if(tpl == null) {
 				throw new Exception("Template not exist: " + template_id);
@@ -238,144 +218,6 @@ public class TemplateManager {
 	}
 
 	/**
-	 * 生成新Holder 0
-	 * 简化模式B
-	 * 使用场景：任意
-	 *
-	 * @param template_id
-	 * @param init_map
-	 * @param username
-	 * @param step
-	 * @return
-	 * @throws Exception
-	 */
-	public TaskHolder newHolder(
-			int template_id,
-			Map<String, Object> init_map,
-			String username,
-			int step
-	) throws Exception {
-
-		return newHolder(Task.class, template_id, init_map, username, step, null);
-	}
-
-	/**
-	 * 生成新Holder 0
-	 * 简化模式C
-	 * 使用场景：任意
-	 *
-	 * @param clazz
-	 * @param init_map
-	 * @param username
-	 * @return
-	 * @throws Exception
-	 */
-	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map,
-			String username
-	) throws Exception {
-
-		return newHolder(clazz, init_map, username, 0);
-	}
-
-	/**
-	 * 生成新Holder 0
-	 * 简化模式D
-	 * 使用场景：任意
-	 *
-	 * @param template_id
-	 * @param init_map
-	 * @param username
-	 * @return
-	 * @throws Exception
-	 */
-	public TaskHolder newHolder(
-			int template_id,
-			Map<String, Object> init_map,
-			String username
-	) throws Exception {
-
-		return newHolder(Task.class, template_id, init_map, username, 0, null);
-	}
-
-	/**
-	 * 生成新Holder 0
-	 * 简化模式E
-	 * 使用场景：任意
-	 *
-	 * @param clazz
-	 * @param init_map
-	 * @param step
-	 * @return
-	 * @throws Exception
-	 */
-	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map,
-			int step
-	) throws Exception {
-
-		return newHolder(clazz, init_map, null, step);
-	}
-
-	/**
-	 * 生成新Holder 0
-	 * 简化模式F
-	 * 使用场景：任意
-	 *
-	 * @param template_id
-	 * @param init_map
-	 * @param step
-	 * @return
-	 * @throws Exception
-	 */
-	public TaskHolder newHolder(
-			int template_id,
-			Map<String, Object> init_map,
-			int step
-	) throws Exception {
-
-		return newHolder(template_id, init_map, null, step);
-	}
-
-	/**
-	 * 生成新Holder 0
-	 * 简化模式G
-	 * 使用场景：任意
-	 *
-	 * @param clazz
-	 * @param init_map
-	 * @return
-	 * @throws Exception
-	 */
-	public TaskHolder newHolder(
-			Class<? extends ChromeTask> clazz,
-			Map<String, Object> init_map
-	) throws Exception {
-
-		return newHolder(clazz, init_map, null, 0);
-	}
-
-	/**
-	 * 生成新Holder 0
-	 * 简化模式H
-	 * 使用场景：任意
-	 *
-	 * @param template_id
-	 * @param init_map
-	 * @return
-	 * @throws Exception
-	 */
-	public TaskHolder newHolder(
-			int template_id,
-			Map<String, Object> init_map
-	) throws Exception {
-
-		return newHolder(template_id, init_map, 0);
-	}
-
-	/**
 	 * Holder --> Task
 	 *
 	 * @param holder
@@ -391,7 +233,7 @@ public class TemplateManager {
 
 			clazz = Task.class;
 
-			tpl = this.getTemplate(holder.template_id);
+			tpl = this.get(holder.template_id);
 
 			if(tpl == null) {
 				throw new Exception("Template not exist: " + holder.toJSON());
@@ -424,7 +266,7 @@ public class TemplateManager {
 
 		// Call sub class constructor
 		Constructor<?> cons = clazz.getConstructor(String.class);
-		Task task = (ChromeTask) cons.newInstance(url);
+		Task<ChromeTask> task = (ChromeTask) cons.newInstance(url);
 		task.holder = holder;
 
 		// 验证 vars
@@ -444,8 +286,13 @@ public class TemplateManager {
 				Parser parser = new Parser(t.getResponse().getText(), t.getResponse().getDoc());
 
 				for(Mapper mapper : finalTpl.mappers) {
-					Map<String, Object> data = parser.parse(mapper);
-					nts.addAll(mapper.eval(data));
+
+					// mapper 解析数据
+					for( Map<String, Object> data : parser.parse(mapper) ) {
+
+						// 对解析的数据进行后续处理
+						nts.addAll(mapper.eval(data));
+					}
 				}
 			});
 		}

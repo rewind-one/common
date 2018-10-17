@@ -18,37 +18,29 @@ public class BasicDistributorTest {
 
 	@Before
 	public void setup() throws Exception {
+
 		Proxy proxy = null;
 		//proxy = new ProxyImpl("reid.red", 60103, null, null);
 		BasicDistributor.getInstance().addOperator(proxy);
 
-		Template tpl_1 = new Template(Builder.getBuilder("https://www.baidu.com/s?wd={{q}}"));
-		tpl_1.id = 1;
-		tpl_1.addMapper(
-			new Mapper(2).addField(new Field("q", "baidu"))
+		Template tpl_1 = new Template(
+				1, Builder.of("https://www.baidu.com/s?wd={{q}}"),
+				new Mapper(2, new Field("url", "h3 a", "href"))
 		);
 
-		TemplateManager.getInstance().addTemplate(tpl_1);
 
-		Template tpl_2 = new Template(Builder.getBuilder("https://www.baidu.com/s?wd={{q}}"));
-		tpl_2.id = 2;
-		tpl_2.addMapper(
-			new Mapper(1).addField(new Field("q", "qq"))
-		);
 
-		Template tpl_3 = new Template(Builder.getBuilder("https://www.baidu.com/s?wd={{q}}"));
-		tpl_3.id = 2;
-		tpl_3.addMapper(
-				new Mapper(1).addField(new Field("q", "qq"))
-		);
+		Template tpl_2 = Template.dummy(2);
+
+		TemplateManager.getInstance().add(tpl_1, tpl_2);
 	}
 
 	@Test
-	public void testFingerprint() throws Exception {
+	public void simpleTask() throws Exception {
 
 		for(int i=0; i<10; i++) {
 
-			TaskHolder taskHolder = TemplateManager.getInstance().getTemplate(1).newHolder(ImmutableMap.of("q", String.valueOf(i)));
+			TaskHolder taskHolder = TemplateManager.getInstance().get(1).at(ImmutableMap.of("q", String.valueOf(i)));
 			BasicDistributor.getInstance().submit(taskHolder);
 		}
 	}

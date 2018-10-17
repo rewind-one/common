@@ -6,10 +6,10 @@ import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
 import one.rewind.io.requester.parser.Builder;
+import one.rewind.io.requester.parser.Template;
 import one.rewind.io.requester.parser.TemplateManager;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
-import one.rewind.txt.StringUtil;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -45,7 +45,7 @@ public class ChromeTask extends Task<ChromeTask> {
 
 		try {
 
-			TemplateManager.getInstance().addBuilder(clazz, new Builder(
+			TemplateManager.getInstance().add(clazz, new Builder(
 					url_template,
 					init_map_class,
 					init_map_defaults
@@ -74,7 +74,7 @@ public class ChromeTask extends Task<ChromeTask> {
 
 		try {
 
-			TemplateManager.getInstance().addBuilder(clazz, new Builder(
+			TemplateManager.getInstance().add(clazz, new Builder(
 					url_template,
 					init_map_class,
 					init_map_defaults,
@@ -108,7 +108,7 @@ public class ChromeTask extends Task<ChromeTask> {
 
 		try {
 
-			TemplateManager.getInstance().addBuilder(clazz, new Builder(
+			TemplateManager.getInstance().add(clazz, new Builder(
 					url_template,
 					null,
 					init_map_class,
@@ -122,15 +122,14 @@ public class ChromeTask extends Task<ChromeTask> {
 			ChromeAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
 		}
 	}
-
-
-
+	
 	/**
 	 *
 	 * @param params
 	 * @return
 	 */
 	public Map<String, Object> newVars(Map<String, Object> params) {
+
 		Map<String, Object> map = new HashMap<>();
 		map.putAll(holder.vars);
 		map.putAll(params);
@@ -144,6 +143,7 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @throws URISyntaxException
 	 */
 	public ChromeTask(String url) throws MalformedURLException, URISyntaxException {
+
 		super(url);
 	}
 
@@ -183,6 +183,7 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @return
 	 */
 	public Task addDoneCallback(TaskCallback<ChromeTask> callback) {
+
 		if (this.doneCallbacks == null) this.doneCallbacks = new LinkedList<>();
 		this.doneCallbacks.add(callback);
 		return this;
@@ -194,9 +195,71 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @return
 	 */
 	public Task addExceptionCallback(TaskCallback<ChromeTask> callback) {
+
 		if (this.exceptionCallbacks == null) this.exceptionCallbacks = new LinkedList<>();
 		this.exceptionCallbacks.add(callback);
 		return this;
+	}
+
+	/**
+	 * 生成新Holder 0
+	 * 简化模式 A-1
+	 * 使用场景：任意
+	 *
+	 * @param clazz 任务类
+	 * @param init_map 初始化map
+	 * @param username 用户名
+	 * @param step 步骤数
+	 * @return TaskHolder
+	 * @throws Exception 异常
+	 */
+	public static TaskHolder at(
+			Class<? extends ChromeTask> clazz,
+			Map<String, Object> init_map,
+			String username,
+			int step,
+			Priority priority
+	) throws Exception {
+
+		return TemplateManager.getInstance().newHolder(clazz, 0, init_map, username, step, priority);
+	}
+
+	/**
+	 * 生成新Holder 0
+	 * 简化模式 A-2
+	 * 使用场景：任意
+	 *
+	 * @param clazz 任务类
+	 * @param init_map 初始化map
+	 * @param username 用户名
+	 * @return TaskHolder
+	 * @throws Exception 异常
+	 */
+	public static TaskHolder at(
+			Class<? extends ChromeTask> clazz,
+			Map<String, Object> init_map,
+			String username
+	) throws Exception {
+
+		return at(clazz, init_map, username, 0, null);
+	}
+
+	/**
+	 * 生成新Holder 0
+	 * 简化模式 A-3
+	 * 使用场景：任意
+	 *
+	 * @param clazz
+	 * @param init_map
+	 * @return
+	 * @throws Exception
+	 */
+	public static TaskHolder at(
+			Class<? extends ChromeTask> clazz,
+			Map<String, Object> init_map
+	) throws Exception {
+
+		return at(clazz, init_map, null, 0, null);
 	}
 
 	/**
@@ -207,11 +270,11 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @return
 	 * @throws Exception
 	 */
-	public TaskHolder getHolder(
+	public TaskHolder goon(
 			Map<String, Object> init_map
 	) throws Exception {
 
-		return getHolder(this.getClass(), init_map);
+		return goon(this.getClass(), init_map);
 	}
 
 	/**
@@ -223,12 +286,12 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @return
 	 * @throws Exception
 	 */
-	public TaskHolder getHolder(
+	public TaskHolder goon(
 			Class<? extends ChromeTask> clazz,
 			Map<String, Object> init_map
 	) throws Exception {
 
-		return getHolder(clazz, init_map, null);
+		return goon(clazz, init_map, null);
 	}
 
 	/**
@@ -241,7 +304,7 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @return
 	 * @throws Exception
 	 */
-	public TaskHolder getHolder(
+	public TaskHolder goon(
 			Class<? extends ChromeTask> clazz,
 			Map<String, Object> init_map,
 			Priority priority

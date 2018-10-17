@@ -6,7 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.RTopic;
 
-public class TopicTester {
+public class TopicTest {
 
 	private static final Logger logger = LogManager.getLogger(RedissonAdapter.class.getName());
 
@@ -17,7 +17,7 @@ public class TopicTester {
 	/**
 	 *
 	 */
-	public TopicTester() {
+	public TopicTest() {
 
 
 		topic.addListener((channel, msg) -> {
@@ -42,7 +42,7 @@ public class TopicTester {
 	 */
 	public static void main(String[] args) {
 
-		TopicTester tester = new TopicTester();
+		TopicTest tester = new TopicTest();
 		tester.addMsg();
 	}
 }

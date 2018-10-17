@@ -1,4 +1,4 @@
-package one.rewind.io.action.test;
+package one.rewind.io.requester.chrome.test;
 
 import one.rewind.io.requester.chrome.action.LoginAction;
 import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
@@ -23,7 +23,6 @@ public class LoginActionTest {
 		}
 
 		System.err.println(a1.getClass().getSimpleName());
-
 	}
 
 }

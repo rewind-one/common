@@ -30,8 +30,6 @@ public class SparkJavaTest {
 			req.session().attribute("user_id", 1234567);
 		});
 
-
-
 		post("/1111", (req, res) -> {
 
 			String s = req.body();
@@ -45,8 +43,8 @@ public class SparkJavaTest {
 
 			System.err.println(user_id);
 
-
 			return new Msg<>();
+
 		}, new MsgTransformer());
 	}
 

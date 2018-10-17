@@ -59,29 +59,16 @@ public class Field implements JSONable<Field> {
 	}
 
 	/**
-	 * 正则
-	 * @param name
-	 * @param path
-	 * @param type
-	 */
-	public Field(String name, String path, String type) {
-		this.name = name;
-		this.path = path;
-		this.type = type;
-	}
-
-	/**
 	 *
 	 * @param name
 	 * @param path
-	 * @param method
-	 * @param type
+	 * @param attribute
 	 */
-	public Field(String name, String path, Method method, String type) {
+	public Field(String name, String path, String attribute) {
 		this.name = name;
 		this.path = path;
-		this.method = method;
-		this.type = type;
+		this.method = Method.CssPath;
+		this.attribute = attribute;
 	}
 
 	/**
@@ -89,14 +76,15 @@ public class Field implements JSONable<Field> {
 	 * @param name
 	 * @param path
 	 * @param attribute
+	 * @param method
 	 * @param type
 	 */
-	public Field(String name, String path, String attribute, String type) {
+	public Field(String name, String path, String attribute, Method method, String type) {
 		this.name = name;
 		this.path = path;
-		this.method = Method.CssPath;
-		this.type = type;
 		this.attribute = attribute;
+		this.method = method;
+		this.type = type;
 	}
 
 	/**

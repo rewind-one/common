@@ -1,4 +1,4 @@
-package one.rewind.io.test;
+package one.rewind.util.test;
 
 import one.rewind.util.FileUtil;
 import org.junit.Test;

@@ -1,4 +1,4 @@
-package one.rewind.io.test;
+package one.rewind.io.requester.test;
 
 import net.lightbody.bmp.BrowserMobProxy;
 import net.lightbody.bmp.BrowserMobProxyServer;

@@ -1,4 +1,4 @@
-package one.rewind.io.test;
+package one.rewind.io.ssh.test;
 
 import org.junit.Test;
 import one.rewind.io.ssh.SshManager;

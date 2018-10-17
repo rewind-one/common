@@ -69,6 +69,10 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	public List<Flag> flags = new ArrayList<>();
 
 	// 域名
+	@DatabaseField(dataType = DataType.STRING, width = 4096, canBeNull = false)
+	public String url;
+
+	// 域名
 	@DatabaseField(dataType = DataType.STRING, width = 256, canBeNull = false)
 	public String domain;
 

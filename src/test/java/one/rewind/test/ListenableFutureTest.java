@@ -1,4 +1,4 @@
-package one.rewind.future.test;
+package one.rewind.test;
 
 import com.google.common.util.concurrent.*;
 import org.apache.logging.log4j.LogManager;

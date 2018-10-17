@@ -1,4 +1,4 @@
-package one.rewind.io.test;
+package one.rewind.db.test;
 
 import org.redisson.api.RBlockingQueue;
 

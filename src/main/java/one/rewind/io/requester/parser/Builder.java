@@ -34,7 +34,7 @@ public class Builder implements JSONable<Builder> {
 	// POST DATA 模板
 	public String post_data_template;
 
-	// domain
+	// domain 当 url_template 的定义过于宽泛时，可以为空
 	public String domain;
 
 	// 相同 fingerprint 最小采集间隔
@@ -50,15 +50,25 @@ public class Builder implements JSONable<Builder> {
 	public List<Flag> flags = new ArrayList<>();
 
 	/**
+	 *
+	 * @param flags
+	 * @return
+	 * @throws Exception
+	 */
+	public static Builder of(Flag... flags) throws Exception {
+		return of("{{url}}", "{{post_data}}", flags);
+	}
+
+	/**
 	 * 生成新的Builder
 	 *
 	 * @param url_template
 	 * @return
 	 * @throws Exception
 	 */
-	public static Builder getBuilder(String url_template, Flag... flags) throws Exception {
+	public static Builder of(String url_template, Flag... flags) throws Exception {
 
-		return getBuilder(url_template, null, flags);
+		return of(url_template, null, flags);
 	}
 
 	/**
@@ -69,7 +79,7 @@ public class Builder implements JSONable<Builder> {
 	 * @return
 	 * @throws Exception
 	 */
-	public static Builder getBuilder(
+	public static Builder of(
 			String url_template,
 			String post_data_template,
 			Flag... flags
@@ -82,6 +92,7 @@ public class Builder implements JSONable<Builder> {
 
 		for(String key : vars) {
 			init_map_class.put(key, String.class);
+			init_map_defaults.put(key, "");
 		}
 
 		return new Builder(url_template, post_data_template, init_map_class, init_map_defaults, flags);
@@ -215,12 +226,13 @@ public class Builder implements JSONable<Builder> {
 					throw new Exception("init_map_defaults value type error.");
 				}
 
-			} else {
+			}
+			else {
 				throw new Exception("init_map_defaults define error.");
 			}
 		}
 
-		// 验证url_template  \{\{[\w\W][\w\W\d\_]*\}\}
+		// 验证 url_template \{\{[\w\W][\w\W\d\_]*\}\}
 		Set<String> vars = getVarNames(url_template + post_data_template);
 
 		// init_map 包含 url_template 和 post_data_template 的变量
@@ -235,8 +247,12 @@ public class Builder implements JSONable<Builder> {
 
 		this.min_interval = min_interval;
 
-		// TODO url_template 中应该有完整的域名，否则此处会抛异常
-		this.domain = URLUtil.getDomainName(url_template.replaceAll("\\{\\{|\\}\\}", ""));
+		// url_template 中有完整域名时，给domain字段赋值
+		try {
+			this.domain = URLUtil.getDomainName(url_template.replaceAll("\\{\\{|\\}\\}", ""));
+		} catch (Exception e) {
+			TemplateManager.logger.info("url_template:{} contain no domain", url_template);
+		}
 
 		this.need_login = need_login;
 		this.base_priority = base_priority;

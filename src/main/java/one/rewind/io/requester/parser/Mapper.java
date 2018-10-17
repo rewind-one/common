@@ -1,5 +1,6 @@
 package one.rewind.io.requester.parser;
 
+import com.sun.istack.internal.NotNull;
 import one.rewind.db.model.ESIndex;
 import one.rewind.db.model.Model;
 import one.rewind.db.model.ModelD;
@@ -31,11 +32,49 @@ public class Mapper implements JSONable<Mapper> {
 	// 字段解析规则
 	List<Field> fields = new ArrayList<>();
 
-	@Override
-	public String toJSON() {
-		return JSON.toJson(this);
+	/**
+	 * 获取默认 Mapper
+	 * @param templateId
+	 * @return
+	 */
+	public static Mapper of(
+			int templateId,
+			@NotNull String urlReg
+	){
+		return of(templateId, urlReg, null);
 	}
 
+	/**
+	 * 获取默认 Mapper
+	 * @param templateId
+	 * @return
+	 */
+	public static Mapper of(
+			int templateId,
+			@NotNull String urlReg,
+			String postDataReg
+	){
+
+		Mapper mapper = null;
+
+		try {
+
+			mapper = new Mapper(null, templateId, false, null, Field.Method.Reg);
+			mapper.addField(new Field("url", urlReg));
+			if(postDataReg != null) {
+				mapper.addField(new Field("post_data", postDataReg));
+			}
+
+		} catch (Exception e) {
+			TemplateManager.logger.error("You shouldn't be here", e);
+		}
+
+		return mapper;
+	}
+
+	/**
+	 *
+	 */
 	public Mapper() {}
 
 	/**
@@ -43,24 +82,41 @@ public class Mapper implements JSONable<Mapper> {
 	 * @param modelClassName
 	 * @throws Exception
 	 */
-	public Mapper(String modelClassName, boolean multi, String path, Field.Method method) throws Exception {
+	public Mapper(String modelClassName, Field... fields) throws Exception {
 
-		Class<?> clazz = Class.forName(modelClassName);
-		if(! clazz.isAssignableFrom(Model.class)) throw new Exception("Model class name unrecognizable");
-		this.multi = multi;
-		this.path = path;
-		this.method = method;
+		this(modelClassName, 0, false, null, Field.Method.Reg, fields);
 	}
 
 	/**
 	 *
 	 * @param templateId
+	 * @throws Exception
 	 */
-	public Mapper(int templateId, boolean multi, String path, Field.Method method) {
+	public Mapper(int templateId, Field... fields) throws Exception {
+
+		this(null, templateId, false, null, Field.Method.Reg, fields);
+	}
+
+	/**
+	 *
+	 * @param modelClassName
+	 * @throws Exception
+	 */
+	public Mapper(String modelClassName, int templateId, boolean multi, String path, Field.Method method, Field... fields) throws Exception {
+
+		if(modelClassName != null && modelClassName.length() > 0) {
+			Class<?> clazz = Class.forName(modelClassName);
+			if (!clazz.isAssignableFrom(Model.class)) throw new Exception("Model class name unrecognizable");
+		}
+
 		this.templateId = templateId;
 		this.multi = multi;
 		this.path = path;
 		this.method = method;
+
+		for(Field field : fields) {
+			this.fields.add(field);
+		}
 	}
 
 	/**
@@ -109,8 +165,8 @@ public class Mapper implements JSONable<Mapper> {
 		// 生成下一级任务
 		else if(templateId != 0) {
 
-			Template tpl = TemplateManager.getInstance().getTemplate(templateId);
-			nts.add(tpl.newHolder(data));
+			Template tpl = TemplateManager.getInstance().get(templateId);
+			nts.add(tpl.at(data));
 		}
 		// 测试用
 		else {
@@ -118,5 +174,10 @@ public class Mapper implements JSONable<Mapper> {
 		}
 
 		return nts;
+	}
+
+	@Override
+	public String toJSON() {
+		return JSON.toJson(this);
 	}
 }

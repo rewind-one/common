@@ -1,4 +1,4 @@
-package one.rewind.util.test;
+package one.rewind.db.test;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;

@@ -19,7 +19,5 @@ public class DockerHostTest {
 		ChromeDriverDockerContainer container = host.createChromeDriverDockerContainer();
 
 		System.err.println(container.vncPort);
-
-		// 4.
 	}
 }

@@ -1,4 +1,4 @@
-package one.rewind.io.test;
+package one.rewind.db.test;
 
 import java.sql.*;
 import java.util.ArrayList;
