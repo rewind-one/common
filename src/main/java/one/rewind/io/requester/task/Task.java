@@ -1,5 +1,6 @@
 package one.rewind.io.requester.task;
 
+import com.j256.ormlite.field.DatabaseField;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.basic.BasicRequester;
@@ -53,6 +54,16 @@ public class Task<T extends Task> {
 		OPTIONS
 	}
 
+	/**
+	 * 任务的额外标签
+	 */
+	public static enum Flag {
+		PRE_PROC, // 是否进行预处理
+		SHOOT_SCREEN,
+		BUILD_DOM,
+		SWITCH_PROXY
+	}
+
 	// id
 	public String id;
 
@@ -90,6 +101,9 @@ public class Task<T extends Task> {
 
 	// Holder 信息
 	public TaskHolder holder;
+
+	// 任务标签
+	public List<Flag> flags = new ArrayList<>();
 
 	// 代理信息
 	private Proxy proxy;
@@ -451,32 +465,73 @@ public class Task<T extends Task> {
 		return response;
 	}
 
+
+	public Task setPreProc() {
+		flags.add(Flag.PRE_PROC);
+		return this;
+	}
+
 	/**
 	 * @return 是否前置处理
 	 */
 	public boolean preProc() {
-		return holder.flags.contains(TaskHolder.Flag.PRE_PROC);
+
+		if(holder != null) {
+			return holder.flags.contains(Flag.PRE_PROC);
+		}
+
+		return flags.contains(Flag.PRE_PROC);
+	}
+
+	public Task setSwitchProxy() {
+		flags.add(Flag.SWITCH_PROXY);
+		return this;
 	}
 
 	/**
 	 * @return 是否切换代理
 	 */
 	public boolean switchProxy() {
-		return holder.flags.contains(TaskHolder.Flag.SWITCH_PROXY);
+
+		if(holder != null) {
+			return holder.flags.contains(Flag.SWITCH_PROXY);
+		}
+
+		return flags.contains(Flag.SWITCH_PROXY);
+	}
+
+	public Task setBuildDom() {
+		flags.add(Flag.BUILD_DOM);
+		return this;
 	}
 
 	/**
 	 * @return 是否构建DOM
 	 */
 	public boolean buildDom() {
-		return holder.flags.contains(TaskHolder.Flag.BUILD_DOM);
+
+		if(holder != null) {
+			return holder.flags.contains(Flag.BUILD_DOM);
+		}
+
+		return flags.contains(Flag.BUILD_DOM);
+	}
+
+	public Task setShootScreen() {
+		flags.add(Flag.SHOOT_SCREEN);
+		return this;
 	}
 
 	/**
 	 * @return 是否进行截屏
 	 */
 	public boolean shootScreen() {
-		return holder.flags.contains(TaskHolder.Flag.SHOOT_SCREEN);
+
+		if(holder != null) {
+			return holder.flags.contains(Flag.SHOOT_SCREEN);
+		}
+
+		return flags.contains(Flag.SHOOT_SCREEN);
 	}
 
 	/**
@@ -548,31 +603,38 @@ public class Task<T extends Task> {
 	}
 
 	private static <T> T cast(Object o, Class<T> clazz) {
+		if(o == null) return null;
 		return clazz != null && clazz.isInstance(o) ? clazz.cast(o) : null;
 	}
 
 	// init_map中支持的类型 int long float double String boolean
 	public int getIntFromVars(String key) {
+		if(holder == null) return 0;
 		return cast(holder.vars.get(key), Integer.class);
 	}
 
 	public Long getLongFromVars(String key) {
+		if(holder == null) return 0L;
 		return cast(holder.vars.get(key), Long.class);
 	}
 
 	public float getFloatFromVars(String key) {
+		if(holder == null) return 0;
 		return cast(holder.vars.get(key), Float.class);
 	}
 
 	public double getDoubleFromVars(String key) {
+		if(holder == null) return 0;
 		return cast(holder.vars.get(key), Double.class);
 	}
 
 	public String getStringFromVars(String key) {
+		if(holder == null) return null;
 		return cast(holder.vars.get(key), String.class);
 	}
 
 	public boolean getBooleanFromVars(String key) {
+		if(holder == null) return false;
 		return cast(holder.vars.get(key), Boolean.class);
 	}
 

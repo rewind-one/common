@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static one.rewind.io.requester.task.TaskHolder.Flag;
+import static one.rewind.io.requester.task.Task.Flag;
 
 /**
  * TaskHolder 生成器

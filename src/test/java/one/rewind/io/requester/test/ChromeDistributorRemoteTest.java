@@ -10,6 +10,7 @@ import one.rewind.io.requester.chrome.action.LoginWithGeetestAction;
 import one.rewind.io.requester.chrome.action.RedirectAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
+import one.rewind.io.requester.parser.TemplateManager;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.chrome.ChromeTask;
@@ -25,27 +26,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class ChromeDriverDistributorRemoteTest {
+/**
+ * 远程的ChromeDriver测试
+ */
+public class ChromeDistributorRemoteTest {
 
 	@Before
 	public void loadClass() throws Exception {
-
 		Class.forName(TestChromeTask.class.getName());
-
-		/*TaskHolder holder = new TaskHolder(
-
-				TestChromeTask.class.getName(),
-				TestChromeTask.domain(),
-				TestChromeTask.need_login,
-				null,
-				ImmutableMap.of("q", "ip"),
-				0,
-				TestChromeTask.base_priority
-		);
-
-		ChromeTask task = holder.build();*/
 	}
-
 
 	@Test
 	public void batchTest() throws Exception {
@@ -55,15 +44,9 @@ public class ChromeDriverDistributorRemoteTest {
 	}
 
 	/**
-	 * 远程服务器手动创建容器后
-	 * 执行简单调用测试
+	 * 远程服务器手动创建容器后执行简单调用测试
 	 *
-	 * @throws MalformedURLException
-	 * @throws URISyntaxException
-	 * @throws ChromeDriverException.IllegalStatusException
-	 * @throws InterruptedException
-	 * @throws ChromeDriverException.NotFoundException
-	 * @throws AccountException.NotFound
+	 * @throws Exception
 	 */
 	@Test
 	public void simpleTest() throws Exception {
@@ -81,17 +64,18 @@ public class ChromeDriverDistributorRemoteTest {
 
 		for(int i=0; i<100; i++) {
 
-			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
+			TaskHolder holder = ChromeTask.at(TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
 
-			Map<String, Object> info = distributor.submit(holder);
-
-			System.err.println(JSON.toPrettyJson(info));
+			System.err.println(JSON.toPrettyJson(distributor.submit(holder)));
 		}
 
 		Thread.sleep(1000000);
 	}
 
-
+	/**
+	 * 登陆测试
+	 * @throws Exception
+	 */
 	@Test
 	public void loginTest() throws Exception {
 
@@ -159,7 +143,7 @@ public class ChromeDriverDistributorRemoteTest {
 	}
 
 	/**
-	 *
+	 * 重启容器测试
 	 * @throws Exception
 	 */
 	@Test
@@ -183,7 +167,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		for(int i=0; i<10; i++) {
 
-			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(TestFailedChromeTask.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
+			TaskHolder holder = ChromeTask.at(TestChromeTask.TF.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
 
 			distributor.submit(holder);
 		}
@@ -207,11 +191,9 @@ public class ChromeDriverDistributorRemoteTest {
 		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
 		Proxy proxy1 = new ProxyImpl("***", 59998, "***", "***@15");
-
 		proxy1.validate();
 
 		Proxy proxy2 = new ProxyImpl("***", 59998, "***", "***@15");
-
 		proxy2.validate();
 
 		final URL remoteAddress = container.getRemoteAddress();
@@ -229,7 +211,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		distributor.addAgent(agent);
 
-		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(TestProxyFailedChromeTask.class, ImmutableMap.of("q", "ip"));
+		TaskHolder holder = ChromeTask.at(TestChromeTask.TPF.class, ImmutableMap.of("q", "ip"));
 
 		//
 		/*agent.addIdleCallback((a)->{
@@ -249,12 +231,12 @@ public class ChromeDriverDistributorRemoteTest {
 	}
 
 	/**
-	 * docker Account更换测试
+	 * docker Account 更换测试
 	 */
 	@Test
 	public void RemoteAccountFiledTest() throws Exception {
 
-		Class.forName(TestFailedChromeTask.class.getName());
+		Class.forName(TestChromeTask.TF.class.getName());
 
 		int containerNum = 1;
 
@@ -294,7 +276,7 @@ public class ChromeDriverDistributorRemoteTest {
 
 		});
 
-		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(TestFailedChromeTask.class, "17600668061", ImmutableMap.of("q", ""));
+		TaskHolder holder = ChromeTask.at(TestChromeTask.TF.class, ImmutableMap.of("q", ""), "17600668061");
 
 		distributor.submit(holder);
 

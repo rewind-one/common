@@ -5,6 +5,7 @@ import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.reflections.Reflections;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -46,6 +47,9 @@ public class TemplateManager {
 	// 保存所有ChromeTask Class 对应的TaskBuilder
 	private Map<Class<? extends ChromeTask>, Builder> chrome_task_builders = new HashMap<>();
 
+	/**
+	 *
+	 */
 	private TemplateManager() {}
 
 	/**
@@ -109,7 +113,7 @@ public class TemplateManager {
 		if(trace == null) trace = new ArrayList<>();
 		trace.add(holder.id);
 
-		TaskHolder.Flag[] flag_array = new TaskHolder.Flag[holder.flags.size()];
+		Task.Flag[] flag_array = new Task.Flag[holder.flags.size()];
 
 		return new TaskHolder(
 				holder.class_name, holder.template_id, holder.domain, holder.vars, holder.need_login, holder.username, holder.step, holder.priority, holder.min_interval,
@@ -212,7 +216,7 @@ public class TemplateManager {
 			priority = builder.base_priority;
 		}
 
-		TaskHolder.Flag[] flag_array = new TaskHolder.Flag[builder.flags.size()];
+		Task.Flag[] flag_array = new Task.Flag[builder.flags.size()];
 
 		return new TaskHolder(clazz.getName(), builder.domain, vars, builder.need_login, username, step, priority, builder.min_interval, builder.flags.toArray(flag_array));
 	}

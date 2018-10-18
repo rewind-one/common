@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import one.rewind.io.docker.model.ChromeDriverDockerContainer;
 import one.rewind.io.docker.model.DockerHost;
+import one.rewind.io.requester.Distributor;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.account.AccountImpl;
 import one.rewind.io.requester.chrome.ChromeAgent;
@@ -29,18 +30,23 @@ import java.util.Map;
 
 import static one.rewind.io.requester.chrome.ChromeDistributor.buildBMProxy;
 
-public class ChromeDriverDistributorTest {
+public class ChromeDistributorTest {
 
+	/**
+	 * 任务类型注册
+	 * TODO 测试是否可以被ChromeTask的静态方法块取代
+	 * @throws Exception
+	 */
 	@Before
 	public void loadClass() throws Exception {
 
-		Class.forName(TestChromeTask.class.getName());
+		/*Class.forName(TestChromeTask.class.getName());
 		Class.forName(TestChromeTask.T1.class.getName());
 		Class.forName(TestChromeTask.T2.class.getName());
 		Class.forName(TestChromeTask.T3.class.getName());
 		Class.forName(TestChromeTask.T4.class.getName());
 		Class.forName(TestChromeTask.T5.class.getName());
-		Class.forName(TestFailedChromeTask.class.getName());
+		Class.forName(TestChromeTask.TF.class.getName());*/
 	}
 
 	/**
@@ -48,7 +54,7 @@ public class ChromeDriverDistributorTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void basicTest() throws Exception {
+	public void basicTest1() throws Exception {
 
 		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
@@ -63,15 +69,15 @@ public class ChromeDriverDistributorTest {
 		for(int i=0; i<1000; i++) {
 
 			if(i%2 == 0) {
-				TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-						TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
 
-				Map<String, Object> info = distributor.submit(holder);
+				TaskHolder holder = ChromeTask.at(TestChromeTask.T1.class, ImmutableMap.of("q", String.valueOf(1950 + i)));
+				distributor.submit(holder);
+
 			} else {
-				TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-						TestChromeTask.T2.class, ImmutableMap.of("k", String.valueOf(1950 + i)));
 
-				Map<String, Object> info = distributor.submit(holder);
+				TaskHolder holder = ChromeTask.at(TestChromeTask.T2.class, ImmutableMap.of("k", String.valueOf(1950 + i)));
+				distributor.submit(holder);
+
 			}
 		}
 
@@ -81,7 +87,7 @@ public class ChromeDriverDistributorTest {
 	}
 
 	@Test
-	public void recursiveTest() throws Exception {
+	public void basicTest2() throws Exception {
 
 		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
@@ -89,17 +95,16 @@ public class ChromeDriverDistributorTest {
 
 			ChromeAgent agent = new ChromeAgent();
 			distributor.addAgent(agent);
+
 		}
 
 		distributor.layout();
 
 		for(int i=0; i<10; i++) {
 
-			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-					TestChromeTask.T3.class,
-					ImmutableMap.of("k", String.valueOf(1950 + i)));
+			TaskHolder holder = ChromeTask.at(TestChromeTask.T3.class, ImmutableMap.of("k", String.valueOf(1950 + i)));
+			distributor.submit(holder);
 
-			Map<String, Object> info = distributor.submit(holder);
 		}
 
 		Thread.sleep(60000);
@@ -108,7 +113,7 @@ public class ChromeDriverDistributorTest {
 	}
 
 	/**
-	 * 4浏览器 并发请求100个任务
+	 * 调度任务
 	 * @throws Exception
 	 */
 	@Test
@@ -124,10 +129,9 @@ public class ChromeDriverDistributorTest {
 
 		distributor.layout();
 
-		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-				TestChromeTask.T3.class, ImmutableMap.of("k", String.valueOf(1950)));
+		TaskHolder holder = ChromeTask.at(TestChromeTask.T3.class, ImmutableMap.of("k", String.valueOf(1950)));
 
-		Map<String, Object> info = TaskScheduler.getInstance().schedule(new ScheduledTask(holder, "* * * * *"));
+		Distributor.SubmitInfo info = ChromeDistributor.getInstance().schedule(holder, "* * * * *");
 
 		System.err.println(JSON.toPrettyJson(info));
 
@@ -141,19 +145,16 @@ public class ChromeDriverDistributorTest {
 
 		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
-		Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
-		ChromeAgent agent1 = new ChromeAgent(proxy);
+		ChromeAgent agent1 = new ChromeAgent(new ProxyImpl("uml.ink", 60201, "tfelab", "TfeLAB2@15"));
 		distributor.addAgent(agent1);
 
-		proxy = new ProxyImpl("114.215.70.14", 59998, "tfelab", "TfeLAB2@15");
-		ChromeAgent agent2 = new ChromeAgent(proxy);
+		ChromeAgent agent2 = new ChromeAgent(new ProxyImpl("uml.ink", 60202, "tfelab", "TfeLAB2@15"));
 		distributor.addAgent(agent2);
-		proxy = new ProxyImpl("118.190.133.34", 59998, "tfelab", "TfeLAB2@15");
-		ChromeAgent agent3 = new ChromeAgent(proxy);
+
+		ChromeAgent agent3 = new ChromeAgent(new ProxyImpl("uml.ink", 60204, "tfelab", "TfeLAB2@15"));
 		distributor.addAgent(agent3);
 
-		proxy = new ProxyImpl("118.190.44.184", 59998, "tfelab", "TfeLAB2@15");
-		ChromeAgent agent4 = new ChromeAgent(proxy);
+		ChromeAgent agent4 = new ChromeAgent(new ProxyImpl("uml.ink", 60205, "tfelab", "TfeLAB2@15"));
 		distributor.addAgent(agent4);
 
 		distributor.layout();
@@ -162,8 +163,7 @@ public class ChromeDriverDistributorTest {
 
 		for(int i=0; i<10000; i++) {
 
-			TaskHolder holder =
-					ChromeTaskFactory.getInstance().newHolder(TestChromeTask.T1.class, ImmutableMap.of("q", "ip"));
+			TaskHolder holder = ChromeTask.at(TestChromeTask.T1.class, ImmutableMap.of("q", "ip"));
 
 			distributor.submit(holder);
 		}
@@ -179,7 +179,7 @@ public class ChromeDriverDistributorTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void ExceptionTest() throws Exception {
+	public void throwExceptionTest() throws Exception {
 
 		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
@@ -193,8 +193,7 @@ public class ChromeDriverDistributorTest {
 
 		for(int i=0; i<10; i++) {
 
-			TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-					TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
+			TaskHolder holder = ChromeTask.at( TestChromeTask.TF.class, ImmutableMap.of("q", "ip") );
 
 			distributor.submit(holder);
 		}
@@ -204,29 +203,24 @@ public class ChromeDriverDistributorTest {
 		distributor.close();
 	}
 
+	/**
+	 * 失败任务测试
+	 * @throws Exception
+	 */
 	@Test
-	public void test() throws Exception {
+	public void failedTaskTest() throws Exception {
 
-		Class.forName(TestFailedChromeTask.class.getName());
 
-		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-				TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
+		TaskHolder holder = ChromeTask.at( TestChromeTask.TF.class, ImmutableMap.of("q", "ip") );
 
 	}
 
 	/**
 	 * 账户异常回调
-	 * @throws ChromeDriverException.IllegalStatusException
-	 * @throws InterruptedException
-	 * @throws MalformedURLException
-	 * @throws URISyntaxException
-	 * @throws ChromeDriverException.NotFoundException
-	 * @throws AccountException.NotFound
 	 */
 	@Test
 	public void testAccountFailed() throws Exception {
 
-		Class.forName(TestFailedChromeTask.class.getName());
 
 		int containerNum = 1;
 
@@ -267,8 +261,7 @@ public class ChromeDriverDistributorTest {
 
 		});
 
-		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-				TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
+		TaskHolder holder = ChromeTask.at( TestChromeTask.TF.class, ImmutableMap.of("q", "ip") );
 
 		distributor.submit(holder);
 
@@ -283,7 +276,7 @@ public class ChromeDriverDistributorTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void testProxyFailed() throws Exception {
+	public void proxyFailedTest() throws Exception {
 
 		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
@@ -327,8 +320,7 @@ public class ChromeDriverDistributorTest {
 
 		distributor.addAgent(agent);
 
-		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-				TestFailedChromeTask.class, ImmutableMap.of("q", "ip"));
+		TaskHolder holder = ChromeTask.at( TestChromeTask.TF.class, ImmutableMap.of("q", "ip") );
 
 		distributor.submit(holder);
 
@@ -337,15 +329,7 @@ public class ChromeDriverDistributorTest {
 		distributor.close();
 	}
 
-	@Test
-	public void testBuildProxyServer() throws InterruptedException, UnknownHostException {
 
-		Proxy proxy = new ProxyImpl("scisaga.net", 60103, "tfelab", "TfeLAB2@15");
-		BrowserMobProxyServer ps = buildBMProxy(proxy);
-		System.err.println(ps.getClientBindAddress());
-		System.err.println(ps.getPort());
-		Thread.sleep(100000);
-	}
 
 	@Test
 	public void testScheduledTask() throws Exception {
@@ -360,8 +344,7 @@ public class ChromeDriverDistributorTest {
 
 		// distributor.layout();
 
-		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-				TestChromeTask.T4.class, ImmutableMap.of("q", String.valueOf(1950)));
+		TaskHolder holder = ChromeTask.at(TestChromeTask.T4.class, ImmutableMap.of("q", String.valueOf(1950)));
 
 		distributor.submit(holder);
 
@@ -370,7 +353,7 @@ public class ChromeDriverDistributorTest {
 	}
 
 	@Test
-	public void testScanTask() throws Exception {
+	public void scanTaskTest() throws Exception {
 
 		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
@@ -382,11 +365,9 @@ public class ChromeDriverDistributorTest {
 
 		// distributor.layout();
 
-		TaskHolder holder = ChromeTaskFactory.getInstance().newHolder(
-				TestChromeTask.T5.class, ImmutableMap.of("q", String.valueOf(1950), "max_page", 60));
+		TaskHolder holder = ChromeTask.at(TestChromeTask.T5.class, ImmutableMap.of("q", String.valueOf(1950), "max_page", 60));
 
-		TaskHolder holder1 = ChromeTaskFactory.getInstance().newHolder(
-				TestChromeTask.T5.class, ImmutableMap.of("q", String.valueOf(1989), "max_page", 60));
+		TaskHolder holder1 = ChromeTask.at(TestChromeTask.T5.class, ImmutableMap.of("q", String.valueOf(1989), "max_page", 60));
 
 		distributor.submit(holder);
 		distributor.submit(holder1);

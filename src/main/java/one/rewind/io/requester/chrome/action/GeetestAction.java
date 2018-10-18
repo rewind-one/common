@@ -7,6 +7,7 @@ import one.rewind.simulator.mouse.MouseEventModeler;
 import one.rewind.simulator.mouse.MouseEventSimulator;
 import one.rewind.txt.StringUtil;
 import one.rewind.util.EnvUtil;
+import one.rewind.util.FileUtil;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -33,13 +34,13 @@ public class GeetestAction extends Action {
 
 		if (EnvUtil.isHostLinux()) {
 			// TODO 从文件中读取 生成bg_list
-			for (int i= 1; i<7; i++) {
+			for (int i=1; i<7; i++) {
 				bg_list.add(Imgcodecs.imread("data/zbj-geetest-bg-linux/"+ i+".png"));
 			}
 
 		} else {
 			// TODO 从文件中读取 生成bg_list
-			for (int i= 1; i<7; i++) {
+			for (int i=1; i<7; i++) {
 				bg_list.add(Imgcodecs.imread("data/zbj-geetest-bg-windows/"+ i+".png"));
 			}
 		}
@@ -98,7 +99,7 @@ public class GeetestAction extends Action {
 
 		// 简单拖拽后截图，截图中会包含目标拖拽位置
 		byte[] img_2 = agent.shoot(geetestWindowCssPath);
-		// FileUtil.writeBytesToFile(img_2, img_2_path);
+		//FileUtil.writeBytesToFile(img_2, img_2_path);
 		Mat mat_2 = Imgcodecs.imdecode(new MatOfByte(img_2), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
 
 		// TODO 判断 mat_1 和 mat_2 是否相同
@@ -110,11 +111,11 @@ public class GeetestAction extends Action {
 			Mat bg_mat = OpenCVUtil.mostSimilar(bg_list, mat_1);
 
 			if (bg_list == null && bg_list.size() < 1) {
-				logger.error("The system does not load the data/zbj-geetest-bg-***");
+				logger.error("Not found data/zbj-geetest-bg-***");
 			}
 
 			if (bg_mat == null) {
-				logger.info("Don`t get choose img, Retry login!");
+				logger.info("No match img, Retry login!");
 				return -1;
 			}
 
@@ -137,13 +138,16 @@ public class GeetestAction extends Action {
 		if (offset != -1) {
 			// TODO
 			int x_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().x
-					+ 15 + new Random().nextInt(20);
+					+ agent.getDriver().manage().window().getPosition().x
+					+ 20 + new Random().nextInt(20);
 
 			int y_init = agent.getElementWait(geetestSliderButtonCssPath).getLocation().y
-					+ agent.getDriver().manage().window().getPosition().y + 105 + 10 + new Random().nextInt(20);
+					+ agent.getDriver().manage().window().getPosition().y
+					+ ( agent.getDriver().manage().window().getSize().height - ((Long) agent.getDriver().executeScript("return window.innerHeight;")).intValue() )
+					+ 10 + new Random().nextInt(20);
 
-		/*Robot bot = new Robot();
-		bot.mouseMove(x_init, y_init);*/
+			/*Robot bot = new Robot();
+			bot.mouseMove(x_init, y_init);*/
 
 			logger.info("x_init:{}, y_init:{}, offset:{}", x_init, y_init, offset);
 
@@ -183,6 +187,7 @@ public class GeetestAction extends Action {
 			}
 			// 如果页面上没有GeeTest识别框
 			catch (Exception e) {
+
 				// 并且没有滑块，直接返回
 				try {
 					agent.getDriver().findElement(By.cssSelector(geetestSliderButtonCssPath));
@@ -199,19 +204,24 @@ public class GeetestAction extends Action {
 			try {
 				// 验证DIV未关闭
 				WebElement sliderButton = agent.getDriver().findElement(By.cssSelector(geetestSliderButtonCssPath));
+
 				if(sliderButton.isDisplayed()) {
+
 					// 点击刷新按钮
 					logger.info("Try to click refresh button.");
 					agent.getElementWait(geetestRefreshButtonCssPath).click();
-				} else {
+				}
+				else {
 					throw new NoSuchElementException("Slider button hidden.");
 				}
 			}
 			// 验证DIV已经关闭
 			catch (NoSuchElementException e) {
+
 				// 主页面出现 尝试过多 请点击重试 01
 				if(agent.getElementWait(geetestRefreshTooManyErrorCssPath).getText().equals("01")
 						|| agent.getElementWait(geetestRefreshTooManyErrorCssPath).getText().equals("12")) {
+
 					// 点击重试连接
 					logger.info("Try to click reset link.");
 					agent.getElementWait(geetestResetTipCssPath).click();
@@ -251,7 +261,8 @@ public class GeetestAction extends Action {
 		try {
 			bypass(agent);
 			return true;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			geetest_retry_count = 0;
 			logger.error("GeeTest bypass error, ", e);
 			return false;

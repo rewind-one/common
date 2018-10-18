@@ -57,8 +57,8 @@ public class MongoDBAdapter {
 	 */
 	private MongoDBAdapter(String configString) {
 
-		List<ServerAddress> seeds = new ArrayList<ServerAddress>();
-		List<MongoCredential> credentialsList = new ArrayList<MongoCredential>();
+		List<ServerAddress> seeds = new ArrayList<>();
+		MongoCredential credential = null;
 
 		try {
 
@@ -70,6 +70,7 @@ public class MongoDBAdapter {
 				config = Configs.getConfig(MongoDBAdapter.class);
 			}
 
+			// 获取 seeds
 			List<? extends com.typesafe.config.Config> mongoSeeds = config.getConfigList("seeds");
 
 			for (com.typesafe.config.Config seed : mongoSeeds) {
@@ -77,30 +78,22 @@ public class MongoDBAdapter {
 				seeds.add(addr);
 			}
 
-			List<? extends com.typesafe.config.Config> mongoCredentials = config.getConfigList("credentials");
+			// 用户名密码
+			com.typesafe.config.Config mongoCredential = config.getConfig("credential");
+			credential = MongoCredential.createCredential(mongoCredential.getString("user"),
+					mongoCredential.getString("db"), mongoCredential.getString("password").toCharArray());
 
-			for (com.typesafe.config.Config credential : mongoCredentials) {
-				MongoCredential credentials = MongoCredential.createCredential(credential.getString("user"),
-						credential.getString("db"), credential.getString("password").toCharArray());
-				credentialsList.add(credentials);
-			}
-
-		} catch (Throwable err) {
-			logger.error("Error get MongoDB config, {}", err.getMessage());
-			throw err;
-		}
-
-		try {
 			logger.info("Connecting MongoDB...");
-			mongoClient = new MongoClient(seeds, credentialsList, getConfOptions());
-			mongoClient.getAddress();
-			logger.info("Connected to MongoDB.");
+
+			mongoClient = new MongoClient(seeds, credential, getConfOptions());
+			ServerAddress address = mongoClient.getAddress();
+
+			logger.info("Connected to MongoDB:{}", address);
 
 		} catch (Throwable err) {
-			logger.error("Connected to MongoDB error.", err);
+			logger.error("Error connect to MongoDB, {}", err.getMessage());
 			throw err;
 		}
-
 	}
 
 	/**
@@ -109,7 +102,7 @@ public class MongoDBAdapter {
 	 */
 	private static MongoClientOptions getConfOptions() {
 
-		return new MongoClientOptions.Builder().socketKeepAlive(true) // 是否保持长链接
+		return new MongoClientOptions.Builder()
 				.connectTimeout(5000) // 链接超时时间
 				.socketTimeout(20000) // read数据超时时间
 				.readPreference(ReadPreference.primary()) // 最近优先策略
@@ -172,22 +165,16 @@ public class MongoDBAdapter {
 		MongoDatabase mdb = mongoClient.getDatabase(db);
 		MongoCollection<Document> coll = mdb.getCollection(collection);
 
-		try {
-			BasicDBObject dateRange = new BasicDBObject("$gte", DateFormatUtil.parseTime(sd));
-			dateRange.put("$lt", DateFormatUtil.parseTime(ed));
-			BasicDBObject query = new BasicDBObject("insert_time", dateRange);
-			MongoCursor<Document> cursors = coll.find(query).iterator();
-			while (cursors.hasNext()) {
-				
-				documents.add(cursors.next());
-			}
-			
-			return documents;
+		BasicDBObject dateRange = new BasicDBObject("$gte", DateFormatUtil.parseTime(sd));
+		dateRange.put("$lt", DateFormatUtil.parseTime(ed));
+		BasicDBObject query = new BasicDBObject("insert_time", dateRange);
+		MongoCursor<Document> cursors = coll.find(query).iterator();
+		while (cursors.hasNext()) {
 
-		} catch (ParseException e) {
-			logger.error("Get documents from mongodb with time 2 time failed" + e);
+			documents.add(cursors.next());
 		}
-		return null;
+
+		return documents;
 	}
 	
 	/**

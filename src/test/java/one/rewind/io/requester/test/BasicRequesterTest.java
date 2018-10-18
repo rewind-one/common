@@ -1,10 +1,12 @@
 package one.rewind.io.requester.test;
 
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.task.Task;
 import one.rewind.json.JSON;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -17,6 +19,16 @@ import java.util.HashMap;
  */
 public class BasicRequesterTest {
 
+	@Before
+	public void setup() {
+		System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
+		System.setProperty("jdk.http.auth.proxying.disabledSchemes", "");
+	}
+
+	/**
+	 * 简单请求测试，多参数
+	 * @throws Exception
+	 */
 	@Test
 	public void basicFetch() throws Exception {
 
@@ -25,19 +37,21 @@ public class BasicRequesterTest {
 		String ref = "http://www.cninfo.com.cn/cninfo-new/disclosure/szse/showFulltext/600036";
 
 		Task<Task> t = new Task(url, null, cookies, ref);
-		t.setPreProc();
-		Proxy proxy = new ProxyImpl("127.0.0.1", 3128, null, null);
+		Proxy proxy = new ProxyImpl("uml.ink", 60201, "tfelab", "TfeLAB2@15");
 		t.setProxy(proxy);
 
 		BasicRequester.getInstance().submit(t, 30000);
-
-		for(Throwable e : t.getExceptions()) {
-			e.printStackTrace();
+		if(t.exception != null) {
+			t.exception.printStackTrace();
 		}
 
 		System.err.println(t.getDuration() + "\t" + t.getResponse().getText());
 	}
 
+	/**
+	 * 设置生成DOM
+	 * @throws Exception
+	 */
 	@Test
 	public void domBuildTest() throws Exception {
 
@@ -48,8 +62,8 @@ public class BasicRequesterTest {
 
 		BasicRequester.getInstance().submit(t, 30000);
 
-		for(Throwable e : t.getExceptions()) {
-			e.printStackTrace();
+		if(t.exception != null) {
+			t.exception.printStackTrace();
 		}
 
 		System.err.println(t.getDuration() + "\t" + t.getResponse().getDoc().select("#su").attr("value"));
@@ -57,9 +71,8 @@ public class BasicRequesterTest {
 	}
 
 	/**
-	 * TODO
-	 * 已知问题：https请求 使用需要验证的proxy 会出错 原因是 HttpURLConnection不支持单独设定Authenticator
-	 * 解决方法：使用Apache HttpClient
+	 * 切实切换代理
+	 * @throws Exception
 	 */
 	@Test
 	public void testSwitchProxy() throws Exception {
@@ -68,27 +81,28 @@ public class BasicRequesterTest {
 
 			Thread thread = new Thread(() -> {
 
-				for(int j=0; j<1; j++) {
+				for(int j=0; j<10; j++) {
 
 					Task<Task> t;
 
 					try {
 
 						if(j % 2 == 0){
-							t = new Task("http://carnegieeurope.eu/search/?qry=&maxrow=10&lang=en&search_op=&search_mode=&search_sort=articlePubDate%20desc&tabName=date&fltr=&pageOn=1");
-							/*ProxyWrapper pw = new ProxyWrapperImpl("198.23.253.200", 59998, "tfelab", "TfeLAB2@15");
-							t.setProxy(pw);*/
+							t = new Task("http://ddns.oray.com/checkip");
+							Proxy proxy = new ProxyImpl("uml.ink", 60201, "tfelab", "TfeLAB2@15");
+							t.setProxy(proxy);
 						} else {
-							t = new Task("https://www.baidu.com/s?wd=ip");
-							/*ProxyWrapper pw = new ProxyWrapperImpl("124.206.133.227", 80, null, null);
-							t.setProxy(pw);*/
+							t = new Task("http://ddns.oray.com/checkip");
+							Proxy proxy = new ProxyImpl("uml.ink", 60204, "tfelab", "TfeLAB2@15");
+							t.setProxy(proxy);
 						}
+
 						t.setPreProc();
 
 						BasicRequester.getInstance().submit(t, 30000);
 
-						for(Throwable e : t.getExceptions()) {
-							e.printStackTrace();
+						if(t.exception != null) {
+							t.exception.printStackTrace();
 						}
 
 						System.err.println(t.getDuration() + "\t" + t.getResponse().getText());
@@ -102,8 +116,14 @@ public class BasicRequesterTest {
 
 			thread.start();
 		}
+
+		Thread.sleep(60000);
 	}
 
+	/**
+	 * 测试自定义请求头
+	 * @throws Exception
+	 */
 	@Test
 	public void customizedHeader() throws Exception {
 
@@ -135,90 +155,10 @@ public class BasicRequesterTest {
 
 		BasicRequester.getInstance().submit(t, 30000);
 
-		for(Throwable e : t.getExceptions()) {
-			e.printStackTrace();
+		if(t.exception != null) {
+			t.exception.printStackTrace();
 		}
 
 		System.err.println(t.getDuration() + "\n" + t.getResponse().getText());
-
-	}
-
-	@Test
-	public void postTest() throws MalformedURLException, URISyntaxException {
-
-		String url = "http://www.baidu.com";
-
-		Task<Task> t = new Task(url);
-		t.addDoneCallback((task)->{
-			System.out.println("A");
-		});
-
-		String json = t.toJSON();
-
-		Task t_ = JSON.fromJson(json, Task.class);
-
-		BasicRequester.getInstance().submit(t_,10000);
-
-		System.err.println(t.getResponse().getText());
-	}
-
-	/**
-	 * Basic proxy authentication for HTTPS URLs returns HTTP/1.0 407 Proxy Authentication Required
-	 * https://stackoverflow.com/questions/34877470/basic-proxy-authentication-for-https-urls-returns-http-1-0-407-proxy-authenticat
-	 */
-	@Test
-	public void testProxiedHttpsRequest() throws Exception {
-
-		Proxy proxy = new ProxyImpl("http-dyn.abuyun.com",9020,"HC712I309A6549HD","B9BA137D9DD68EAC");
-
-		Task<Task> task = new XueQiuTask("https://xueqiu.com/friendships/groups/members.json?uid=3013624218&page=1&gid=0");
-
-		task.setProxy(proxy);
-
-		BasicRequester.getInstance().submit(task);
-
-		for (TaskCallback taskCallback : task.doneCallbacks) {
-			taskCallback.run(task);
-		}
-
-		for(Throwable throwable : task.getExceptions()) {
-
-		}
-	}
-}
-
-class XueQiuTask extends Task{
-
-	public static HashMap<String, String> genHeaders() {
-
-		HashMap<String, String> headers = new HashMap<String, String>();
-		headers.put("Host", "xueqiu.com");
-		headers.put("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36");
-		headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-		headers.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
-		// Accept-Encoding 不能为gzip
-		headers.put("Accept-Encoding", "*");
-		headers.put("Accept-Charset", "utf-8,gb2312;q=0.8,*;q=0.8");
-		headers.put("Cache-Control", "max-age=0");
-		headers.put("Connection", "keep-alive");
-		headers.put("Upgrade-Insecure-Requests", "1");
-		headers.put("Pragma", "no-cache");
-		headers.put("Cookie", "aliyungf_tc=AQAAAOY2Bl60MAoAe4bzdPn++5JA5RVK; __utmc=1; device_id=bc931461d2e2f6e7f546f2b92106d760; __utmz=1.1525920324.2.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); s=fl11xr6rdk; _ga=GA1.2.956805427.1524307479; __utma=1.956805427.1524307479.1526635062.1526965879.6; Hm_lvt_1db88642e346389874251b5a1eded6e3=1533048030; _gid=GA1.2.245365313.1533048031; _gat_gtag_UA_16079156_4=1; xq_a_token=aef774c17d4993658170397fcd0faedde488bd20; xq_a_token.sig=F7BSXzJfXY0HFj9lqXif9IuyZhw; xq_r_token=d694856665e58d9a55450ab404f5a0144c4c978e; xq_r_token.sig=Ozg4Sbvgl2PbngzIgexouOmvqt0; Hm_lpvt_1db88642e346389874251b5a1eded6e3=1533048054; u=361533048054356");
-		return headers;
-
-	}
-
-	public XueQiuTask(String url) throws MalformedURLException, URISyntaxException {
-
-		super(url, genHeaders(), "","", "");
-
-		this.addDoneCallback((t) -> {
-
-			String src = new String(getResponse().getSrc(), "UTF-8");
-
-			String text = getResponse().getText();
-			System.err.println(text);
-
-		});
 	}
 }

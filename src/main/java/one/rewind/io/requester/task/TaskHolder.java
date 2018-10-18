@@ -28,15 +28,7 @@ import java.util.*;
 @DatabaseTable(tableName = "tasks")
 public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 
-	/**
-	 * 任务的额外标签
-	 */
-	public static enum Flag {
-		PRE_PROC, // 是否进行预处理
-		SHOOT_SCREEN,
-		BUILD_DOM,
-		SWITCH_PROXY
-	}
+
 
 	// 生成 Holder 的 task_id 可以为空
 	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
@@ -66,7 +58,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 
 	// 任务标签
 	@DatabaseField(persisterClass = JSONableFlagListPersister.class, width = 1024)
-	public List<Flag> flags = new ArrayList<>();
+	public List<Task.Flag> flags = new ArrayList<>();
 
 	// 域名
 	@DatabaseField(dataType = DataType.STRING, width = 4096, canBeNull = false)
@@ -148,7 +140,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	 */
 	public TaskHolder(
 			String class_name, String domain, Map<String, Object> vars, boolean login_task, String username, int step, Task.Priority priority, long min_interval,
-			TaskHolder.Flag... flags
+			Task.Flag... flags
 	) {
 
 		this(class_name, 0, domain, vars, login_task, username, step, priority, min_interval, null, null, null, flags);
@@ -174,7 +166,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 		String generate_task_id,
 		String scheduled_task_id,
 		List<String> trace,
-		TaskHolder.Flag... flags
+		Task.Flag... flags
 	) {
 
 		this.class_name = class_name;
@@ -277,28 +269,28 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	 * @return 是否前置处理
 	 */
 	public boolean preProc() {
-		return flags.contains(Flag.PRE_PROC);
+		return flags.contains(Task.Flag.PRE_PROC);
 	}
 
 	/**
 	 * @return 是否切换代理
 	 */
 	public boolean switchProxy() {
-		return flags.contains(Flag.SWITCH_PROXY);
+		return flags.contains(Task.Flag.SWITCH_PROXY);
 	}
 
 	/**
 	 * @return 是否构建DOM
 	 */
 	public boolean buildDom() {
-		return flags.contains(Flag.BUILD_DOM);
+		return flags.contains(Task.Flag.BUILD_DOM);
 	}
 
 	/**
 	 * @return 是否进行截屏
 	 */
 	public boolean shootScreen() {
-		return flags.contains(Flag.SHOOT_SCREEN);
+		return flags.contains(Task.Flag.SHOOT_SCREEN);
 	}
 
 	/**
@@ -335,8 +327,8 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 		@Override
 		public Object sqlArgToJava(FieldType fieldType, Object sqlArg, int columnPos) {
 
-			Type type = new TypeToken<List<Flag>>() {}.getType();
-			List<Flag> list = JSON.fromJson((String)sqlArg, type);
+			Type type = new TypeToken<List<Task.Flag>>() {}.getType();
+			List<Task.Flag> list = JSON.fromJson((String)sqlArg, type);
 			return sqlArg != null ? list : null;
 		}
 	}

@@ -13,7 +13,6 @@ sourceCompatibility = 1.8
 
 // mainClassName = 'one.rewind.io.BasicRequester'
 
-
 applicationDefaultJvmArgs = ["-Xms200m", "-Xmx4000m", "-Dsun.net.inetaddr.ttl=-1", "-Djava.net.preferIPv4Stack=true", "-Dlog4j.configurationFile=log4j2.xml", "-Dfile.encoding=UTF8", "-Djdk.http.auth.tunneling.disabledSchemes=\"\""]
 
 buildscript {
@@ -125,10 +124,12 @@ dependencies {
 
     // BrowserMob Proxy MITM 代理
     compile 'net.lightbody.bmp:browsermob-core:2.1.5'
-    compile 'io.netty:netty-all:4.1.22.Final' // 强制更新netty
+
+    // 强制更新netty
+    compile 'io.netty:netty-all:4.1.22.Final'
 
     // Appium java-client 自动化库
-    //compile group: 'io.appium', name: 'java-client', version: '5.0.4'
+    // compile group: 'io.appium', name: 'java-client', version: '5.0.4'
     compile group: 'io.appium', name: 'java-client', version: '6.1.0'
 
     // ADB 连接

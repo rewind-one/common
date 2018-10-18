@@ -17,6 +17,9 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
+/**
+ * 代理测试
+ */
 public class BrowserMobProxyTest {
 
 	private static final Logger logger = LogManager.getLogger(BrowserMobProxyTest.class.getName());
@@ -24,6 +27,9 @@ public class BrowserMobProxyTest {
 	BrowserMobProxy bmProxy;
 	int proxyPort;
 
+	/**
+	 * 根据证书ca.crt 私钥pk.crt 创建MITM代理服务器
+	 */
 	@Before
 	public void buildProxy() {
 
@@ -61,6 +67,11 @@ public class BrowserMobProxyTest {
 		});*/
 	}
 
+	/**
+	 * 测试代理的访问
+	 * @throws MalformedURLException
+	 * @throws URISyntaxException
+	 */
 	@Test
 	public void test() throws MalformedURLException, URISyntaxException {
 

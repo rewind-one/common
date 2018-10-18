@@ -118,8 +118,8 @@ public class FormatUtilTest {
 
 
 	@Test
-	public void test() throws ParseException {
-		System.out.println(new Date("Jan 3, 2014 7:30:16"));
+	public void test() {
+		System.out.println(DateFormatUtil.parseTime("Jan 3, 2014 7:30:16"));
 		System.out.println(DateFormatUtil.parseTime("2014.10.01"));
 	}
 

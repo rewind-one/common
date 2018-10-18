@@ -46,6 +46,7 @@ public class LoginAction extends Action {
 			/*agent.getUrl(url);
 
 			agent.waitPageLoad(url);*/
+			Thread.sleep(1000);
 
 			// 输入账号
 			WebElement usernameInput = agent.getElementWait(usernameCssPath);

@@ -29,15 +29,4 @@ public class RestfulRequestManagerTest {
 		}
 		
 	}
-
-	@Test
-	public void httpSubmit() throws Exception {
-
-		ChromeDistributor.getInstance();
-
-		HttpTaskSubmitter.getInstance().submit(TestChromeTask.T5.class.getName(), JSON.toJson(ImmutableMap.of("q" ,"ip")));
-
-		Thread.sleep(10000000);
-	}
-
 }

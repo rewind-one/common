@@ -3,6 +3,7 @@ package one.rewind.io.requester.test;
 import com.google.common.collect.ImmutableMap;
 import one.rewind.io.requester.chrome.ChromeDistributor;
 import one.rewind.io.requester.chrome.ChromeTask;
+import one.rewind.io.requester.exception.ProxyException;
 import one.rewind.io.requester.scheduler.ScheduledTask;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.json.JSON;
@@ -106,7 +107,7 @@ public class TestChromeTask {
 
 			this.addDoneCallback((t) -> {
 
-				ChromeDistributor.getInstance().submit(this.getHolder(T1.class, ImmutableMap.of("q", "1000")));
+				ChromeDistributor.getInstance().submit(this.ext(T1.class, ImmutableMap.of("q", "1000")));
 
 			});
 		}
@@ -195,7 +196,7 @@ public class TestChromeTask {
 				for(int i=current_page+10; i<=max_page; i=i+10) {
 
 					Map<String, Object> init_map = t.newVars(ImmutableMap.of("pn", i, "max_page", 0));
-					TaskHolder holder = t.getHolder(t.getClass(), init_map);
+					TaskHolder holder = t.ext(t.getClass(), init_map);
 					holders.add(holder);
 				}
 
@@ -205,6 +206,74 @@ public class TestChromeTask {
 					ChromeDistributor.getInstance().submit(holder);
 				}
 
+			});
+		}
+	}
+
+	static class TF extends ChromeTask {
+
+		static {
+
+			registerBuilder(
+					TF.class,
+					"http://www.baidu.com/s?wd={{q}}",
+					ImmutableMap.of("q", String.class),
+					ImmutableMap.of("q", "ip")
+			);
+		}
+
+		/**
+		 * @param url
+		 * @throws MalformedURLException
+		 * @throws URISyntaxException
+		 */
+		public TF(String url) throws MalformedURLException, URISyntaxException {
+			super(url);
+
+			this.setValidator((a, t) -> {
+
+				//throw new UnreachableBrowserException("Test");
+				throw new ProxyException.Failed(a.proxy);
+			/*Account account1 = a.accounts.get(t.getDomain());
+			throw new AccountException.Failed(account1);*/
+				//throw new AccountException.Failed(a.accounts.get(t.getDomain()));
+
+			});
+
+			this.addDoneCallback((t) -> {
+				System.err.println(t.getResponse().getText().length());
+			});
+		}
+	}
+
+	static class TPF extends ChromeTask {
+
+		static {
+
+			registerBuilder(
+					TPF.class,
+					"http://www.baidu.com/s?word={{q}}",
+					ImmutableMap.of("q", String.class),
+					ImmutableMap.of("q", "ip")
+			);
+		}
+		/**
+		 * @param url
+		 * @throws MalformedURLException
+		 * @throws URISyntaxException
+		 */
+		public TPF(String url) throws MalformedURLException, URISyntaxException {
+			super(url);
+
+			this.setValidator((a, t) -> {
+				throw new ProxyException.Failed(a.proxy);
+				//throw new ProxyException();
+
+				//throw new AccountException.Failed();
+			});
+
+			this.addDoneCallback((t) -> {
+				System.err.println(t.getResponse().getText().length());
 			});
 		}
 	}

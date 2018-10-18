@@ -6,10 +6,10 @@ import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.exception.TaskException;
 import one.rewind.io.requester.parser.Builder;
-import one.rewind.io.requester.parser.Template;
 import one.rewind.io.requester.parser.TemplateManager;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
+import org.reflections.Reflections;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -19,6 +19,18 @@ import java.util.*;
  *
  */
 public class ChromeTask extends Task<ChromeTask> {
+
+	static {
+		// 所有ChromeTask的注册
+		try {
+			Reflections reflections = new Reflections("one.rewind");
+			for (Class<? extends ChromeTask> clazz : reflections.getSubTypesOf(ChromeTask.class)) {
+				Class.forName(clazz.getName());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	public TaskHolder holder;
 
@@ -270,11 +282,11 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @return
 	 * @throws Exception
 	 */
-	public TaskHolder goon(
+	public TaskHolder ext(
 			Map<String, Object> init_map
 	) throws Exception {
 
-		return goon(this.getClass(), init_map);
+		return ext(this.getClass(), init_map);
 	}
 
 	/**
@@ -286,12 +298,12 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @return
 	 * @throws Exception
 	 */
-	public TaskHolder goon(
+	public TaskHolder ext(
 			Class<? extends ChromeTask> clazz,
 			Map<String, Object> init_map
 	) throws Exception {
 
-		return goon(clazz, init_map, null);
+		return ext(clazz, init_map, null);
 	}
 
 	/**
@@ -304,7 +316,7 @@ public class ChromeTask extends Task<ChromeTask> {
 	 * @return
 	 * @throws Exception
 	 */
-	public TaskHolder goon(
+	public TaskHolder ext(
 			Class<? extends ChromeTask> clazz,
 			Map<String, Object> init_map,
 			Priority priority
