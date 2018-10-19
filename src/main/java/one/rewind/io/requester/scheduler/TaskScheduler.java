@@ -35,6 +35,8 @@ public class TaskScheduler {
 	 */
 	public TaskScheduler(Distributor distributor) {
 
+		this.distributor = distributor;
+
 		//scheduledTasks = RedissonAdapter.redisson.getMap("scheduled-tasks");
 
 		// 重新调度周期性任务

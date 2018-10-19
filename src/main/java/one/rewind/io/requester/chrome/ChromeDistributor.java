@@ -89,6 +89,8 @@ public class ChromeDistributor extends Distributor {
 	 */
 	public ChromeDistributor() {
 
+		super();
+
 		executor.setThreadFactory(new ThreadFactoryBuilder()
 				.setNameFormat("ChromeDistributor-Worker-%d").build());
 
@@ -395,6 +397,7 @@ public class ChromeDistributor extends Distributor {
 		try {
 
 			task = (ChromeTask) holder.build();
+			task.holder = holder;
 
 			// 任务失败重试逻辑
 			task.addDoneCallback((t) -> {

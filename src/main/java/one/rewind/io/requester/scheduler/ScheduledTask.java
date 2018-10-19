@@ -82,16 +82,20 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 	/**
 	 *
 	 */
-	public void degenerate() throws Exception {
+	public void degenerate() {
 
-		taskScheduler.unschedule(id);
+		try {
 
-		int index = crons.indexOf(cron);
-		if(index > -1 && index < crons.size() - 1) {
-			cron = crons.get(index + 1);
+			int index = crons.indexOf(cron);
+			if (index > -1 && index < crons.size() - 1) {
+				cron = crons.get(index + 1);
+			}
+
+			taskScheduler.scheduler.reschedule(scheduleId, cron);
+
+		} catch (Exception e) {
+			logger.error("Error reschedule: {}", scheduleId);
 		}
-
-		taskScheduler.scheduler.reschedule(scheduleId, cron);
 	}
 
 	/**
@@ -103,6 +107,7 @@ public class ScheduledTask implements JSONable<ScheduledTask>, Runnable {
 
 			TaskHolder new_holder = TemplateManager.getInstance().newHolder(holder);
 			new_holder.scheduled_task_id = this.id;
+
 			taskScheduler.distributor.submit(new_holder);
 
 		} catch (Exception e) {

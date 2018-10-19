@@ -47,6 +47,12 @@ public abstract class Distributor {
 
 	public TaskScheduler taskScheduler = new TaskScheduler(this);
 
+	public Distributor() {}
+
+	public TaskScheduler getScheduler() {
+		return taskScheduler;
+	}
+
 	public abstract SubmitInfo submit(TaskHolder th) throws Exception;
 
 	/**

@@ -27,20 +27,26 @@ public class BasicDistributorTest {
 	@Before
 	public void setup() throws Exception {
 
-		Proxy proxy = null;
-		//proxy = new ProxyImpl("reid.red", 60103, null, null);
-		BasicDistributor.getInstance().addOperator(proxy);
+		try {
+			Proxy proxy = null;
+			//proxy = new ProxyImpl("reid.red", 60103, null, null);
+			BasicDistributor.getInstance().addOperator(proxy);
+
+			System.err.println(Builder.of("https://www.baidu.com/s?wd={{q}}").toJSON());
 
 
-		// 定义模板时 需要手工制定ID
-		Template tpl_1 = new Template(
-				1, Builder.of("https://www.baidu.com/s?wd={{q}}"),
-				new Mapper(2, new Field("url", "h3 a", "href"))
-		);
+			// 定义模板时 需要手工制定ID
+			Template tpl_1 = new Template(
+					1, Builder.of("https://www.baidu.com/s?wd={{q}}"),
+					new Mapper(2, new Field("url", "h3 a", "href"))
+			);
 
-		Template tpl_2 = Template.dummy(2);
+			Template tpl_2 = Template.dummy(2);
 
-		TemplateManager.getInstance().add(tpl_1, tpl_2);
+			TemplateManager.getInstance().add(tpl_1, tpl_2);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Test
@@ -59,8 +65,8 @@ public class BasicDistributorTest {
 		}
 	}
 
-	@After
+/*	@After
 	public void close() throws InterruptedException {
 		Thread.sleep(60000);
-	}
+	}*/
 }

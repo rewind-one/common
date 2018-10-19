@@ -197,7 +197,7 @@ public class TemplateManager {
 
 		}
 		// Chrome Task
-		else if(clazz.equals(ChromeTask.class) || clazz.isAssignableFrom(ChromeTask.class)){
+		else if(clazz.equals(ChromeTask.class) || ChromeTask.class.isAssignableFrom(clazz)){
 
 			// get builder
 			builder = chrome_task_builders.get(clazz);

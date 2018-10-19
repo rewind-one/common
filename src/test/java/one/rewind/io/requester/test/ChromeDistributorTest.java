@@ -23,31 +23,16 @@ import one.rewind.json.JSON;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Map;
 
 import static one.rewind.io.requester.chrome.ChromeDistributor.buildBMProxy;
 
 public class ChromeDistributorTest {
-
-	/**
-	 * 任务类型注册
-	 * TODO 测试是否可以被ChromeTask的静态方法块取代
-	 * @throws Exception
-	 */
-	@Before
-	public void loadClass() throws Exception {
-
-		/*Class.forName(TestChromeTask.class.getName());
-		Class.forName(TestChromeTask.T1.class.getName());
-		Class.forName(TestChromeTask.T2.class.getName());
-		Class.forName(TestChromeTask.T3.class.getName());
-		Class.forName(TestChromeTask.T4.class.getName());
-		Class.forName(TestChromeTask.T5.class.getName());
-		Class.forName(TestChromeTask.TF.class.getName());*/
-	}
 
 	/**
 	 * 4浏览器 并发请求100个任务
@@ -131,7 +116,7 @@ public class ChromeDistributorTest {
 
 		TaskHolder holder = ChromeTask.at(TestChromeTask.T3.class, ImmutableMap.of("k", String.valueOf(1950)));
 
-		Distributor.SubmitInfo info = ChromeDistributor.getInstance().schedule(holder, "* * * * *");
+		Distributor.SubmitInfo info = ChromeDistributor.getInstance().schedule(holder, Arrays.asList("* * * * *", "*/2 * * * *", "*/4 * * * *"));
 
 		System.err.println(JSON.toPrettyJson(info));
 
@@ -329,8 +314,10 @@ public class ChromeDistributorTest {
 		distributor.close();
 	}
 
-
-
+	/**
+	 * 测试带有递减周期监控任务
+	 * @throws Exception
+	 */
 	@Test
 	public void testScheduledTask() throws Exception {
 
@@ -348,7 +335,7 @@ public class ChromeDistributorTest {
 
 		distributor.submit(holder);
 
-		Thread.sleep(600000);
+		Thread.sleep(60000000);
 
 	}
 

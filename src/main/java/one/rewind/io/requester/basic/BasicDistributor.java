@@ -85,6 +85,8 @@ public class BasicDistributor extends Distributor {
 	 */
 	public BasicDistributor() {
 
+		super();
+
 		operator = new Operator(null);
 		operator.start();
 

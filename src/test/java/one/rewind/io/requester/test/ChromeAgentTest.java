@@ -26,7 +26,7 @@ import static one.rewind.io.requester.chrome.ChromeDistributor.buildBMProxy;
  * ChromeDriverAgent 测试
  * Created by karajan on 2017/6/3.
  */
-public class ChromeDriverTest {
+public class ChromeAgentTest {
 
 	@Before
 	public void setup() {

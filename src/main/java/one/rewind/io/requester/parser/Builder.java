@@ -23,7 +23,7 @@ public class Builder implements JSONable<Builder> {
 	public static String varPattern = "[\\w\\W][\\w\\W\\d\\_]*";
 
 	// 初始化参数类型
-	public Map<String, Class> init_map_class;
+	public Map<String, String> init_map_class;
 
 	// 初始化参数默认值
 	public Map<String, Object> init_map_defaults;
@@ -87,11 +87,11 @@ public class Builder implements JSONable<Builder> {
 
 		Set<String> vars = Builder.getVarNames(url_template + post_data_template);
 
-		Map<String, Class> init_map_class = new HashMap<>();
+		Map<String, String> init_map_class = new HashMap<>();
 		Map<String, Object> init_map_defaults = new HashMap<>();
 
 		for(String key : vars) {
-			init_map_class.put(key, String.class);
+			init_map_class.put(key, "String");
 			init_map_defaults.put(key, "");
 		}
 
@@ -107,7 +107,7 @@ public class Builder implements JSONable<Builder> {
 	 */
 	public Builder(
 			String url_template,
-			Map<String, Class> init_map_class,
+			Map<String, String> init_map_class,
 			Flag... flags
 	) throws Exception {
 		this(url_template, null, init_map_class, new HashMap<String, Object>(), 0, false, Task.Priority.MEDIUM, flags);
@@ -123,7 +123,7 @@ public class Builder implements JSONable<Builder> {
 	 */
 	public Builder(
 			String url_template,
-			Map<String, Class> init_map_class,
+			Map<String, String> init_map_class,
 			Map<String, Object> init_map_defaults,
 			Flag... flags
 	) throws Exception {
@@ -142,7 +142,7 @@ public class Builder implements JSONable<Builder> {
 	public Builder(
 			String url_template,
 			String post_data_template,
-			Map<String, Class> init_map_class,
+			Map<String, String> init_map_class,
 			Map<String, Object> init_map_defaults,
 			Flag... flags
 	) throws Exception {
@@ -159,7 +159,7 @@ public class Builder implements JSONable<Builder> {
 	 */
 	public Builder(
 			String url_template,
-			Map<String, Class> init_map_class,
+			Map<String, String> init_map_class,
 			Map<String, Object> init_map_defaults,
 			long min_interval,
 			Flag... flags
@@ -179,7 +179,7 @@ public class Builder implements JSONable<Builder> {
 	public Builder(
 			String url_template,
 			String post_data_template,
-			Map<String, Class> init_map_class,
+			Map<String, String> init_map_class,
 			Map<String, Object> init_map_defaults,
 			long min_interval,
 			Flag... flags
@@ -200,7 +200,7 @@ public class Builder implements JSONable<Builder> {
 	public Builder(
 			String url_template,
 			String post_data_template,
-			Map<String, Class> init_map_class,
+			Map<String, String> init_map_class,
 			Map<String, Object> init_map_defaults,
 			long min_interval,
 			boolean need_login,
@@ -220,7 +220,7 @@ public class Builder implements JSONable<Builder> {
 
 			if(init_map_class.containsKey(key)) {
 
-				if(init_map_defaults.get(key).getClass().equals(init_map_class.get(key))){
+				if(init_map_defaults.get(key).getClass().getSimpleName().equals(init_map_class.get(key))){
 
 				} else {
 					throw new Exception("init_map_defaults value type error.");
@@ -295,7 +295,7 @@ public class Builder implements JSONable<Builder> {
 
 			if(init_map_class.containsKey(key)) {
 
-				if(init_map_defaults.get(key).getClass().equals(init_map_class.get(key))){
+				if(init_map_defaults.get(key).getClass().getSimpleName().equals(init_map_class.get(key))){
 
 					init.put(key, init_map_defaults.get(key));
 
@@ -314,7 +314,7 @@ public class Builder implements JSONable<Builder> {
 
 			if(init_map_class.containsKey(key)) {
 
-				if(init_map.get(key).getClass().equals(init_map_class.get(key))){
+				if(init_map.get(key).getClass().getSimpleName().equals(init_map_class.get(key))){
 
 					init.put(key, init_map.get(key));
 

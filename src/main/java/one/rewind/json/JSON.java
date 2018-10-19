@@ -14,7 +14,7 @@ import java.util.Date;
  */
 public class JSON {
 
-	public static GsonBuilder gb = new GsonBuilder()
+	private static GsonBuilder gb = new GsonBuilder()
 			.disableHtmlEscaping()
 			.registerTypeAdapter(Date.class, new DateSerializer()).setDateFormat(DateFormat.LONG)
 			.registerTypeAdapter(Date.class, new DateDeserializer()).setDateFormat(DateFormat.LONG)
@@ -24,9 +24,9 @@ public class JSON {
 			.registerTypeAdapter(Account.class, new InterfaceAdapter<Account>())
 			.registerTypeAdapter(Proxy.class, new InterfaceAdapter<Proxy>());
 
-	public static Gson gson;
+	private static Gson gson;
 
-	public static Gson _gson;
+	private static Gson _gson;
 
 	static {
 		gson = gb.create();
@@ -41,14 +41,27 @@ public class JSON {
 		return gson.fromJson(json, clazz);
 	}
 
+	/**
+	 *
+	 * @param obj
+	 * @return
+	 */
 	public static String toJson(Object obj){
 		return gson.toJson(obj);
 	}
 
+	/**
+	 *
+	 * @param obj
+	 * @return
+	 */
 	public static String toPrettyJson(Object obj){
 		return _gson.toJson(obj);
 	}
 
+	/**
+	 *
+	 */
 	public static class DateDeserializer implements JsonDeserializer<Date> {
 
 	    public Date deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
@@ -56,12 +69,18 @@ public class JSON {
 	    }
 	}
 
+	/**
+	 *
+	 */
 	public static class DateSerializer implements JsonSerializer<Date> {
 	    public JsonElement serialize(Date src, Type typeOfSrc, JsonSerializationContext context) {
 	        return new JsonPrimitive(src.getTime());
 	    }
 	}
 
+	/**
+	 *
+	 */
 	public static class ExceptionDeserializer implements JsonDeserializer<Exception> {
 		 
 	    public Exception deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
@@ -69,6 +88,9 @@ public class JSON {
 	    }
 	}
 
+	/**
+	 *
+	 */
 	public static class ExceptionSerializer implements JsonSerializer<Exception> {
 	    public JsonElement serialize(Exception src, Type typeOfSrc, JsonSerializationContext context) {
 	        return new JsonPrimitive(src.getMessage());

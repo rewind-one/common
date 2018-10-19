@@ -9,15 +9,13 @@ import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.account.Account;
 import one.rewind.io.requester.basic.BasicRequester;
-import one.rewind.io.requester.callback.AccountCallback;
-import one.rewind.io.requester.callback.ChromeDriverAgentCallback;
-import one.rewind.io.requester.callback.ProxyCallBack;
-import one.rewind.io.requester.callback.TaskCallback;
+import one.rewind.io.requester.callback.*;
 import one.rewind.io.requester.chrome.action.ChromeAction;
 import one.rewind.io.requester.chrome.action.LoginAction;
 import one.rewind.io.requester.exception.AccountException;
 import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.exception.ProxyException;
+import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.io.requester.util.DocumentSettleCondition;
 import one.rewind.io.ssh.RemoteShell;
 import one.rewind.util.Configs;
@@ -1051,7 +1049,7 @@ public class ChromeAgent {
 	 */
 	public void submit(ChromeTask task) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
-		submit(task, ChromeDistributor.CONNECT_TIMEOUT + ChromeDistributor.READ_TIMEOUT, false);
+		submit(task, (task.getActions().size() + 1) * (ChromeDistributor.CONNECT_TIMEOUT + ChromeDistributor.READ_TIMEOUT), false);
 	}
 
 	/**
@@ -1060,7 +1058,7 @@ public class ChromeAgent {
 	 */
 	public void submit(ChromeTask task, boolean ignoreIdleCallback) throws ChromeDriverException.IllegalStatusException, InterruptedException {
 
-		submit(task, ChromeDistributor.CONNECT_TIMEOUT + ChromeDistributor.READ_TIMEOUT, ignoreIdleCallback);
+		submit(task, (task.getActions().size() + 1) * (ChromeDistributor.CONNECT_TIMEOUT + ChromeDistributor.READ_TIMEOUT), ignoreIdleCallback);
 	}
 
 	/**
@@ -1084,10 +1082,31 @@ public class ChromeAgent {
 			taskFuture.get(timeout, TimeUnit.MILLISECONDS);
 			status = Status.IDLE;
 
+			// 处理 DoneCallbacks
 			for(TaskCallback callback : task.doneCallbacks) {
 				ChromeDistributor.getInstance().post_executor.submit(()->{
 					try {
 						callback.run(task);
+					} catch (Exception e) {
+						logger.error("Error proc doneCallback, Task:{}. ", task.url, e);
+					}
+				});
+			}
+
+			// 处理 NextTaskHolderGenerators
+			for(NextTaskGenerator ntg : task.nextTaskGenerators) {
+
+				ChromeDistributor.getInstance().post_executor.submit(()->{
+
+					try {
+
+						List<TaskHolder> nths = new ArrayList<>();
+						ntg.run(task, nths);
+
+						for(TaskHolder nth : nths) {
+							ChromeDistributor.getInstance().submit(nth);
+						}
+
 					} catch (Exception e) {
 						logger.error("Error proc doneCallback, Task:{}. ", task.url, e);
 					}

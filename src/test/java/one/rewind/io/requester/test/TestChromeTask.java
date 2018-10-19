@@ -26,7 +26,7 @@ public class TestChromeTask {
 			registerBuilder(
 					TestChromeTask.T1.class,
 					"https://www.baidu.com/s?word={{q}}",
-					ImmutableMap.of("q", String.class),
+					ImmutableMap.of("q", "String"),
 					ImmutableMap.of("q", "ip")
 			);
 		}
@@ -60,7 +60,7 @@ public class TestChromeTask {
 			registerBuilder(
 					TestChromeTask.T2.class,
 					"https://www.zhihu.com/search?type=content&q={{k}}",
-					ImmutableMap.of("k", String.class),
+					ImmutableMap.of("k", "String"),
 					ImmutableMap.of("k", "ip")
 			);
 		}
@@ -91,7 +91,7 @@ public class TestChromeTask {
 			registerBuilder(
 					TestChromeTask.T3.class,
 					"https://www.zhihu.com/search?type=content&q={{k}}",
-					ImmutableMap.of("k", String.class),
+					ImmutableMap.of("k", "String"),
 					ImmutableMap.of("k", "ip")
 			);
 		}
@@ -126,7 +126,7 @@ public class TestChromeTask {
 			registerBuilder(
 					TestChromeTask.T4.class,
 					"https://www.baidu.com/s?word={{q}}",
-					ImmutableMap.of("q", String.class),
+					ImmutableMap.of("q", "String"),
 					ImmutableMap.of("q", "ip")
 			);
 		}
@@ -144,24 +144,37 @@ public class TestChromeTask {
 
 				System.err.println(this.getDomain() + "\t" + System.currentTimeMillis() + "\t" + t.getResponse().getText().length());
 
-				if(!ChromeDistributor.getInstance().taskScheduler.registered(t.holder.generateScheduledTaskId())) {
+				if(!ChromeDistributor.getInstance().getScheduler().registered(t.holder.generateScheduledTaskId())) {
 
 					ChromeDistributor.getInstance().schedule(t.holder, crons);
+
+					ChromeDistributor.logger.info("new");
 				}
 				else {
 
-					ScheduledTask st = ChromeDistributor.getInstance().taskScheduler.getScheduledTask(t.holder.generateScheduledTaskId());
+					ScheduledTask st = ChromeDistributor.getInstance()
+							.getScheduler()
+							.getScheduledTask(t.holder.generateScheduledTaskId());
 
-					if(System.currentTimeMillis() < DateFormatUtil.parseTime("2018-07-27 16:35:20").getTime()) {
+					if(System.currentTimeMillis() < DateFormatUtil.parseTime("2018-10-19 18:30:20").getTime()) {
+
 						st.degenerate();
+						ChromeDistributor.logger.info("degenerate");
+
 					} else {
+
 						st.stop();
+						ChromeDistributor.logger.info("stop");
+
 					}
 				}
 			});
 		}
 	}
 
+	/**
+	 * 测试翻页
+	 */
 	public static class T5 extends ChromeTask {
 
 		public static long MIN_INTERVAL = 60000;
@@ -170,7 +183,7 @@ public class TestChromeTask {
 			registerBuilder(
 					TestChromeTask.T5.class,
 					"https://www.baidu.com/s?word={{q}}&pn={{pn}}",
-					ImmutableMap.of("q", String.class,"pn", Integer.class, "max_page", Integer.class),
+					ImmutableMap.of("q", "String","pn", "Integer", "max_page", "Integer"),
 					ImmutableMap.of("q", "ip", "pn", 0, "max_page", 100)
 			);
 		}
@@ -184,28 +197,21 @@ public class TestChromeTask {
 
 			super(url);
 
-			this.addDoneCallback((t) -> {
+			this.addNextTaskGenerator((t, nths) -> {
 
 				System.err.println(this.getDomain() + "\t" + System.currentTimeMillis() + "\t" + t.getResponse().getText().length());
 
 				int max_page = t.getIntFromVars("max_page");
 				int current_page = t.getIntFromVars("pn");
 
-				List<TaskHolder> holders = new ArrayList<>();
 
 				for(int i=current_page+10; i<=max_page; i=i+10) {
 
+					// max_page 设为0 不用再翻页
 					Map<String, Object> init_map = t.newVars(ImmutableMap.of("pn", i, "max_page", 0));
-					TaskHolder holder = t.ext(t.getClass(), init_map);
-					holders.add(holder);
+
+					nths.add(t.ext(init_map));
 				}
-
-				for(TaskHolder holder : holders) {
-
-					System.err.println(JSON.toPrettyJson(holder));
-					ChromeDistributor.getInstance().submit(holder);
-				}
-
 			});
 		}
 	}
@@ -217,7 +223,7 @@ public class TestChromeTask {
 			registerBuilder(
 					TF.class,
 					"http://www.baidu.com/s?wd={{q}}",
-					ImmutableMap.of("q", String.class),
+					ImmutableMap.of("q", "String"),
 					ImmutableMap.of("q", "ip")
 			);
 		}
@@ -253,7 +259,7 @@ public class TestChromeTask {
 			registerBuilder(
 					TPF.class,
 					"http://www.baidu.com/s?word={{q}}",
-					ImmutableMap.of("q", String.class),
+					ImmutableMap.of("q", "String"),
 					ImmutableMap.of("q", "ip")
 			);
 		}

@@ -52,7 +52,7 @@ public class ChromeTask extends Task<ChromeTask> {
 	public static void registerBuilder(
 			Class<? extends ChromeTask> clazz,
 			String url_template,
-			Map<String, Class> init_map_class,
+			Map<String, String> init_map_class,
 			Map<String, Object> init_map_defaults){
 
 		try {
@@ -62,6 +62,8 @@ public class ChromeTask extends Task<ChromeTask> {
 					init_map_class,
 					init_map_defaults
 			));
+
+			ChromeAgent.logger.info("Registered {}", clazz.getName());
 
 		} catch (Exception e) {
 			ChromeAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
@@ -79,7 +81,7 @@ public class ChromeTask extends Task<ChromeTask> {
 	public static void registerBuilder(
 			Class<? extends ChromeTask> clazz,
 			String url_template,
-			Map<String, Class> init_map_class,
+			Map<String, String> init_map_class,
 			Map<String, Object> init_map_defaults,
 			long min_interval
 	){
@@ -92,6 +94,8 @@ public class ChromeTask extends Task<ChromeTask> {
 					init_map_defaults,
 					min_interval
 			));
+
+			ChromeAgent.logger.info("Registered {}", clazz.getName());
 
 		} catch (Exception e) {
 			ChromeAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
@@ -111,7 +115,7 @@ public class ChromeTask extends Task<ChromeTask> {
 	public static void registerBuilder(
 			Class<? extends ChromeTask> clazz,
 			String url_template,
-			Map<String, Class> init_map_class,
+			Map<String, String> init_map_class,
 			Map<String, Object> init_map_defaults,
 			boolean need_login,
 			Task.Priority base_priority,
@@ -129,6 +133,9 @@ public class ChromeTask extends Task<ChromeTask> {
 					need_login,
 					base_priority
 			));
+
+
+			ChromeAgent.logger.info("Registered {}", clazz.getName());
 
 		} catch (Exception e) {
 			ChromeAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
