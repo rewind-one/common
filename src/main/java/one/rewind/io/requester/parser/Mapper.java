@@ -164,13 +164,15 @@ public class Mapper implements JSONable<Mapper> {
 		// 解析数据并保存
 		if(modelClassName != null) {
 
+			Class<?> clazz = Class.forName(modelClassName);
+
 			// 需要id赋值
-			if(modelClassName.equals(ESIndex.class.getName()) || modelClassName.equals(ModelD.class.getName())) {
+			if(ESIndex.class.isAssignableFrom(clazz) || ModelD.class.isAssignableFrom(clazz)) {
 				String id = StringUtil.MD5(modelClassName + "::" + JSON.toJson(data));
+				System.err.println("----------"+data);
 				data.put("id", id);
 			}
 
-			Class<?> clazz = Class.forName(modelClassName);
 			Object model = ReflectModelUtil.toObj(data, clazz);
 
 			// TODO 新增数据 insert

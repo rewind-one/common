@@ -95,7 +95,7 @@ public class BasicDistributorTest {
 	@Test
 	public void testBaike() throws Exception{
 
-		for(int i=0; i<10; i++) {
+		for(int i=0; i<1; i++) {
 
 			TaskHolder taskHolder = TemplateManager.getInstance().get(3).at(ImmutableMap.of("w", String.valueOf(i)));
 
