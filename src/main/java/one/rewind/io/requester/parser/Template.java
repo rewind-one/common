@@ -43,7 +43,7 @@ public class Template implements JSONable<Template> {
 	 */
 	public static Template dummy(int id) throws Exception {
 
-		Template template = new Template(id, Builder.of(), new Mapper());
+		Template template = new Template(id, Builder.of(Task.Flag.BUILD_DOM), new Mapper());
 
 		return template;
 	}

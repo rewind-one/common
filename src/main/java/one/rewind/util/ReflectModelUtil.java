@@ -43,7 +43,8 @@ public class ReflectModelUtil {
                     continue;
                 }
                 //由字符串转换回对象对应的类型
-                if (field != null) {
+                if (field != null && map.get(field.getName()) != null) {
+
                     field.setAccessible(true);
                     field.set(obj, map.get(field.getName()));
                 }

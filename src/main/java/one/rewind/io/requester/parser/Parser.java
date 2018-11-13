@@ -18,6 +18,7 @@ public class Parser {
 
 	public Parser(String src, Document doc) {
 		this.src = src;
+		this.doc = doc;
 	}
 
 	/*private static <T> T cast(Object o, Class<T> clazz) {
@@ -144,7 +145,9 @@ public class Parser {
 
 		if(src == null || src.length() == 0 || dom == null) throw new Exception("Mapper path invalid");
 
-		if(mapper.fields.size() == 0) throw new Exception("Mapper no fields");
+		if(mapper.fields.size() == 0) {
+			TemplateManager.logger.warn("Mapper has no fields");
+		}
 
 		// 结果列表
 		List<Map<String, Object>> data = new ArrayList<>();

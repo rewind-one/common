@@ -60,6 +60,17 @@ public class Builder implements JSONable<Builder> {
 	}
 
 	/**
+	 *
+	 * @param url_template
+	 * @return
+	 * @throws Exception
+	 */
+	public static Builder of(String url_template) throws Exception {
+
+		return of(url_template, Flag.BUILD_DOM);
+	}
+
+	/**
 	 * 生成新的Builder
 	 *
 	 * @param url_template

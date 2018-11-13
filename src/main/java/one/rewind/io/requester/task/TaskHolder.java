@@ -127,6 +127,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	 */
 	public TaskHolder() {}
 
+
 	/**
 	 * 新Holder场景调用
 	 * @param class_name

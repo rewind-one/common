@@ -62,6 +62,18 @@ public class Field implements JSONable<Field> {
 	 *
 	 * @param name
 	 * @param path
+	 * @param method
+	 */
+	public Field(String name, String path, Method method) {
+		this.name = name;
+		this.path = path;
+		this.method = method;
+	}
+
+	/**
+	 *
+	 * @param name
+	 * @param path
 	 * @param attribute
 	 */
 	public Field(String name, String path, String attribute) {

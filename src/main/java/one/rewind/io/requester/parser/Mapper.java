@@ -99,6 +99,18 @@ public class Mapper implements JSONable<Mapper> {
 
 	/**
 	 *
+	 * @param templateId
+	 * @param multi
+	 * @param fields
+	 * @throws Exception
+	 */
+	public Mapper(int templateId, boolean multi, Field... fields) throws Exception {
+
+		this(null, templateId, multi, null, Field.Method.Reg, fields);
+	}
+
+	/**
+	 *
 	 * @param modelClassName
 	 * @throws Exception
 	 */
@@ -106,7 +118,8 @@ public class Mapper implements JSONable<Mapper> {
 
 		if(modelClassName != null && modelClassName.length() > 0) {
 			Class<?> clazz = Class.forName(modelClassName);
-			if (!clazz.isAssignableFrom(Model.class)) throw new Exception("Model class name unrecognizable");
+			if (!Model.class.isAssignableFrom(clazz)) throw new Exception("Model class name unrecognizable");
+			this.modelClassName = modelClassName;
 		}
 
 		this.templateId = templateId;
@@ -160,6 +173,8 @@ public class Mapper implements JSONable<Mapper> {
 			Class<?> clazz = Class.forName(modelClassName);
 			Object model = ReflectModelUtil.toObj(data, clazz);
 
+			// TODO 新增数据 insert
+			// TODO 已有数据 update
 			((Model) model).insert();
 		}
 		// 生成下一级任务

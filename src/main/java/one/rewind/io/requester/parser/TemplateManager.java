@@ -218,7 +218,7 @@ public class TemplateManager {
 
 		Task.Flag[] flag_array = new Task.Flag[builder.flags.size()];
 
-		return new TaskHolder(clazz.getName(), builder.domain, vars, builder.need_login, username, step, priority, builder.min_interval, builder.flags.toArray(flag_array));
+		return new TaskHolder(clazz.getName(), template_id, builder.domain, vars, builder.need_login, username, step, priority, builder.min_interval, null, null, null, builder.flags.toArray(flag_array));
 	}
 
 	/**
@@ -233,7 +233,7 @@ public class TemplateManager {
 		Class<? extends Task> clazz;
 		Template tpl = null;
 
-		if(holder.class_name.equals(Task.class.getSimpleName())) {
+		if(holder.class_name.equals(Task.class.getName())) {
 
 			clazz = Task.class;
 
@@ -270,7 +270,7 @@ public class TemplateManager {
 
 		// Call sub class constructor
 		Constructor<?> cons = clazz.getConstructor(String.class);
-		Task<ChromeTask> task = (ChromeTask) cons.newInstance(url);
+		Task task = (Task) cons.newInstance(url);
 		task.holder = holder;
 
 		// 验证 vars
