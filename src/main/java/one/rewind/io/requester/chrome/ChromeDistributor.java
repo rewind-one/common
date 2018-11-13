@@ -544,12 +544,12 @@ public class ChromeDistributor extends Distributor {
 			}
 		});
 
-//		try {
-//			InetAddress address = InetAddress.getByName(LOCAL_IP);
-//			bmProxy.start(localPort, address);
-//		} catch (UnknownHostException e) {
-//			bmProxy.start(localPort); // Use any free port
-//		}
+		/*try {
+			InetAddress address = InetAddress.getByName(LOCAL_IP);
+			bmProxy.start(localPort, address);
+		} catch (UnknownHostException e) {
+			bmProxy.start(localPort); // Use any free port
+		}*/
 
 		return bmProxy;
 	}

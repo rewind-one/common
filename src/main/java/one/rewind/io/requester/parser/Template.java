@@ -18,6 +18,8 @@ public class Template implements JSONable<Template> {
 	// builder 生成任务用
 	Builder builder;
 
+	Validator validator;
+
 	// mappers 列表
 	List<Mapper> mappers = new ArrayList<>();
 
@@ -74,6 +76,17 @@ public class Template implements JSONable<Template> {
 	 */
 	public Template addMapper(Mapper mapper) {
 		this.mappers.add(mapper);
+		return this;
+	}
+
+
+	/**
+	 * 设置验证器
+	 * @param validator
+	 * @return
+	 */
+	public Template setValidator(Validator validator) {
+		this.validator = validator;
 		return this;
 	}
 

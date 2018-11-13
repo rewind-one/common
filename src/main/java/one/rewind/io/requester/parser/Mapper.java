@@ -10,6 +10,7 @@ import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
 import one.rewind.util.ReflectModelUtil;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -157,7 +158,7 @@ public class Mapper implements JSONable<Mapper> {
 	 * @return
 	 * @throws Exception
 	 */
-	public List<TaskHolder> eval(Map<String, Object> data) throws Exception {
+	public List<TaskHolder> eval(Map<String, Object> data, String url, String post_data) throws Exception {
 
 		List<TaskHolder> nts = new ArrayList<>();
 
@@ -167,27 +168,37 @@ public class Mapper implements JSONable<Mapper> {
 			Class<?> clazz = Class.forName(modelClassName);
 
 			// 需要id赋值
-			if(ESIndex.class.isAssignableFrom(clazz) || ModelD.class.isAssignableFrom(clazz)) {
-				String id = StringUtil.MD5(modelClassName + "::" + JSON.toJson(data));
-				System.err.println("----------"+data);
+			if(ModelD.class.isAssignableFrom(clazz)) {
+
+				String id = StringUtil.MD5(modelClassName + "::" + url + "::" + (post_data == null? "" : post_data));
+				// String id = StringUtil.MD5(modelClassName + "::" + JSON.toJson(data));
 				data.put("id", id);
 			}
 
 			Object model = ReflectModelUtil.toObj(data, clazz);
 
-			// TODO 新增数据 insert
-			// TODO 已有数据 update
-			((Model) model).insert();
+
+			if(ModelD.class.isAssignableFrom(clazz)) {
+
+				((ModelD) model).upsert();
+
+			} else {
+
+				try {
+					((Model) model).insert();
+				}
+				catch (Exception e) {
+
+					TemplateManager.logger.warn("Error insert model, ", e);
+				}
+			}
+
 		}
 		// 生成下一级任务
 		else if(templateId != 0) {
 
 			Template tpl = TemplateManager.getInstance().get(templateId);
 			nts.add(tpl.at(data));
-		}
-		// 测试用
-		else {
-			TemplateManager.logger.info(JSON.toPrettyJson(data));
 		}
 
 		return nts;

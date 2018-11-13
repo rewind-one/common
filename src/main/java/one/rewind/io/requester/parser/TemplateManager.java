@@ -260,6 +260,7 @@ public class TemplateManager {
 		for(String key : holder.vars.keySet()) {
 			url = url.replace("{{" + key + "}}", String.valueOf(holder.vars.get(key)));
 		}
+
 		// 生成POST_DATA
 		String post_data = builder.post_data_template;
 		if(post_data != null) {
@@ -285,6 +286,10 @@ public class TemplateManager {
 
 			Template finalTpl = tpl;
 
+			if(tpl.validator != null) {
+				task.setValidator(tpl.validator.toTaskValidator());
+			}
+
 			task.addNextTaskGenerator((t, nts) -> {
 
 				Parser parser = new Parser(t.getResponse().getText(), t.getResponse().getDoc());
@@ -295,7 +300,7 @@ public class TemplateManager {
 					for( Map<String, Object> data : parser.parse(mapper) ) {
 
 						// 对解析的数据进行后续处理
-						nts.addAll(mapper.eval(data));
+						nts.addAll(mapper.eval(data, t.url, t.getPost_data()));
 					}
 				}
 			});

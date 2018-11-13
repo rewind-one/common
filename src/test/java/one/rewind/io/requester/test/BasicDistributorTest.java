@@ -56,7 +56,17 @@ public class BasicDistributorTest {
 					)
 			);
 
-			TemplateManager.getInstance().add(tpl_1, tpl_2, tpl_3);
+			Template tpl_4 = new Template(
+					4, Builder.of("https://baike.baidu.com/item/{{w}}"),
+					new Mapper(TestDModel.class.getName(),
+							new Field("title", "h1", Field.Method.CssPath),
+							new Field("content", "div.para", Field.Method.CssPath)
+									.addReplacement("<.+?>", "")
+									.addReplacement("\r?\n", "")
+					)
+			).setValidator(new Validator().addNotContain("百度"));
+
+			TemplateManager.getInstance().add(tpl_1, tpl_2, tpl_3, tpl_4);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -98,6 +108,21 @@ public class BasicDistributorTest {
 		for(int i=0; i<1; i++) {
 
 			TaskHolder taskHolder = TemplateManager.getInstance().get(3).at(ImmutableMap.of("w", String.valueOf(i)));
+
+			BasicDistributor.getInstance().submit(taskHolder);
+
+		}
+
+		Thread.sleep(10000);
+	}
+
+
+	@Test
+	public void testValidator() throws Exception{
+
+		for(int i=0; i<1; i++) {
+
+			TaskHolder taskHolder = TemplateManager.getInstance().get(4).at(ImmutableMap.of("w", String.valueOf(i)));
 
 			BasicDistributor.getInstance().submit(taskHolder);
 

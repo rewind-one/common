@@ -1,23 +1,31 @@
 package one.rewind.db.model;
 
+import com.google.common.collect.ImmutableMap;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import one.rewind.db.DaoManager;
+import one.rewind.db.ModelCreateCallback;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
  */
 public abstract class Model implements JSONable<Model> {
 
-	private static final Logger logger = LogManager.getLogger(Model.class.getName());
+	static final Logger logger = LogManager.getLogger(Model.class.getName());
+
+	public static ModelCreateCallback createCallback;
+
+	public static ModelCreateCallback updateCallback;
 
 	@DatabaseField(dataType = DataType.DATE)
 	public Date insert_time = new Date();
@@ -35,6 +43,9 @@ public abstract class Model implements JSONable<Model> {
 		Dao dao = DaoManager.getDao(this.getClass());
 
 		if (dao.create(this) == 1) {
+
+			if(createCallback != null) createCallback.run(this);
+
 			return true;
 		}
 
@@ -53,8 +64,11 @@ public abstract class Model implements JSONable<Model> {
 		this.update_time = new Date();
 
 		if (dao.update(this) == 1) {
+
+			if(updateCallback != null) updateCallback.run(this);
 			return true;
 		}
+
 		return false;
 	}
 
