@@ -1,6 +1,8 @@
 package one.rewind.io.requester.parser;
 
 import one.rewind.io.requester.callback.TaskValidator;
+import one.rewind.json.JSON;
+import one.rewind.json.JSONable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +11,7 @@ import java.util.List;
  * @author scisaga@gmail.com
  * @date 2018/11/14
  */
-public class Validator {
+public class Validator implements JSONable {
 
 	public List<String> contains = new ArrayList<>();
 
@@ -69,5 +71,10 @@ public class Validator {
 			}
 
 		};
+	}
+
+	@Override
+	public String toJSON() {
+		return JSON.toJson(this);
 	}
 }

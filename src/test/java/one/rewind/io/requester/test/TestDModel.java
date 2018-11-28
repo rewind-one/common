@@ -7,6 +7,8 @@ import one.rewind.db.DBName;
 import one.rewind.db.model.ModelD;
 import one.rewind.db.model.ModelL;
 
+import java.util.Date;
+
 /**
  * @author scisaga@gmail.com
  * @date 2018/11/13
@@ -21,5 +23,8 @@ public class TestDModel extends ModelD {
 
 	@DatabaseField(columnDefinition = "MEDIUMTEXT")
 	public String content;
+
+	@DatabaseField(dataType = DataType.DATE)
+	public Date pubdate;
 
 }

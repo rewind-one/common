@@ -7,7 +7,6 @@ import org.csource.fastdfs.*;
 
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 
 public class FastDFSAdapter {
 
@@ -47,7 +46,7 @@ public class FastDFSAdapter {
 
 		// 初始化 StorageClient 队列
 		for( int i = 0 ; i < size; i++){
-			creatStorageClient();
+			createStorageClient();
 		}
 
 	}
@@ -55,7 +54,7 @@ public class FastDFSAdapter {
 	/**
 	 *  创建StorageClient
 	 */
-	public void creatStorageClient(){
+	public void createStorageClient(){
 
 		try {
 
@@ -87,7 +86,7 @@ public class FastDFSAdapter {
 
 		// 获取链接
 		if( idleStorageClient.size() == 0 ){
-			creatStorageClient();
+			createStorageClient();
 		}
 		StorageClient storageClient = idleStorageClient.poll();
 

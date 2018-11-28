@@ -1,7 +1,9 @@
 package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
+import one.rewind.db.RedissonAdapter;
 import one.rewind.db.Refacter;
+import one.rewind.db.model.Model;
 import one.rewind.io.requester.basic.BasicDistributor;
 import one.rewind.io.requester.parser.*;
 import one.rewind.io.requester.proxy.Proxy;
@@ -11,9 +13,12 @@ import org.jsoup.nodes.Element;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.redisson.api.RBlockingQueue;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -64,7 +69,7 @@ public class BasicDistributorTest {
 									.addReplacement("<.+?>", "")
 									.addReplacement("\r?\n", "")
 					)
-			).setValidator(new Validator().addNotContain("百度"));
+			).setValidator(new Validator().addContain("百度"));
 
 			TemplateManager.getInstance().add(tpl_1, tpl_2, tpl_3, tpl_4);
 
@@ -136,6 +141,32 @@ public class BasicDistributorTest {
 		TestModel tm = new TestModel();
 		System.err.println(tm.id);
 	}
+
+	@Test
+	public void testModelD() throws Exception {
+		TestDModel m = new TestDModel();
+		m.id = "1111";
+		m.title = "title";
+		m.content = "aaa";
+		m.pubdate = new Date();
+		System.err.println(m.pubdate);
+		m.insert();
+		System.err.println(m.pubdate);
+	}
+
+	@Test
+	public void testReadModelD() throws Exception {
+		RBlockingQueue<TestDModel> queue = RedissonAdapter.redisson.getBlockingQueue("test-queue");
+		/*TestDModel m = (TestDModel) Model.getById(TestDModel.class, "1111");
+		System.err.println(m.toJSON());
+		System.err.println(m.pubdate);
+		RBlockingQueue<TestDModel> queue = RedissonAdapter.redisson.getBlockingQueue("test-queue");
+		queue.offer(m);*/
+		TestDModel m = queue.poll(1000, TimeUnit.MILLISECONDS);
+		System.err.println(m.pubdate);
+	}
+
+
 
 /*	@After
 	public void close() throws InterruptedException {

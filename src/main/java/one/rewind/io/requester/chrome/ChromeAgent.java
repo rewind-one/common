@@ -395,6 +395,7 @@ public class ChromeAgent {
 
 				boolean actionSuccess = true;
 
+				// 先执行完Actions
 				for(ChromeAction action : task.getActions()) {
 
 					// 当前线程执行 action
@@ -413,6 +414,7 @@ public class ChromeAgent {
 					actionSuccess = actionSuccess && currentActionSuccess;
 				}
 
+				// 再Set Text
 				task.getResponse().setActionDone(actionSuccess);
 				task.getResponse().setSrc(getAllSrc().getBytes());
 				task.getResponse().setText();

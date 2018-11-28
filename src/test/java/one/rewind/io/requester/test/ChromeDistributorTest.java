@@ -43,7 +43,7 @@ public class ChromeDistributorTest {
 
 		ChromeDistributor distributor = ChromeDistributor.getInstance();
 
-		for(int i=0; i<4; i++) {
+		for(int i=0; i<12; i++) {
 
 			ChromeAgent agent = new ChromeAgent();
 			distributor.addAgent(agent);
