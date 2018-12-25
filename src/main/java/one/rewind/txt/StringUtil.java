@@ -103,7 +103,7 @@ public class StringUtil {
 
 		return in.replaceAll("^[ |	|　]+", "").replaceAll("[ |	|　]+$", "")
 				.replaceAll(">[ |	|　]+", ">").replaceAll("[ |	|　]+<", "<")
-				.replaceAll("&nbsp;", "").replaceAll("style=\".+?\"", "");
+				.replaceAll("&nbsp;", "").replaceAll("style=\".*?\"", "");
 	}
 
 	/**
