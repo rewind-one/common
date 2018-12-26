@@ -106,8 +106,10 @@ public class BasicDistributor extends Distributor {
 	 */
 	public BasicDistributor addOperator(ProxyChannel channel) {
 
-		operator.setDone();
-		operator = null;
+		if(operator != null) {
+			operator.setDone();
+			operator = null;
+		}
 
 		Operator op = new Operator(channel);
 		operators.add(op);
@@ -122,8 +124,10 @@ public class BasicDistributor extends Distributor {
 	 */
 	public BasicDistributor addOperator(Proxy proxy) {
 
-		operator.setDone();
-		operator = null;
+		if(operator != null) {
+			operator.setDone();
+			operator = null;
+		}
 
 		Operator op = new Operator().setProxy(proxy);
 		operators.add(op);
