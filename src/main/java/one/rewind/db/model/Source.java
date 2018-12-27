@@ -142,6 +142,26 @@ public class Source extends Model {
 
 	/**
 	 *
+	 * @throws InterruptedException
+	 */
+	public void delSrc() throws InterruptedException {
+		FastDFSAdapter.getInstance().delete(this.group_name, this.file_path);
+	}
+
+	/**
+	 *
+	 * @param id
+	 * @throws Exception
+	 */
+	public static void deleteById(String id) throws Exception {
+		Dao<Source, String> dao = DaoManager.getDao(Source.class);
+		Source source = dao.queryForId(id);
+		source.delSrc();
+		dao.deleteById(id);
+	}
+
+	/**
+	 *
 	 * @return
 	 * @throws Exception
 	 */
