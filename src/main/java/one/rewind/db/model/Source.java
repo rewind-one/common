@@ -14,11 +14,7 @@ import javax.activation.MimetypesFileTypeMap;
 import java.util.LinkedHashMap;
 
 /**
- * 文件记录信息类
- *
- * 1. id生成机制
- *   外部给定 或 随机
- * 2. 先存FastDFS 还是 先入库？
+ * 源文件信息记录类
  *
  * @author scisaga@gmail.com
  * @date 2018/12/26

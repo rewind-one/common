@@ -32,8 +32,6 @@ public class ChromeTask extends Task<ChromeTask> {
 		}
 	}
 
-	public TaskHolder holder;
-
 	// 执行动作列表
 	@DatabaseField(dataType = DataType.SERIALIZABLE)
 

@@ -199,7 +199,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	 * 指纹和id的区别是 id带有时间戳
 	 * @return Self
 	 */
-	private TaskHolder genId() {
+	private one.rewind.io.requester.task.TaskHolder genId() {
 
 		Map<String, Object> vars_ = new HashMap<>();
 
@@ -235,7 +235,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	 * @param another 另一个holder
 	 * @return 是否优先
 	 */
-	public int compareTo(TaskHolder another) {
+	public int compareTo(one.rewind.io.requester.task.TaskHolder another) {
 
 		final Task.Priority me = this.priority;
 		final Task.Priority it = another.priority;

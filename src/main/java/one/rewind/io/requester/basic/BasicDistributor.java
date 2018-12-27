@@ -1,12 +1,10 @@
 package one.rewind.io.requester.basic;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.j256.ormlite.stmt.query.In;
 import one.rewind.db.RedissonAdapter;
 import one.rewind.io.requester.Distributor;
 import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
-import one.rewind.io.requester.parser.TemplateManager;
 import one.rewind.io.requester.proxy.IpDetector;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyChannel;
@@ -18,7 +16,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.redisson.api.RMap;
 
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -87,8 +84,7 @@ public class BasicDistributor extends Distributor {
 
 		super();
 
-		operator = new Operator(null);
-		operator.start();
+		addDefaultOperator();
 
 		// 每10s 打印队列中任务数量
 		Timer timer = new Timer();
@@ -98,6 +94,14 @@ public class BasicDistributor extends Distributor {
 				logger.info("Queue: {}", queue.size());
 			}
 		}, 10000, 10000);
+	}
+
+	/**
+	 *
+	 */
+	private void addDefaultOperator() {
+		operator = new Operator(null);
+		operator.start();
 	}
 
 	/**

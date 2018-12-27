@@ -1,6 +1,5 @@
 package one.rewind.io.requester.task;
 
-import com.j256.ormlite.field.DatabaseField;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.basic.BasicRequester;
@@ -11,7 +10,6 @@ import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.txt.ChineseChar;
 import one.rewind.txt.StringUtil;
 import one.rewind.txt.URLUtil;
-
 import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -26,7 +24,7 @@ import java.util.*;
  * @author karajan
  *
  */
-public class Task<T extends Task> {
+public class Task<T extends one.rewind.io.requester.task.Task> {
 
 	/**
 	 * 任务优先级
@@ -233,7 +231,7 @@ public class Task<T extends Task> {
 	 * @param request_method 请求方法
 	 * @return Self
 	 */
-	public Task setRequestMethod(RequestMethod request_method) {
+	public one.rewind.io.requester.task.Task setRequestMethod(RequestMethod request_method) {
 		this.request_method = request_method;
 		return this;
 	}
@@ -243,7 +241,7 @@ public class Task<T extends Task> {
 	 * 仅对BasicRequester有效
 	 * @return Self
 	 */
-	public Task setPost() {
+	public one.rewind.io.requester.task.Task setPost() {
 		this.request_method = RequestMethod.POST;
 		return this;
 	}
@@ -253,7 +251,7 @@ public class Task<T extends Task> {
 	 * 仅对BasicRequester有效
 	 * @return Self
 	 */
-	public Task setPut() {
+	public one.rewind.io.requester.task.Task setPut() {
 		this.request_method = RequestMethod.PUT;
 		return this;
 	}
@@ -263,7 +261,7 @@ public class Task<T extends Task> {
 	 * 仅对BasicRequester有效
 	 * @return Self
 	 */
-	public Task setDelete() {
+	public one.rewind.io.requester.task.Task setDelete() {
 		this.request_method = RequestMethod.DELETE;
 		return this;
 	}
@@ -280,7 +278,7 @@ public class Task<T extends Task> {
 	 * 仅对BasicRequester有效
 	 * @param headers HEADER
 	 */
-	public Task setHeaders(Map<String, String> headers) {
+	public one.rewind.io.requester.task.Task setHeaders(Map<String, String> headers) {
 		this.headers = headers;
 		return this;
 	}
@@ -291,7 +289,7 @@ public class Task<T extends Task> {
 	 * @param v value
 	 * @return
 	 */
-	public Task addHeader(String k, String v) {
+	public one.rewind.io.requester.task.Task addHeader(String k, String v) {
 		if(headers == null) headers = new HashMap<>();
 		headers.put(k, v);
 		return this;
@@ -301,7 +299,7 @@ public class Task<T extends Task> {
 	 * @param k key
 	 * @return Header中 k 对应的值
 	 */
-	public Task removeHeader(String k) {
+	public one.rewind.io.requester.task.Task removeHeader(String k) {
 		if(headers == null) return this;
 		headers.remove(k);
 		return this;
@@ -319,7 +317,7 @@ public class Task<T extends Task> {
 	 * @param cookies Cookies
 	 * @return Self
 	 */
-	public Task setCookies(String cookies) {
+	public one.rewind.io.requester.task.Task setCookies(String cookies) {
 		this.cookies = cookies;
 		return this;
 	}
@@ -335,7 +333,7 @@ public class Task<T extends Task> {
 	 * @param ref Ref URL
 	 * @return Self
 	 */
-	public Task setRef(String ref) {
+	public one.rewind.io.requester.task.Task setRef(String ref) {
 		this.ref = ref;
 		return this;
 	}
@@ -369,7 +367,7 @@ public class Task<T extends Task> {
 	 * @param proxy proxy
 	 * @return Self
 	 */
-	public Task setProxy(Proxy proxy) {
+	public one.rewind.io.requester.task.Task setProxy(Proxy proxy) {
 		this.proxy = proxy;
 		return this;
 	}
@@ -379,7 +377,7 @@ public class Task<T extends Task> {
 	 * ChromeAgent 专用
 	 * @return Self
 	 */
-	public Task setLoginTask() {
+	public one.rewind.io.requester.task.Task setLoginTask() {
 		this.login_task = true;
 		return this;
 	}
@@ -399,7 +397,7 @@ public class Task<T extends Task> {
 	 * @param username 用户名
 	 * @return Self
 	 */
-	public Task setUsername(String username) {
+	public one.rewind.io.requester.task.Task setUsername(String username) {
 		this.username = username;
 		this.login_task = true;
 		return this;
@@ -423,7 +421,7 @@ public class Task<T extends Task> {
 	 * @param filter 请求过滤器
 	 * @return Self
 	 */
-	public Task setRequestFilter(RequestFilter filter) {
+	public one.rewind.io.requester.task.Task setRequestFilter(RequestFilter filter) {
 		this.requestFilter = filter;
 		return this;
 	}
@@ -443,7 +441,7 @@ public class Task<T extends Task> {
 	 * @param filter 返回过滤器
 	 * @return Self
 	 */
-	public Task setResponseFilter(ResponseFilter filter) {
+	public one.rewind.io.requester.task.Task setResponseFilter(ResponseFilter filter) {
 		this.responseFilter = filter;
 		return this;
 	}
@@ -465,9 +463,13 @@ public class Task<T extends Task> {
 		return response;
 	}
 
-
-	public Task setPreProc() {
+	/**
+	 *
+	 * @return
+	 */
+	public one.rewind.io.requester.task.Task setPreProc() {
 		flags.add(Flag.PRE_PROC);
+		if(this.holder != null) this.holder.flags.add(Flag.PRE_PROC);
 		return this;
 	}
 
@@ -477,14 +479,19 @@ public class Task<T extends Task> {
 	public boolean preProc() {
 
 		if(holder != null) {
-			return holder.flags.contains(Flag.PRE_PROC);
+			return holder.flags.contains(Flag.PRE_PROC) || flags.contains(Flag.PRE_PROC);
 		}
 
 		return flags.contains(Flag.PRE_PROC);
 	}
 
-	public Task setSwitchProxy() {
+	/**
+	 *
+	 * @return
+	 */
+	public one.rewind.io.requester.task.Task setSwitchProxy() {
 		flags.add(Flag.SWITCH_PROXY);
+		if(this.holder != null) this.holder.flags.add(Flag.SWITCH_PROXY);
 		return this;
 	}
 
@@ -494,14 +501,19 @@ public class Task<T extends Task> {
 	public boolean switchProxy() {
 
 		if(holder != null) {
-			return holder.flags.contains(Flag.SWITCH_PROXY);
+			return holder.flags.contains(Flag.SWITCH_PROXY) || flags.contains(Flag.SWITCH_PROXY);
 		}
 
 		return flags.contains(Flag.SWITCH_PROXY);
 	}
 
-	public Task setBuildDom() {
+	/**
+	 *
+	 * @return
+	 */
+	public one.rewind.io.requester.task.Task setBuildDom() {
 		flags.add(Flag.BUILD_DOM);
+		if(this.holder != null) this.holder.flags.add(Flag.BUILD_DOM);
 		return this;
 	}
 
@@ -511,14 +523,19 @@ public class Task<T extends Task> {
 	public boolean buildDom() {
 
 		if(holder != null) {
-			return holder.flags.contains(Flag.BUILD_DOM);
+			return holder.flags.contains(Flag.BUILD_DOM) || flags.contains(Flag.BUILD_DOM);
 		}
 
 		return flags.contains(Flag.BUILD_DOM);
 	}
 
-	public Task setShootScreen() {
+	/**
+	 *
+	 * @return
+	 */
+	public one.rewind.io.requester.task.Task setShootScreen() {
 		flags.add(Flag.SHOOT_SCREEN);
+		if(this.holder != null) this.holder.flags.add(Flag.SHOOT_SCREEN);
 		return this;
 	}
 
@@ -528,7 +545,7 @@ public class Task<T extends Task> {
 	public boolean shootScreen() {
 
 		if(holder != null) {
-			return holder.flags.contains(Flag.SHOOT_SCREEN);
+			return holder.flags.contains(Flag.SHOOT_SCREEN) || flags.contains(Flag.SHOOT_SCREEN);
 		}
 
 		return flags.contains(Flag.SHOOT_SCREEN);
@@ -546,7 +563,7 @@ public class Task<T extends Task> {
 	 * 设定用时
 	 * @return Self
 	 */
-	public Task setDuration() {
+	public one.rewind.io.requester.task.Task setDuration() {
 		this.duration = System.currentTimeMillis() - this.start_time.getTime();
 		return this;
 	}
@@ -556,7 +573,7 @@ public class Task<T extends Task> {
 	 * @param validator 内容验证器
 	 * @return Self
 	 */
-	public Task setValidator(TaskValidator validator) {
+	public one.rewind.io.requester.task.Task setValidator(TaskValidator validator) {
 		this.validator = validator;
 		return this;
 	}
@@ -566,7 +583,7 @@ public class Task<T extends Task> {
 	 * @param callback 完成回调
 	 * @return Self
 	 */
-	public Task addDoneCallback(TaskCallback<T> callback) {
+	public one.rewind.io.requester.task.Task addDoneCallback(TaskCallback<T> callback) {
 		if (this.doneCallbacks == null) this.doneCallbacks = new LinkedList<>();
 		this.doneCallbacks.add(callback);
 		return this;
@@ -577,7 +594,7 @@ public class Task<T extends Task> {
 	 * @param ntg 任务生成器
 	 * @return Self
 	 */
-	public Task addNextTaskGenerator(NextTaskGenerator<T> ntg) {
+	public one.rewind.io.requester.task.Task addNextTaskGenerator(NextTaskGenerator<T> ntg) {
 		if (this.nextTaskGenerators == null) this.nextTaskGenerators = new LinkedList<>();
 		this.nextTaskGenerators.add(ntg);
 		return this;
@@ -588,7 +605,7 @@ public class Task<T extends Task> {
 	 * @param callback 异常回调
 	 * @return Self
 	 */
-	public Task addExceptionCallback(TaskCallback<T> callback) {
+	public one.rewind.io.requester.task.Task addExceptionCallback(TaskCallback<T> callback) {
 		if (this.exceptionCallbacks == null) this.exceptionCallbacks = new LinkedList<>();
 		this.exceptionCallbacks.add(callback);
 		return this;

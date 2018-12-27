@@ -2,6 +2,7 @@ package one.rewind.io.requester.basic;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import one.rewind.io.requester.exception.ProxyException;
+import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyChannel;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
@@ -47,6 +48,50 @@ public class BasicDistributorPG extends BasicDistributor {
 
 	/**
 	 *
+	 */
+	private void addDefaultOperator() {
+		operator = new BasicDistributorPG.Operator(null);
+		operator.start();
+	}
+
+	/**
+	 * 添加一个配置代理隧道的Operator
+	 * @param channel
+	 */
+	public BasicDistributor addOperator(ProxyChannel channel) {
+
+		if(operator != null) {
+			operator.setDone();
+			operator = null;
+		}
+
+		BasicDistributorPG.Operator op = new BasicDistributorPG.Operator(channel);
+		operators.add(op);
+		op.start();
+
+		return this;
+	}
+
+	/**
+	 * 添加一个配置代理的Operator
+	 * @param proxy
+	 */
+	public BasicDistributor addOperator(Proxy proxy) {
+
+		if(operator != null) {
+			operator.setDone();
+			operator = null;
+		}
+
+		BasicDistributor.Operator op = new BasicDistributorPG.Operator().setProxy(proxy);
+		operators.add(op);
+		op.start();
+
+		return this;
+	}
+
+	/**
+	 *
 	 * @param channel
 	 * @throws ProxyException.Failed
 	 * @throws MalformedURLException
@@ -66,6 +111,10 @@ public class BasicDistributorPG extends BasicDistributor {
 	 *
 	 */
 	public class Operator extends BasicDistributor.Operator {
+
+		public Operator() {
+			this(null);
+		}
 
 		/**
 		 *
