@@ -10,6 +10,7 @@ import one.rewind.db.FastDFSAdapter;
 import one.rewind.txt.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 
+import javax.activation.MimetypesFileTypeMap;
 import java.util.LinkedHashMap;
 
 /**
@@ -19,13 +20,12 @@ import java.util.LinkedHashMap;
  *   外部给定 或 随机
  * 2. 先存FastDFS 还是 先入库？
  *
- *
  * @author scisaga@gmail.com
  * @date 2018/12/26
  */
 @DBName(value = "raw")
 @DatabaseTable(tableName = "sources")
-public abstract class Source extends Model {
+public class Source extends Model {
 
 	@DatabaseField(dataType = DataType.STRING, width = 32, id = true)
 	public String id;
@@ -39,7 +39,7 @@ public abstract class Source extends Model {
 	@DatabaseField(dataType = DataType.STRING, width = 128)
 	public String content_type;
 
-	public transient byte[] src;
+	private transient byte[] src;
 
 	@DatabaseField(dataType = DataType.LONG)
 	public long size;
@@ -86,6 +86,20 @@ public abstract class Source extends Model {
 	}
 
 	/**
+	 *
+	 * @param file_name
+	 * @param src
+	 */
+	public Source(String file_name, byte[] src) {
+
+		this.file_name = file_name;
+		this.content_type = new MimetypesFileTypeMap().getContentType(file_name);
+		this.id = StringUtil.MD5(file_name + "::"+ content_type + "::" + System.currentTimeMillis());
+		this.src = src;
+		this.size = src.length;
+	}
+
+	/**
 	 * 插入
 	 * @return
 	 * @throws Exception
@@ -114,6 +128,16 @@ public abstract class Source extends Model {
 		this.file_path = info[1];
 
 		return super.insert();
+	}
+
+	/**
+	 *
+	 * @return
+	 * @throws InterruptedException
+	 */
+	public byte[] getSrc() throws InterruptedException {
+		if(this.src != null) return this.src;
+		return FastDFSAdapter.getInstance().get(this.group_name, this.file_path);
 	}
 
 	/**
