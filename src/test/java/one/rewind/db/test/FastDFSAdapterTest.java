@@ -1,107 +1,80 @@
 package one.rewind.db.test;
 
 import one.rewind.db.FastDFSAdapter;
-import org.csource.fastdfs.*;
+import one.rewind.json.JSON;
+import one.rewind.util.FileUtil;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class FastDFSAdapterTest {
 
-    /**
-     *  测试上传速度
-     * @throws Exception
-     */
-    @Test
-    public void testFastDFSAdapterUpFile() throws Exception{
+	/**
+	 *  测试上传功能及上传速度
+	 * @throws Exception
+	 */
+	@Test
+	public void testPut() throws Exception{
 
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MICROSECONDS, new LinkedBlockingQueue());
+		ExecutorService executor = Executors.newFixedThreadPool(4);
 
-        List<String> fileList = new ArrayList<>();
-        for( int i = 1 ; i< 7 ; i++ ){
-            fileList.add("tmp/zbj-geetest-bg-windows/" + i + ".png");
-        }
+		List<String> fileList = new ArrayList<>();
+		for( int i=1 ; i<11 ; i++ ){
+			fileList.add("tmp/" + i + ".jpg");
+		}
 
-        long t1 = System.currentTimeMillis();
-        int cycle = 1;
-        CountDownLatch countDownLatch = new CountDownLatch(fileList.size() * cycle);
+		long t1 = System.currentTimeMillis();
 
-        for(int i=0; i<cycle; i++) {
-            for (String s : fileList) {
+		int cycle = 1;
+		CountDownLatch countDownLatch = new CountDownLatch(fileList.size() * cycle);
 
-                InputStream is =  new FileInputStream(s);// pathStr 文件路径
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
+		for(int i=0; i<cycle; i++) {
 
-                byte[] b = new byte[1024];
-                int n;
-                while ((n = is.read(b)) != -1) {
-                    out.write(b, 0, n);
-                }
+			for (String s : fileList) {
 
-                executor.submit(()-> {
-                    try {
+				byte[] src = FileUtil.readBytesFromFile(s);
 
-                        String[] src = FastDFSAdapter.getInstance().upload_file(b, "png", null);
-                        File csv = new File("tmp/test.csv"); // CSV数据文件
-                        BufferedWriter bw = new BufferedWriter(new FileWriter(csv, true)); // 附加
-                        bw.write( src[0] + "," + src[1]); // 添加新的数据行
-                        bw.newLine();
-                        bw.close();
+				executor.submit(()-> {
 
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    countDownLatch.countDown();
-                });
-            }
-        }
+					String[] info = new String[0];
 
-        countDownLatch.await();
-        System.out.print(System.currentTimeMillis() - t1);
-    }
+					try {
 
-    @Test
-    public void testUpFile(){
+						info = FastDFSAdapter.getInstance().put(src, "jpg", new LinkedHashMap<>());
+						System.err.println(info[0] + "::" + info[1]); // 组名 + 路径
 
-        String conf_filename = "fastdfs.conf";
+						countDownLatch.countDown();
 
-        TrackerServer trackerServer =null;
-        StorageServer storageServer = null;
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 
-        try {
-            ClientGlobal.init(conf_filename);
-            TrackerClient tracker = new TrackerClient();
-            trackerServer = tracker.getConnection();
-            StorageClient1 client = new StorageClient1(trackerServer, storageServer);
+				});
+			}
+		}
 
-            //要上传的文件路径
-            String local_filename = "tmp/1.png";
+		countDownLatch.await();
 
-            StorageClient storageClient = new StorageClient(trackerServer, storageServer);
-            String fileIds[] = storageClient.upload_file(local_filename, "png", null);
+		System.out.print(System.currentTimeMillis() - t1);
+	}
 
-            System.out.println(fileIds.length);
-            System.out.println("组名：" + fileIds[0]);
-            System.out.println("路径: " + fileIds[1]);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally{
-            try {
-                if(null!=storageServer) storageServer.close();
-                if(null!=trackerServer) trackerServer.close();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
+	@Test
+	public void testGet() throws InterruptedException {
 
-    }
+		byte[] src = FastDFSAdapter.getInstance().get("group1", "M00/00/00/wKikpFwjUUmAVHTQADb9uulM8JE722.jpg");
 
-    public void testFastDFSAdapterDownFile(){}
+		FileUtil.writeBytesToFile(src, "tmp/1_1.jpg");
+
+	}
+
+	@Test
+	public void testGetStat() throws IOException {
+
+		System.err.println(JSON.toPrettyJson(FastDFSAdapter.getInstance().getStat()));
+
+	}
 }
