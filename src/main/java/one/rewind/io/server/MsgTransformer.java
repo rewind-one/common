@@ -19,7 +19,7 @@ public class MsgTransformer implements ResponseTransformer {
 
 	@Override
 	public String render(Object model) throws JsonProcessingException {
-		
+
 		if(model instanceof JSONable){
 			return ((JSONable) model).toJSON();
 		}

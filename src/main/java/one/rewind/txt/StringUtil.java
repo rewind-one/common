@@ -121,12 +121,22 @@ public class StringUtil {
 	 */
 	public static byte[] uuid(String src) {
 
+		return uuid(src.getBytes());
+	}
+
+	/**
+	 *
+	 * @param src
+	 * @return
+	 */
+	public static byte[] uuid(byte[] src) {
+
 		MessageDigest m;
 		try {
 			m = MessageDigest.getInstance("MD5");
 
 			m.reset();
-			m.update(src.getBytes());
+			m.update(src);
 			byte[] digest = m.digest();
 			return digest;
 		} catch (NoSuchAlgorithmException e) {
@@ -232,6 +242,18 @@ public class StringUtil {
 		return StringUtil.byteArrayToHex(StringUtil.uuid(inStr));
 	}
 
+	/**
+	 *
+	 * @param src
+	 * @return
+	 */
+	public static String MD5(byte[] src) {
+		return StringUtil.byteArrayToHex(StringUtil.uuid(src));
+	}
+
+	/**
+	 *
+	 */
 	public static String cronPattern = "(\\*|((\\*\\/)?[1-5]?[0-9])) (\\*|((\\*\\/)?(1?[0-9]|2[0-3]))) (\\*|((\\*\\/)?([1-9]|[12][0-9]|3[0-1]))) (\\*|((\\*\\/)?([1-9]|1[0-2]))) (\\*|((\\*\\/)?[0-6]))";
 
 	/**
