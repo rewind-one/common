@@ -49,7 +49,7 @@ public class BasicDistributorPG extends BasicDistributor {
 	/**
 	 *
 	 */
-	private void addDefaultOperator() {
+	public void addDefaultOperator() {
 		operator = new BasicDistributorPG.Operator(null);
 		operator.start();
 	}
@@ -59,11 +59,6 @@ public class BasicDistributorPG extends BasicDistributor {
 	 * @param channel
 	 */
 	public BasicDistributor addOperator(ProxyChannel channel) {
-
-		if(operator != null) {
-			operator.setDone();
-			operator = null;
-		}
 
 		BasicDistributorPG.Operator op = new BasicDistributorPG.Operator(channel);
 		operators.add(op);
@@ -77,11 +72,6 @@ public class BasicDistributorPG extends BasicDistributor {
 	 * @param proxy
 	 */
 	public BasicDistributor addOperator(Proxy proxy) {
-
-		if(operator != null) {
-			operator.setDone();
-			operator = null;
-		}
 
 		BasicDistributor.Operator op = new BasicDistributorPG.Operator().setProxy(proxy);
 		operators.add(op);
@@ -122,6 +112,8 @@ public class BasicDistributorPG extends BasicDistributor {
 		 */
 		public Operator(ProxyChannel channel) {
 
+			super(channel);
+
 			String name = "OperatorPG";
 
 			if(channel != null) {
@@ -136,6 +128,8 @@ public class BasicDistributorPG extends BasicDistributor {
 							.build());
 
 			this.channel = channel;
+
+			logger.info("{} created.", name);
 		}
 
 		/**
@@ -153,11 +147,11 @@ public class BasicDistributorPG extends BasicDistributor {
 
 					if(th != null) {
 
-						Task t = th.build();
+						// 需要切换代理
+						if (th.flags.contains(Task.Flag.SWITCH_PROXY)) {
 
-						if (t.switchProxy()) {
 
-							RequestGroupWrapper gw = new RequestGroupWrapper(t, channel);
+							RequestGroupWrapper gw = new RequestGroupWrapper(th, channel);
 							executor.submit(gw);
 
 							//logger.info("*Phaser {}", gw.phaser.getUnarrivedParties());
@@ -176,6 +170,7 @@ public class BasicDistributorPG extends BasicDistributor {
 
 							waits();
 
+							Task t = th.build();
 							t.setProxy(channel.proxy);
 
 							executor.submit(new RequestWrapper(t));
@@ -201,7 +196,7 @@ public class BasicDistributorPG extends BasicDistributor {
 			String fingerprint;
 
 			// 请求组内部任务对接
-			BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
+			BlockingQueue<TaskHolder> queue = new LinkedBlockingQueue<>();
 
 			ProxyChannel channel;
 
@@ -210,6 +205,8 @@ public class BasicDistributorPG extends BasicDistributor {
 
 			// 单个请求的共同请求头，第一个任务随机生成，后续任务复用
 			Map<String, String> commonHeader;
+
+			volatile boolean commonHeaderSet = false;
 
 			String cookies;
 
@@ -221,16 +218,15 @@ public class BasicDistributorPG extends BasicDistributor {
 			/**
 			 * 构造器
 			 */
-			public RequestGroupWrapper(Task t, ProxyChannel channel) throws InterruptedException {
+			public RequestGroupWrapper(TaskHolder th, ProxyChannel channel) throws InterruptedException {
 
 				this.channel = channel;
-				this.className = t.getClass().getSimpleName();
-				this.fingerprint = t.holder.fingerprint;
+				this.className = th.class_name;
+				this.fingerprint = th.fingerprint;
 
 				logger.info("*RG {}:[{}]", className, fingerprint);
 
-				queue.put(t);
-				commonHeader = t.getHeaders();
+				queue.put(th);
 				phaser = new Phaser(2);
 			}
 
@@ -243,10 +239,19 @@ public class BasicDistributorPG extends BasicDistributor {
 
 					try {
 
-						Task t = queue.poll(100, TimeUnit.MILLISECONDS);
+						TaskHolder th = queue.poll(100, TimeUnit.MILLISECONDS);
 
-						if(t != null) {
+						if(th != null) {
 
+							Task t = th.build();
+
+							// RequestGroupWrapper 的第一个task 设置 commonHeader
+							if(!commonHeaderSet) {
+								commonHeader = t.getHeaders();
+								commonHeaderSet = true;
+							}
+
+							// 需要进行切换代理操作
 							if(switchProxy) {
 
 								changeIp(channel);
@@ -255,20 +260,25 @@ public class BasicDistributorPG extends BasicDistributor {
 								cookies = null;
 							}
 
+							// 等待切换
 							waits();
 
+							// 设置代理
 							t.setProxy(channel.proxy);
 
+							// Header的处理
 							if(commonHeader != null) {
+
+								// 合并 上一次获取的 Cookie
 								if (cookies != null) {
 									commonHeader.put("Cookie", cookies);
 								} else {
 									commonHeader.remove("Cookie");
 								}
-							}
 
-							// 设置header
-							t.setHeaders(commonHeader);
+								// 设置 header
+								t.setHeaders(commonHeader);
+							}
 
 							// 执行任务
 							executor.submit(new RequestWrapper(t, this));
@@ -350,7 +360,7 @@ public class BasicDistributorPG extends BasicDistributor {
 				// 如果出现验证异常
 				if(validatorException || t.exception != null) {
 
-					logger.info("Set RG switch proxy");
+					logger.info("Set switch proxy");
 
 					// Request Group 中
 					if(requestGroup != null) {

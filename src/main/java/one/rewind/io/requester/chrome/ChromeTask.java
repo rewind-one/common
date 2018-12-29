@@ -69,6 +69,37 @@ public class ChromeTask extends Task<ChromeTask> {
 	}
 
 	/**
+	 *
+	 * @param clazz
+	 * @param url_template
+	 * @param post_data_template
+	 * @param init_map_class
+	 * @param init_map_defaults
+	 */
+	public static void registerBuilder(
+			Class<? extends ChromeTask> clazz,
+			String url_template,
+			String post_data_template,
+			Map<String, String> init_map_class,
+			Map<String, Object> init_map_defaults){
+
+		try {
+
+			TemplateManager.getInstance().add(clazz, new Builder(
+					url_template,
+					post_data_template,
+					init_map_class,
+					init_map_defaults
+			));
+
+			ChromeAgent.logger.info("Registered {}", clazz.getName());
+
+		} catch (Exception e) {
+			ChromeAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
+		}
+	}
+
+	/**
 	 * 注册Builder
 	 * @param clazz
 	 * @param url_template
@@ -117,7 +148,8 @@ public class ChromeTask extends Task<ChromeTask> {
 			Map<String, Object> init_map_defaults,
 			boolean need_login,
 			Task.Priority base_priority,
-			long min_interval
+			long min_interval,
+			Task.Flag... flags
 	){
 
 		try {
@@ -129,7 +161,53 @@ public class ChromeTask extends Task<ChromeTask> {
 					init_map_defaults,
 					min_interval,
 					need_login,
-					base_priority
+					base_priority,
+					flags
+			));
+
+
+			ChromeAgent.logger.info("Registered {}", clazz.getName());
+
+		} catch (Exception e) {
+			ChromeAgent.logger.error("Register {} builder failed. ", clazz.getName(), e);
+		}
+	}
+
+	/**
+	 *
+	 * @param clazz
+	 * @param url_template
+	 * @param post_data_template
+	 * @param init_map_class
+	 * @param init_map_defaults
+	 * @param need_login
+	 * @param base_priority
+	 * @param min_interval
+	 * @param flags
+	 */
+	public static void registerBuilder(
+			Class<? extends ChromeTask> clazz,
+			String url_template,
+			String post_data_template,
+			Map<String, String> init_map_class,
+			Map<String, Object> init_map_defaults,
+			boolean need_login,
+			Task.Priority base_priority,
+			long min_interval,
+			Task.Flag... flags
+	){
+
+		try {
+
+			TemplateManager.getInstance().add(clazz, new Builder(
+					url_template,
+					post_data_template,
+					init_map_class,
+					init_map_defaults,
+					min_interval,
+					need_login,
+					base_priority,
+					flags
 			));
 
 

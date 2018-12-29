@@ -10,6 +10,7 @@ import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyChannel;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
+import one.rewind.json.JSON;
 import one.rewind.util.Configs;
 import one.rewind.util.NetworkUtil;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +35,7 @@ public class BasicDistributor extends Distributor {
 	static int CONNECT_TIMEOUT = 20000;
 
 	// 重试次数
-	static int RETRY_LIMIT = 100;
+	static int RETRY_LIMIT = 10;
 
 	static {
 
@@ -84,8 +85,6 @@ public class BasicDistributor extends Distributor {
 
 		super();
 
-		addDefaultOperator();
-
 		// 每10s 打印队列中任务数量
 		Timer timer = new Timer();
 		timer.schedule(new TimerTask() {
@@ -99,7 +98,7 @@ public class BasicDistributor extends Distributor {
 	/**
 	 *
 	 */
-	private void addDefaultOperator() {
+	public void addDefaultOperator() {
 		operator = new Operator(null);
 		operator.start();
 	}
@@ -109,11 +108,6 @@ public class BasicDistributor extends Distributor {
 	 * @param channel
 	 */
 	public BasicDistributor addOperator(ProxyChannel channel) {
-
-		if(operator != null) {
-			operator.setDone();
-			operator = null;
-		}
 
 		Operator op = new Operator(channel);
 		operators.add(op);
@@ -128,11 +122,6 @@ public class BasicDistributor extends Distributor {
 	 */
 	public BasicDistributor addOperator(Proxy proxy) {
 
-		if(operator != null) {
-			operator.setDone();
-			operator = null;
-		}
-
 		Operator op = new Operator().setProxy(proxy);
 		operators.add(op);
 		op.start();
@@ -145,7 +134,11 @@ public class BasicDistributor extends Distributor {
 	 * 为了复用去重方法，此处可将queue作为一个输入变量
 	 * @param th
 	 */
-	public synchronized SubmitInfo submit(TaskHolder th, BlockingQueue queue) throws InterruptedException {
+	public synchronized SubmitInfo submit(TaskHolder th, BlockingQueue<TaskHolder> queue) throws InterruptedException {
+
+		if(operators.size() == 0 && operator == null) {
+			addDefaultOperator();
+		}
 
 		if(!fingerprints.containsKey(th.fingerprint)) {
 
@@ -225,6 +218,8 @@ public class BasicDistributor extends Distributor {
 							.build());
 
 			this.channel = channel;
+
+			logger.info("{} created.", name);
 		}
 
 		/**

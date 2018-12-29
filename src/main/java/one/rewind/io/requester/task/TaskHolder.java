@@ -59,7 +59,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	@DatabaseField(persisterClass = JSONableFlagListPersister.class, width = 1024)
 	public List<Task.Flag> flags = new ArrayList<>();
 
-	// 域名
+	// url
 	@DatabaseField(dataType = DataType.STRING, width = 4096, canBeNull = false)
 	public String url;
 
