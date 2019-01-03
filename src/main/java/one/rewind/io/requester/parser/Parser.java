@@ -1,9 +1,16 @@
 package one.rewind.io.requester.parser;
 
+import one.rewind.db.RedissonAdapter;
+import one.rewind.io.requester.exception.TaskException;
+import one.rewind.io.requester.task.Task;
+import one.rewind.json.JSON;
+import one.rewind.txt.ContentCleaner;
 import one.rewind.txt.DateFormatUtil;
 import one.rewind.txt.NumberFormatUtil;
+import one.rewind.txt.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.redisson.api.RMap;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -11,16 +18,18 @@ import java.util.regex.Pattern;
 
 public class Parser {
 
+	public Task t;
+	public String url;
 	public String src;
 	public Document doc;
 
 	public Parser() {}
 
-	public Parser(String src, Document doc) {
-		this.src = src;
-		this.doc = doc;
+	public Parser(Task t) {
+		this.url = t.url;
+		this.src = t.getResponse().getText();
+		this.doc = t.getResponse().getDoc();
 	}
-
 	/*private static <T> T cast(Object o, Class<T> clazz) {
 		return clazz != null && clazz.isInstance(o) ? clazz.cast(o) : null;
 	}*/
@@ -49,7 +58,9 @@ public class Parser {
 		else if(className.equals(Date.class.getSimpleName())) {
 			return DateFormatUtil.parseTime(str);
 		}
-
+		else if (className.equals(List.class.getSimpleName())) {
+			return Arrays.asList(str);
+		}
 		return str;
 	}
 
@@ -123,6 +134,8 @@ public class Parser {
 		String src = this.src;
 		Element dom = this.doc;
 
+		String src_hash = null;
+
 		// A 需要对源数据进行预先截取
 		if(mapper.path != null) {
 
@@ -131,6 +144,7 @@ public class Parser {
 
 				for(String res : regMatch(src, mapper.path, false)) {
 					src = res;
+					src_hash = StringUtil.MD5(src);
 					break;
 				}
 			}
@@ -140,7 +154,20 @@ public class Parser {
 				if(this.doc == null) throw new IllegalStateException("Doc not set");
 
 				dom = this.doc.select(mapper.path).get(0);
+				src_hash = StringUtil.MD5(dom.html());
 			}
+		}
+
+		// A3 对获取的 src / dom 进行去重判断
+		// TODO t.holder.vars need to be LinkedHashMap
+		int template_id = t.holder.template_id;
+		String mapper_hash = mapper.getHash();
+		RMap<String, String> rmap = RedissonAdapter.redisson.getMap("Template-" + template_id + "-Mapper-" + mapper_hash);
+
+		if(rmap.containsValue(src_hash)) {
+			throw new TaskException.DuplicateContentException();
+		} else {
+			rmap.put(StringUtil.MD5(JSON.toJson(new TreeMap<>(t.holder.vars))), src_hash);
 		}
 
 		if(src == null || src.length() == 0 || dom == null) throw new Exception("Mapper path invalid");
@@ -149,7 +176,7 @@ public class Parser {
 			TemplateManager.logger.warn("Mapper has no fields");
 		}
 
-		// 结果列表
+		// B 生成结果列表
 		List<Map<String, Object>> data = new ArrayList<>();
 
 		// 如果 mapper 是多值匹配方式
@@ -162,60 +189,126 @@ public class Parser {
 
 			founds.put(field.name, new ArrayList<>());
 
-			// 正则表达式解析
-			if(field.method == Field.Method.Reg) {
+			if (field.path != null) {
+				// B1.1 正则表达式解析
+				if (field.method == Field.Method.Reg) {
 
-				regMatch(src, field.path, mapper.multi).forEach(res -> {
+					regMatch(src, field.path, mapper.multi).forEach(res -> {
 
-					for(Field.Replacement replacement : field.replacements) {
-						res = res.replaceAll(replacement.find, replacement.replace);
-					}
+						for (Field.Replacement replacement : field.replacements) {
+							res = res.replaceAll(replacement.find, replacement.replace);
+						}
 
-					founds.get(field.name).add(cast(res, field.type));
-				});
+						founds.get(field.name).add(cast(res, field.type));
+					});
 
+				}
+				// B1.2 CSSPath 解析
+				else if (field.method == Field.Method.CssPath) {
+
+					if (this.doc == null) throw new IllegalStateException("Doc not set");
+
+					cssMatch(dom, field.path, field.attribute, mapper.multi).forEach(res -> {
+
+						for (Field.Replacement replacement : field.replacements) {
+							res = res.replaceAll(replacement.find, replacement.replace);
+						}
+
+						founds.get(field.name).add(cast(res, field.type));
+					});
+				}
 			}
-			// CSSPath 解析
-			else if(field.method == Field.Method.CssPath) {
+			// B2 path为null或path选择不出数据时
+			if (founds.get(field.name).size() == 0) {
 
-				if(this.doc == null) throw new IllegalStateException("Doc not set");
+				// B2.1 defaultString有值时，使用defaultString填充
+				if (field.defaultString != null) {
 
-				cssMatch(dom, field.path, field.attribute, mapper.multi).forEach(res -> {
+					founds.get(field.name).add(cast(field.defaultString, field.type));
+				}
+				// B2.2 defaultString没有设定时，且该Field不能为空时，抛出异常
+				else if (!field.nullable) {
 
-					for(Field.Replacement replacement : field.replacements) {
-						res = res.replaceAll(replacement.find, replacement.replace);
-					}
-
-					founds.get(field.name).add(cast(res, field.type));
-				});
+					throw new Exception("Field : [" + field.name + "] not allowed to be null.");
+				}
 			}
 		}
 
-		// 生成最小公共长度
-		int common_length = Integer.MAX_VALUE;
+		// 定义Mapper中Field的几种场景
+		// 如果存在一个Field拿到 n 个结果，n是Mapper中所有Field拿到结果数量最大的那个
+		// 如果存在另外一个Field 拿到 0 个结果，且这个Field不是nullable，此处应该抛出异常
+		// 如果存在另外一个Field 拿到 m 个结果，且m < n 个，则自动忽略 第2个到第m个结果，认为拿到了n个一样的结果，相当于把第一个结果复制了n份
+		// 通过这样处理，可认为此时所有的 非 nullable 的 Field 都拿到了 n 个结果
+		// 将这些结果组合，相当于得到了 n 个map
+		// 此时对每个map 再进行evalRule处理，抛出 js eval 过程中出现的异常，生成最终的map，传递到下一层处理
+		// va --> 1 // 媒体名称
+		// vb --> 6 // 文章名称
+		// vc --> 6 // 文章摘要
+		// vd --> 0 nullable
 
-		for(String name : founds.keySet()) {
-			if(founds.get(name).size() < common_length) {
-				common_length = founds.get(name).size();
-			}
-		}
+		// va --> 1 媒体名称 md5({{vb}}+"-"+{{va}}) --> Nashorn 加载自定义函数
+		// vb --> 0 文章名称
+		// vc --> 1 文章摘要
+		// vd --> 1 nullable
 
-		if(common_length == 0) throw new Exception("Match no data");
+		// C 对齐 获取的数据
+		// C1 生成最大公共长度
+		int maxLength = founds.values().stream().map(list -> list.size()).reduce(Integer::max).get();
 
-		// 生成data
-		for(int i=0; i<common_length; i++) {
+		// C2 生成data
+		for (int i = 0; i < maxLength; i++) {
 
 			Map<String, Object> item = new HashMap<>();
 
-			for(String name : founds.keySet()) {
-				item.put(name, founds.get(name).get(i));
+			for (String name : founds.keySet()) {
+
+				if(0 < founds.get(name).size() && founds.get(name).size() < maxLength) {
+					item.put(name, founds.get(name).get(0));
+				}
+				else if (founds.get(name).size() == maxLength){
+					item.put(name, founds.get(name).get(i));
+				}
+
+				//对 content 和 src 进行清洗
+				if (name.equals("content")) {
+
+					// TODO 如果图片要单独下载，并保存在小文件系统，何如？
+					// 对 images src 进行修正
+					String content = item.get(name).toString();
+
+					List<String> img_urls = new ArrayList<>();
+					content = ContentCleaner.clean(content, img_urls, url);
+
+					item.put("content", content);
+					item.put("images", img_urls);
+				}
 			}
 
 			data.add(item);
 		}
 
+		// D 预定义规则运算
+		for(Map<String, Object> item : data) {
+
+			for(Field f : mapper.fields) {
+
+				if(f.evalRule != null) {
+
+					String rule = f.evalRule;
+
+					for(String key : item.keySet()) {
+						rule = rule.replaceAll("\\{\\{" + key + "\\}\\}", item.get(key).toString());
+					}
+
+					if(rule.contains("{{") && rule.contains("}}")) {
+						throw new Exception("EvalRule not fully construct.");
+					}
+
+					item.put(f.name, Evaluator.getInstance().serialEval(rule).toString());
+				}
+			}
+		}
+
 		return data;
 	}
-
-
 }

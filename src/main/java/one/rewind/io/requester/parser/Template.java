@@ -1,5 +1,11 @@
 package one.rewind.io.requester.parser;
 
+import com.google.gson.reflect.TypeToken;
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.field.FieldType;
+import one.rewind.db.persister.JSONableListPersister;
+import one.rewind.db.persister.JSONablePersister;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.json.JSON;
@@ -13,14 +19,18 @@ import java.util.*;
 public class Template implements JSONable<Template> {
 
 	// id
+	@DatabaseField(persisterClass = JSONablePersister.class, dataType = DataType.INTEGER, index = true)
 	public int id;
 
 	// builder 生成任务用
+	@DatabaseField(persisterClass = JSONablePersister.class, columnDefinition = "MEDIUMTEXT")
 	Builder builder;
 
+	@DatabaseField(persisterClass = JSONablePersister.class, columnDefinition = "MEDIUMTEXT")
 	Validator validator;
 
 	// mappers 列表
+	@DatabaseField(persisterClass = JSONableMapperListPersister.class, columnDefinition = "MEDIUMTEXT")
 	List<Mapper> mappers = new ArrayList<>();
 
 	/**
@@ -90,6 +100,10 @@ public class Template implements JSONable<Template> {
 		return this;
 	}
 
+	public Template setMinInterval(long minInterval) {
+		this.builder.min_interval = minInterval;
+		return this;
+	}
 	/**
 	 *
 	 * @param init_map
@@ -139,6 +153,29 @@ public class Template implements JSONable<Template> {
 	) throws Exception {
 
 		return TemplateManager.getInstance().newHolder(Task.class, id, init_map, username, 0, null);
+	}
+
+	/**
+	 * ormlite框架下的list<Mapper>持久化实现
+	 */
+	public static class JSONableMapperListPersister extends JSONableListPersister {
+
+		private static final Template.JSONableMapperListPersister INSTANCE = new Template.JSONableMapperListPersister();
+
+		public static Template.JSONableMapperListPersister getSingleton() {
+			return INSTANCE;
+		}
+
+		private JSONableMapperListPersister() {
+			super();
+		}
+
+		@Override
+		public Object sqlArgToJava(FieldType fieldType, Object sqlArg, int columnPos) {
+
+			List list = JSON.fromJson((String) sqlArg, new TypeToken<List<Mapper>>() {}.getType());
+			return sqlArg != null ? list : null;
+		}
 	}
 
 	@Override

@@ -8,6 +8,9 @@ import java.util.List;
 
 public class Field implements JSONable<Field> {
 
+	/**
+	 * 解析方法
+	 */
 	public enum Method {
 		Reg,
 		CssPath
@@ -34,19 +37,64 @@ public class Field implements JSONable<Field> {
 		}
 	}
 
+	// 具体解析方法
 	Method method = Method.Reg;
 
+	// 字段名
 	String name;
 
+	// 字段类型
 	String type = String.class.getSimpleName();
 
+	// 默认字符类型值
+	String defaultString;
+
+	// 是否可为空
+	boolean nullable = true;
+
+	// 后置运算规则 JS
+	String evalRule;
+
+	// 解析路径
 	String path;
 
+	// 当 method = CssPath 时，可以通过path解析到DOM对象，通过attribute得到对象属性
 	String attribute;
 
+	// 内容清洗规则
 	List<Replacement> replacements = new ArrayList<>();
 
 	public Field() {}
+
+	/**
+	 * JS 字段验证脚本
+	 * @param evalRule
+	 * @return
+	 */
+	public Field setEvalRule(String evalRule) {
+		this.evalRule = evalRule;
+		return this;
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public Field setNotNullable() {
+		this.nullable = false;
+		return this;
+	}
+
+	/**
+	 *
+	 * @param defaultString
+	 * @return
+	 */
+	public Field setDefaultString(String defaultString) {
+
+		this.defaultString = defaultString;
+		return this;
+	}
 
 	/**
 	 * 正则 结果都是String

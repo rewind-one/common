@@ -111,6 +111,36 @@ public class Builder implements JSONable<Builder> {
 
 	/**
 	 * 生成新的Builder
+	 * 提交post_data，设置task_priority
+	 * @param url_template
+	 * @param post_data_template
+	 * @param task_priority
+	 * @return
+	 * @throws Exception
+	 * @auther zm
+	 */
+	public static Builder of(
+			String url_template,
+			String post_data_template,
+			Task.Priority task_priority
+	) throws Exception {
+
+		Set<String> vars = Builder.getVarNames(url_template + post_data_template);
+
+		Map<String, String> init_map_class = new HashMap<>();
+		Map<String, Object> init_map_defaults = new HashMap<>();
+
+		for (String key : vars) {
+			init_map_class.put(key, "String");
+			init_map_defaults.put(key, "");
+		}
+
+		return new Builder(url_template, post_data_template, init_map_class, init_map_defaults, 0, false, task_priority, Flag.BUILD_DOM);
+
+	}
+
+	/**
+	 * 生成新的Builder
 	 *
 	 * @param url_template
 	 * @param init_map_class

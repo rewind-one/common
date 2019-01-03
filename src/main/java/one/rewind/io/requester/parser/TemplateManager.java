@@ -1,5 +1,8 @@
 package one.rewind.io.requester.parser;
 
+import one.rewind.db.model.Model;
+import one.rewind.db.model.ModelD;
+import one.rewind.io.requester.basic.BasicRequester;
 import one.rewind.io.requester.chrome.ChromeTask;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
@@ -46,10 +49,25 @@ public class TemplateManager {
 	// 保存所有ChromeTask Class 对应的TaskBuilder
 	private Map<Class<? extends ChromeTask>, Builder> chrome_task_builders = new HashMap<>();
 
+	private List<ModelProc> commonModelProcs = new ArrayList<>();
 	/**
 	 *
 	 */
 	private TemplateManager() {}
+
+	/**
+	 *
+	 * @param modelProcs
+	 * @return
+	 */
+	public TemplateManager addCommonModelProc(ModelProc... modelProcs) {
+
+		for(ModelProc proc : modelProcs) {
+			commonModelProcs.add(proc);
+		}
+
+		return this;
+	}
 
 	/**
 	 *
@@ -273,6 +291,12 @@ public class TemplateManager {
 		Task task = (Task) cons.newInstance(url);
 		task.holder = holder;
 
+		// 任务中加入POST_DATA
+		task.setPost_data(post_data);
+
+		// 给任务添加headers Task必有domain
+		task.setHeaders(BasicRequester.getInstance().getHeaders(task.domain));
+
 		// 验证 vars
 		if(builder.need_login) task.setLoginTask();
 		task.setUsername(holder.username);
@@ -291,7 +315,7 @@ public class TemplateManager {
 
 			task.addNextTaskGenerator((t, nts) -> {
 
-				Parser parser = new Parser(t.getResponse().getText(), t.getResponse().getDoc());
+				Parser parser = new Parser(t);
 
 				for(Mapper mapper : finalTpl.mappers) {
 
@@ -299,7 +323,30 @@ public class TemplateManager {
 					for( Map<String, Object> data : parser.parse(mapper) ) {
 
 						// 对解析的数据进行后续处理
-						nts.addAll(mapper.eval(data, t.url, t.getPost_data()));
+						Model model = mapper.eval(data, t.url, t.getPost_data(), nts);
+
+						if(model != null) {
+
+							if(ModelD.class.isAssignableFrom(model.getClass())) {
+
+								((ModelD) model).upsert();
+
+							} else {
+
+								try {
+									model.insert();
+								}
+								catch (Exception e) {
+
+									TemplateManager.logger.warn("Error insert model, ", e);
+								}
+							}
+
+							// 对Model进行后续处理
+							for(ModelProc mp : this.commonModelProcs) {
+								mp.run(model);
+							}
+						}
 					}
 				}
 			});

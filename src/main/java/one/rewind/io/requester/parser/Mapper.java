@@ -20,14 +20,19 @@ import java.util.Map;
  */
 public class Mapper implements JSONable<Mapper> {
 
+	// 数据类型 如果需要解析数据
 	String modelClassName;
 
+	// 模板id
 	int templateId;
 
+	// 预筛选条件
 	String path;
 
+	// 预筛选方法
 	Field.Method method = Field.Method.Reg;
 
+	// 是否多值匹配
 	boolean multi = false;
 
 	// 字段解析规则
@@ -158,54 +163,55 @@ public class Mapper implements JSONable<Mapper> {
 	 * @return
 	 * @throws Exception
 	 */
-	public List<TaskHolder> eval(Map<String, Object> data, String url, String post_data) throws Exception {
+	public Model eval(Map<String, Object> data, String url, String post_data, List<TaskHolder> nts) throws Exception {
 
-		List<TaskHolder> nts = new ArrayList<>();
+		Model model = null;
 
 		// 解析数据并保存
 		if(modelClassName != null) {
 
-			Class<?> clazz = Class.forName(modelClassName);
+			Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(modelClassName);
 
 			// 需要id赋值
 			if(ModelD.class.isAssignableFrom(clazz)) {
 
-				String id = StringUtil.MD5(modelClassName + "::" + url + "::" + (post_data == null? "" : post_data));
-				// String id = StringUtil.MD5(modelClassName + "::" + JSON.toJson(data));
-				data.put("id", id);
-			}
+				//判断id是否需要自定义
+				if (!data.containsKey("id")){
 
-			Object model = ReflectModelUtil.toObj(data, clazz);
-
-
-			if(ModelD.class.isAssignableFrom(clazz)) {
-
-				((ModelD) model).upsert();
-
-			} else {
-
-				try {
-					((Model) model).insert();
-				}
-				catch (Exception e) {
-
-					TemplateManager.logger.warn("Error insert model, ", e);
+					String id = StringUtil.MD5(modelClassName + "::" + url + "::" + (post_data == null? "" : post_data));
+					// String id = StringUtil.MD5(modelClassName + "::" + JSON.toJson(data));
+					data.put("id", id);
 				}
 			}
 
+			// TODO 验证
+			// 如果 model 中包含属性 va，data 中 没有key va ==> va = null
+			// model中没有属性 vb，data中 有key vb ==> vb 被忽略，不会报错
+			model = (Model) ReflectModelUtil.toObj(data, clazz);
 		}
+
 		// 生成下一级任务
 		else if(templateId != 0) {
 
 			Template tpl = TemplateManager.getInstance().get(templateId);
-			nts.add(tpl.at(data));
-		}
 
-		return nts;
+			// TODO 此处应该判断当前的TaskHolder的 step，生成的新 TH step 应 --
+			nts.add(tpl.at(data));
+
+		}
+		return model;
 	}
 
 	@Override
 	public String toJSON() {
 		return JSON.toJson(this);
+	}
+
+	/**
+	 * 生成唯一Hash特征
+	 * @return
+	 */
+	public String getHash() {
+		return StringUtil.MD5(toJSON());
 	}
 }

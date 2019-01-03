@@ -61,6 +61,24 @@ public class BasicRequester {
 
 	CookiesManager cookiesManager = null;
 
+	public Map<String, Map<String, String>> headers = new HashMap<>();
+
+	/**
+	 *
+	 * @param domain
+	 * @param header
+	 */
+	public void setHeaders(String domain, Map<String, String> header) {
+		headers.put(domain, header);
+	}
+
+	/**
+	 *
+	 * @param domain
+	 */
+	public Map<String, String> getHeaders(String domain) {
+		return headers.get(domain);
+	}
 	/**
 	 * 单例模式
 	 * @return

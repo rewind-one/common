@@ -11,7 +11,7 @@ public class JSONableListPersister extends StringType {
 
 	private static final JSONableListPersister INSTANCE = new JSONableListPersister();
 
-	private JSONableListPersister() {
+	protected JSONableListPersister() {
 		super(SqlType.STRING, new Class<?>[] { List.class });
 	}
 
