@@ -1,16 +1,15 @@
 package one.rewind.io.requester.parser;
 
 import com.sun.istack.internal.NotNull;
-import one.rewind.db.model.ESIndex;
 import one.rewind.db.model.Model;
 import one.rewind.db.model.ModelD;
+import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
 import one.rewind.util.ReflectModelUtil;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +37,7 @@ public class Mapper implements JSONable<Mapper> {
 	// 字段解析规则
 	List<Field> fields = new ArrayList<>();
 
+	boolean forbidDuplicateContent = false;
 	/**
 	 * 获取默认 Mapper
 	 * @param templateId
@@ -157,13 +157,20 @@ public class Mapper implements JSONable<Mapper> {
 		return this;
 	}
 
+	public Mapper setForbidDuplicateContent() {
+		this.forbidDuplicateContent = true;
+		return this;
+	}
 	/**
 	 *
 	 * @param data
 	 * @return
 	 * @throws Exception
 	 */
-	public Model eval(Map<String, Object> data, String url, String post_data, List<TaskHolder> nts) throws Exception {
+	public Model eval(Map<String, Object> data, Task task, List<TaskHolder> nts) throws Exception {
+
+		String url = task.url;
+		String post_data = task.getPost_data();
 
 		Model model = null;
 
@@ -194,9 +201,20 @@ public class Mapper implements JSONable<Mapper> {
 		else if(templateId != 0) {
 
 			Template tpl = TemplateManager.getInstance().get(templateId);
-
 			// TODO 此处应该判断当前的TaskHolder的 step，生成的新 TH step 应 --
-			nts.add(tpl.at(data));
+			int step = task.holder.step;
+
+			if (step == 0){
+				//A1.初始step为0，则不做步长限制
+				//A2.处理后为0（不会出现，step=1时已经停止生成下级任务且不对step做处理）
+			} else if(step == 1){
+				//初始或处理后step=1,则不再生成下一级任务，（抛出异常/不做处理）
+				return model;
+			} else {
+				//步长-1，然后生成下一级任务
+				--step;
+			}
+			nts.add(tpl.at(data, null, step));
 
 		}
 		return model;

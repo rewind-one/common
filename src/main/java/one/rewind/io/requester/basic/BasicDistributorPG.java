@@ -31,7 +31,7 @@ public class BasicDistributorPG extends BasicDistributor {
 		if (Instance == null) {
 			synchronized (BasicDistributorPG.class) {
 				if (Instance == null) {
-					Instance = new BasicDistributorPG();
+					Instance = new BasicDistributorPG("default");
 				}
 			}
 		}
@@ -41,9 +41,23 @@ public class BasicDistributorPG extends BasicDistributor {
 
 	/**
 	 *
+	 * @param name
+	 * @return
 	 */
-	public BasicDistributorPG() {
-		super();
+	public static BasicDistributor getInstance(String name) {
+
+		if (Named_Instances.get(name) == null) {
+			Named_Instances.put(name, new BasicDistributorPG(name));
+		}
+
+		return Named_Instances.get(name);
+	}
+
+	/**
+	 *
+	 */
+	public BasicDistributorPG(String name) {
+		super(name);
 	}
 
 	/**
@@ -146,6 +160,9 @@ public class BasicDistributorPG extends BasicDistributor {
 					th = queue.poll(100, TimeUnit.MILLISECONDS);
 
 					if(th != null) {
+
+						// 去掉 队列中任务fingerprints 对应记录
+						queueFingerprints.remove(th.fingerprint);
 
 						// 需要切换代理
 						if (th.flags.contains(Task.Flag.SWITCH_PROXY)) {

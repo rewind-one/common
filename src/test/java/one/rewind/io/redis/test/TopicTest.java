@@ -14,9 +14,6 @@ public class TopicTest {
 
 	RPatternTopic<String> topic_ = RedissonAdapter.redisson.getPatternTopic("topic.*");
 
-	/**
-	 *
-	 */
 	public TopicTest() {
 
 
@@ -29,17 +26,10 @@ public class TopicTest {
 		});
 	}
 
-	/**
-	 *
-	 */
 	public void addMsg() {
 		topic.publish("Msg1");
 	}
 
-	/**
-	 *
-	 * @param args
-	 */
 	public static void main(String[] args) {
 
 		TopicTest tester = new TopicTest();

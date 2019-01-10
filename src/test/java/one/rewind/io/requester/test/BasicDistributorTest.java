@@ -71,8 +71,14 @@ public class BasicDistributorTest {
 					)
 			).setValidator(new Validator().addContain("百度"));
 
-			TemplateManager.getInstance().add(tpl_1, tpl_2, tpl_3, tpl_4);
+			Template tpl_5 = new Template(
+					5, Builder.of("http://localhost:4567/pages/{{page}}"),
+					new Mapper(TestDModel.class.getName(),
+							new Field("title", "body > div.g-list-text > div:nth-child(8) > ul > li > a", Field.Method.CssPath)
+					)
+			);
 
+			TemplateManager.getInstance().add(tpl_1, tpl_2, tpl_3, tpl_4, tpl_5);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -167,6 +173,17 @@ public class BasicDistributorTest {
 	}
 
 
+	@Test
+	public void testMult() throws Exception {
+		for (int i=0; i<1000; i++){
+
+			TaskHolder taskHolder = TemplateManager.getInstance().get(5).at(ImmutableMap.of("page", "1"));
+
+			BasicDistributor.getInstance().submit(taskHolder);
+		}
+		Thread.sleep(1000);
+		System.err.println(BasicDistributor.getInstance().queue.toString());
+	}
 
 /*	@After
 	public void close() throws InterruptedException {

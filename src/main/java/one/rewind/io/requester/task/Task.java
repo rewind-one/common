@@ -317,8 +317,10 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 	 * 设置Post_data
 	 */
 	public void setPost_data(String post_data) {
-		this.post_data = post_data;
-		this.request_method = RequestMethod.POST;
+		if (post_data != null){
+			this.post_data = post_data;
+			this.request_method = RequestMethod.POST;
+		}
 	}
 
 	/**

@@ -9,19 +9,16 @@ import one.rewind.db.Refacter;
 import one.rewind.db.persister.JSONableListPersister;
 import one.rewind.io.requester.basic.BasicDistributor;
 import one.rewind.io.requester.parser.*;
+import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.txt.StringUtil;
 import org.junit.Test;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class TemplateTest {
-
-	@Test
-	public void testCreateDB() throws Exception {
-		Refacter.createTable(Essay.class);
-	}
 
 	/**
 	 * 对可能出现问题的Field进行验证
@@ -29,7 +26,7 @@ public class TemplateTest {
 	public Template template() throws Exception {
 		Template tpl = new Template(
 				1, Builder.of("{{url}}"),
-				new Mapper(Essay.class.getName(),
+				new Mapper(0,
 						//path为空,设置defaultString,结果类型为默认
 						new Field("id", null)
 								.setDefaultString("123123"),
@@ -59,7 +56,6 @@ public class TemplateTest {
 
 	@Test
 	public void testTemplate() throws Exception {
-
 		/* String url = "https://www.jiemian.com/article/2723871.html";//有media*/
 		String url = "https://www.jiemian.com/article/2715916.html";//无media
 
@@ -67,11 +63,12 @@ public class TemplateTest {
 		TemplateManager.getInstance().add(tpl);
 
 		TaskHolder taskHolder = TemplateManager.getInstance().get(1).at(ImmutableMap.of("url", url));
+
+
 		BasicDistributor.getInstance().submit(taskHolder);
-
 		Thread.sleep(5000);
-	}
 
+	}
 	/**
 	 * 检查生成的下一级任务是否正确
 	 */
@@ -104,47 +101,7 @@ public class TemplateTest {
 	@Test
 	public void testMD5() {
 		String str = "3-界面";
-		System.out.println(StringUtil.MD5(str));
+		System.out.println(StringUtil.MD5(str).equals("19455461e1ec09ce160c409d074e1ccb"));
 	}
 
-	@DBName("raw")
-	@DatabaseTable(tableName = "essays")
-	public static class Essay {
-
-		@DatabaseField(dataType = DataType.INTEGER, width = 11, index = true)
-		public int platform_id;
-
-		@DatabaseField(dataType = DataType.STRING, width = 32)
-		public String platform;
-
-		@DatabaseField(dataType = DataType.STRING, width = 32, index = true, canBeNull = false)
-		public String media_id;
-
-		@DatabaseField(dataType = DataType.STRING, width = 32)
-		public String media_nick;
-
-		@DatabaseField(dataType = DataType.STRING, width = 32)
-		public String media_name;
-
-		@DatabaseField(dataType = DataType.STRING, width = 32)
-		public String media_src_id;
-
-		@DatabaseField(dataType = DataType.STRING, width = 32)
-		public String src_id;
-
-		@DatabaseField(dataType = DataType.STRING, width = 256)
-		public String title;
-
-		@DatabaseField(dataType = DataType.STRING, width = 1024)
-		public String meta_content;
-
-		@DatabaseField(dataType = DataType.DATE, index = true)
-		public Date pubdate = new Date();
-
-		@DatabaseField(persisterClass = JSONableListPersister.class, columnDefinition = "TEXT")
-		public List<String> images;
-
-		@DatabaseField(dataType = DataType.STRING, columnDefinition = "MEDIUMTEXT")
-		public String content;
-	}
 }

@@ -4,19 +4,19 @@ import com.google.gson.reflect.TypeToken;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.FieldType;
+import one.rewind.db.model.Model;
 import one.rewind.db.persister.JSONableListPersister;
 import one.rewind.db.persister.JSONablePersister;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.json.JSON;
-import one.rewind.json.JSONable;
 
 import java.util.*;
 
 /**
  *
  */
-public class Template implements JSONable<Template> {
+public class Template extends Model {
 
 	// id
 	@DatabaseField(persisterClass = JSONablePersister.class, dataType = DataType.INTEGER, index = true)

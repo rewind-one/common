@@ -26,6 +26,7 @@ public class Parser {
 	public Parser() {}
 
 	public Parser(Task t) {
+		this.t = t;
 		this.url = t.url;
 		this.src = t.getResponse().getText();
 		this.doc = t.getResponse().getDoc();
@@ -157,6 +158,12 @@ public class Parser {
 				src_hash = StringUtil.MD5(dom.html());
 			}
 		}
+		// A2.1 不需要对源数据进行预先截取
+		else {
+			src_hash = StringUtil.MD5(src);
+		}
+
+		if(src == null || src.length() == 0 || dom == null) throw new Exception("Mapper path invalid");
 
 		// A3 对获取的 src / dom 进行去重判断
 		// TODO t.holder.vars need to be LinkedHashMap
@@ -165,12 +172,16 @@ public class Parser {
 		RMap<String, String> rmap = RedissonAdapter.redisson.getMap("Template-" + template_id + "-Mapper-" + mapper_hash);
 
 		if(rmap.containsValue(src_hash)) {
-			throw new TaskException.DuplicateContentException();
+			//mapper内容不允许重复出现时，抛出异常
+			//mapper内容允许重复出现时，跳过不再次处理,返回null
+			if(mapper.forbidDuplicateContent) {
+				throw new TaskException.DuplicateContentException();
+			} else {
+				return new ArrayList<>();
+			}
 		} else {
 			rmap.put(StringUtil.MD5(JSON.toJson(new TreeMap<>(t.holder.vars))), src_hash);
 		}
-
-		if(src == null || src.length() == 0 || dom == null) throw new Exception("Mapper path invalid");
 
 		if(mapper.fields.size() == 0) {
 			TemplateManager.logger.warn("Mapper has no fields");

@@ -28,10 +28,9 @@ import java.util.*;
 @DatabaseTable(tableName = "tasks")
 public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 
-
 	// 生成 Holder 的 task_id 可以为空
 	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
-	public String generate_task_id;
+	public String generate_id;
 
 	// 如果由 ScheduledTask 生成 会包含这个ID
 	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
@@ -156,14 +155,14 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	 * @param step
 	 * @param priority
 	 * @param min_interval
-	 * @param generate_task_id
+	 * @param generate_id
 	 * @param scheduled_task_id
 	 * @param trace
 	 */
 	public TaskHolder(
 		String class_name, int template_id, String domain, Map<String, Object> vars, boolean login_task, String username, int step, Task.Priority priority,
 		long min_interval,
-		String generate_task_id,
+		String generate_id,
 		String scheduled_task_id,
 		List<String> trace,
 		Task.Flag... flags
@@ -188,7 +187,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 		// 定义 ID
 		this.genId();
 
-		this.generate_task_id = generate_task_id;
+		this.generate_id = generate_id;
 		this.scheduled_task_id = scheduled_task_id;
 		this.trace = trace;
 

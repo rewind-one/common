@@ -142,7 +142,7 @@ public class TemplateManager {
 	 * 生成新Holder II
 	 *
 	 * 使用场景：任务执行中，生成的新的Holder
-	 *     新的Holder 要包含原Holder 的 generate_task_id, scheduled_task_id, trace
+	 *     新的Holder 要包含原Holder 的 generate_id, scheduled_task_id, trace
 	 *
 	 * @param holder
 	 * @param clazz
@@ -170,7 +170,7 @@ public class TemplateManager {
 			if(trace == null) trace = new ArrayList<>();
 			trace.add(holder.id);
 
-			new_holder.generate_task_id = holder.id;
+			new_holder.generate_id = holder.id;
 			new_holder.scheduled_task_id = holder.scheduled_task_id;
 			new_holder.trace = trace;
 		}
@@ -292,7 +292,9 @@ public class TemplateManager {
 		task.holder = holder;
 
 		// 任务中加入POST_DATA
-		task.setPost_data(post_data);
+		if (post_data != null){
+			task.setPost_data(post_data);
+		}
 
 		// 给任务添加headers Task必有domain
 		task.setHeaders(BasicRequester.getInstance().getHeaders(task.domain));
@@ -323,7 +325,7 @@ public class TemplateManager {
 					for( Map<String, Object> data : parser.parse(mapper) ) {
 
 						// 对解析的数据进行后续处理
-						Model model = mapper.eval(data, t.url, t.getPost_data(), nts);
+						Model model = mapper.eval(data, t, nts);
 
 						if(model != null) {
 

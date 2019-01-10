@@ -5,17 +5,20 @@ import one.rewind.db.RedissonAdapter;
 import one.rewind.io.requester.Distributor;
 import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
+import one.rewind.io.requester.callback.TaskHolderHook;
 import one.rewind.io.requester.proxy.IpDetector;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyChannel;
 import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
-import one.rewind.json.JSON;
 import one.rewind.util.Configs;
 import one.rewind.util.NetworkUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bytedeco.javacpp.presets.opencv_core;
+import org.omg.CORBA.IRObject;
 import org.redisson.api.RMap;
+import org.redisson.api.RSet;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -25,6 +28,8 @@ public class BasicDistributor extends Distributor {
 	static final Logger logger = LogManager.getLogger(BasicDistributor.class.getName());
 
 	public static BasicDistributor Instance;
+
+	public static Map<String, BasicDistributor> Named_Instances = new ConcurrentHashMap<>();
 
 	public static String LOCAL_IP = IpDetector.getIp() + " :: " + NetworkUtil.getLocalIp();
 
@@ -58,13 +63,29 @@ public class BasicDistributor extends Distributor {
 		if (Instance == null) {
 			synchronized (BasicDistributor.class) {
 				if (Instance == null) {
-					Instance = new BasicDistributor();
+					Instance = new BasicDistributor("default");
 				}
 			}
 		}
 
 		return Instance;
 	}
+
+	/**
+	 *
+	 * @param name
+	 * @return
+	 */
+	public static BasicDistributor getInstance(String name) {
+
+		if (Named_Instances.get(name) == null) {
+			Named_Instances.put(name, new BasicDistributor(name));
+		}
+
+		return Named_Instances.get(name);
+	}
+
+	public String name;
 
 	// 默认执行器
 	public Operator operator;
@@ -73,17 +94,35 @@ public class BasicDistributor extends Distributor {
 	public List<Operator> operators = new ArrayList<>();
 
 	// 已经执行完的任务特征缓存
-	public RMap<String, Long> fingerprints = RedissonAdapter.redisson.getMap("WX-Fingerprints");
+	public RMap<String, Long> fingerprints;
 
 	// 任务队列 TODO --> redisson
 	public PriorityBlockingQueue<TaskHolder> queue = new PriorityBlockingQueue();
+	// public RPriorityBlockingQueue<TaskHolder> queue;
+
+	// 用于存放队列中待执行任务的 fingerprints
+	public RSet<String> queueFingerprints;
+	// public RPriorityBlockingQueue<TaskHolder> queue;
+
+	public List<TaskHolderHook> beforeSubmitHooks = new ArrayList<>();
+	public List<TaskHolderHook> successCallbacks = new ArrayList<>();
+	public List<TaskHolderHook> failureCallbacks = new ArrayList<>();
 
 	/**
 	 *
 	 */
-	public BasicDistributor() {
+	protected BasicDistributor(String name) {
 
 		super();
+
+		this.name = name;
+
+		/*queue = RedissonAdapter.redisson.getPriorityBlockingQueue(
+				this.getClass().getSimpleName() + "-" + this.name + "-TaskHolder-Queue");*/
+
+		fingerprints = RedissonAdapter.redisson.getMap(this.getClass().getSimpleName() + "-" + this.name + "-Fingerprints");
+
+		queueFingerprints = RedissonAdapter.redisson.getSet(this.getClass().getSimpleName() + "-" + this.name + "-Queu-Fingerprints");
 
 		// 每10s 打印队列中任务数量
 		Timer timer = new Timer();
@@ -93,6 +132,22 @@ public class BasicDistributor extends Distributor {
 				logger.info("Queue: {}", queue.size());
 			}
 		}, 10000, 10000);
+	}
+
+	/**
+	 *
+	 * @param holderHook
+	 */
+	public void addbeforeSubmitHook(TaskHolderHook holderHook) {
+		this.beforeSubmitHooks.add(holderHook);
+	}
+
+	public void addSuccessCallback(TaskHolderHook holderHook) {
+		this.successCallbacks.add(holderHook);
+	}
+
+	public void addFailureCallback(TaskHolderHook holderHook) {
+		this.failureCallbacks.add(holderHook);
 	}
 
 	/**
@@ -136,16 +191,31 @@ public class BasicDistributor extends Distributor {
 	 */
 	public synchronized SubmitInfo submit(TaskHolder th, BlockingQueue<TaskHolder> queue) throws InterruptedException {
 
+		for(TaskHolderHook hook : beforeSubmitHooks) {
+			hook.run(th);
+		}
+
+		th.flags = new ArrayList<>(th.flags);
+		th.flags.add(Task.Flag.PRE_PROC);
+
 		if(operators.size() == 0 && operator == null) {
 			addDefaultOperator();
 		}
 
+		// 队列中相同fingerprints 去重
+		if(queueFingerprints.contains(th.fingerprint)) {
+			logger.warn("Same fingerprints in queue, {}:[{}] --> {}:{}", th.class_name, th.template_id, th.domain, th.fingerprint);
+			return new SubmitInfo(false);
+		} else {
+			queueFingerprints.add(th.fingerprint);
+		}
+
+		// 已采集任务去重
 		if(!fingerprints.containsKey(th.fingerprint)) {
 
 			queue.put(th);
 			return new SubmitInfo();
 		}
-
 		else {
 
 			// 上一次采集时间
@@ -153,8 +223,8 @@ public class BasicDistributor extends Distributor {
 
 			long ts = System.currentTimeMillis();
 
-			//
-			if(ts - lts >= th.min_interval / 2) {
+			//queue去重
+			if(ts - lts >= th.min_interval / 2 ) {
 				queue.put(th);
 				return new SubmitInfo();
 			} else {
@@ -273,6 +343,9 @@ public class BasicDistributor extends Distributor {
 					th = queue.poll(100, TimeUnit.MILLISECONDS);
 
 					if(th != null) {
+
+						// 去掉 队列中任务fingerprints 对应记录
+						queueFingerprints.remove(th.fingerprint);
 
 						waits();
 
@@ -442,13 +515,25 @@ public class BasicDistributor extends Distributor {
 						} else {
 
 							logger.warn("Exceed retry limit, {}:[{}] --> {}:{}", class_name, template_id, domain, fingerprint);
-							t.holder.insert(); // 失败保存数据库
+							t.holder.insert(); // 失败保存数据库 TODO 是否应该移到 failureCallbacks中？
+
+							// holder回调
+							for(TaskHolderHook hook : failureCallbacks) {
+								hook.run(t.holder);
+							}
+
 						}
 					}
 					// C2 成功执行
 					else {
 
 						count(true);
+
+						// holder回调
+						for(TaskHolderHook hook : successCallbacks) {
+							hook.run(t.holder);
+						}
+
 						fingerprints.put(fingerprint, new Date().getTime());
 						logger.info("{}:[{}] --> {}:{} done --> {}", class_name, template_id, domain, fingerprint, t.getDuration());
 					}
