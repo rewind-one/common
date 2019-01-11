@@ -15,8 +15,6 @@ import one.rewind.util.Configs;
 import one.rewind.util.NetworkUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bytedeco.javacpp.presets.opencv_core;
-import org.omg.CORBA.IRObject;
 import org.redisson.api.RMap;
 import org.redisson.api.RSet;
 
@@ -34,7 +32,7 @@ public class BasicDistributor extends Distributor {
 	public static String LOCAL_IP = IpDetector.getIp() + " :: " + NetworkUtil.getLocalIp();
 
 	// 全局每秒请求数
-	static int REQUEST_PER_SECOND_LIMIT = 20;
+	static int DEFAULT_REQUEST_PER_SECOND_LIMIT = 20;
 
 	// 单次请求TIMEOUT
 	static int CONNECT_TIMEOUT = 20000;
@@ -46,7 +44,7 @@ public class BasicDistributor extends Distributor {
 
 		try {
 
-			REQUEST_PER_SECOND_LIMIT = Configs.getConfig(BasicRequester.class).getInt("requestPerSecondLimit");
+			DEFAULT_REQUEST_PER_SECOND_LIMIT = Configs.getConfig(BasicRequester.class).getInt("requestPerSecondLimit");
 			CONNECT_TIMEOUT = Configs.getConfig(BasicRequester.class).getInt("connectTimeout");
 
 		} catch (Exception e) {
@@ -87,6 +85,8 @@ public class BasicDistributor extends Distributor {
 
 	public String name;
 
+	public int requestPerSecondLimit = DEFAULT_REQUEST_PER_SECOND_LIMIT;
+
 	// 默认执行器
 	public Operator operator;
 
@@ -122,7 +122,7 @@ public class BasicDistributor extends Distributor {
 
 		fingerprints = RedissonAdapter.redisson.getMap(this.getClass().getSimpleName() + "-" + this.name + "-Fingerprints");
 
-		queueFingerprints = RedissonAdapter.redisson.getSet(this.getClass().getSimpleName() + "-" + this.name + "-Queu-Fingerprints");
+		queueFingerprints = RedissonAdapter.redisson.getSet(this.getClass().getSimpleName() + "-" + this.name + "-Queue-Fingerprints");
 
 		// 每10s 打印队列中任务数量
 		Timer timer = new Timer();
@@ -181,6 +181,16 @@ public class BasicDistributor extends Distributor {
 		operators.add(op);
 		op.start();
 
+		return this;
+	}
+
+	/**
+	 *
+	 * @param limit
+	 * @return
+	 */
+	public BasicDistributor setRequestPerSecondLimit(int limit) {
+		this.requestPerSecondLimit = limit;
 		return this;
 	}
 
@@ -308,7 +318,7 @@ public class BasicDistributor extends Distributor {
 		 */
 		public synchronized void waits() throws InterruptedException {
 
-			double requestPerSecond = REQUEST_PER_SECOND_LIMIT;
+			double requestPerSecond = requestPerSecondLimit;
 			if(channel != null) {
 				lastRequestTime = channel.lastRequsetTime;
 				requestPerSecond = channel.requestPerSecond;

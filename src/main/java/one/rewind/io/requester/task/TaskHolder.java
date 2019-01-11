@@ -29,16 +29,16 @@ import java.util.*;
 public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 
 	// 生成 Holder 的 task_id 可以为空
-	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
+	@DatabaseField(dataType = DataType.STRING, width = 32, index = true)
 	public String generate_id;
 
 	// 如果由 ScheduledTask 生成 会包含这个ID
-	@DatabaseField(dataType = DataType.STRING, width = 32, canBeNull = false, index = true)
+	@DatabaseField(dataType = DataType.STRING, width = 32, index = true)
 	public String scheduled_task_id;
 
 	// 类名
 	// 根据类名注册Builder 生成 Task时 会用到
-	@DatabaseField(dataType = DataType.STRING, width = 128, canBeNull = false)
+	@DatabaseField(dataType = DataType.STRING, width = 128)
 	public String class_name;
 
 	// 模板ID
@@ -51,7 +51,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	public String fingerprint;
 
 	// 相同指纹信息的任务 最小采集间隔
-	@DatabaseField(dataType = DataType.INTEGER, width = 11)
+	@DatabaseField(dataType = DataType.LONG)
 	public long min_interval = 0;
 
 	// 任务标签
@@ -59,11 +59,11 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	public List<Task.Flag> flags = new ArrayList<>();
 
 	// url
-	@DatabaseField(dataType = DataType.STRING, width = 4096, canBeNull = false)
+	@DatabaseField(dataType = DataType.STRING, width = 4096)
 	public String url;
 
 	// 域名
-	@DatabaseField(dataType = DataType.STRING, width = 256, canBeNull = false)
+	@DatabaseField(dataType = DataType.STRING, width = 256)
 	public String domain;
 
 	// 是否为登录任务
@@ -75,7 +75,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 	public String username;
 
 	// 初始参数
-	@DatabaseField(dataType = DataType.STRING, width = 4096, persisterClass = JSONableMapPersister.class)
+	@DatabaseField(persisterClass = JSONableMapPersister.class, width = 8096)
 	public Map<String, Object> vars;
 
 	// 步长

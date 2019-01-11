@@ -292,7 +292,7 @@ public class TemplateManager {
 		task.holder = holder;
 
 		// 任务中加入POST_DATA
-		if (post_data != null){
+		if (post_data != null && post_data.length() > 0){
 			task.setPost_data(post_data);
 		}
 

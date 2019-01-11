@@ -260,6 +260,8 @@ public class BasicDistributorPG extends BasicDistributor {
 
 						if(th != null) {
 
+							queueFingerprints.remove(th.fingerprint);
+
 							Task t = th.build();
 
 							// RequestGroupWrapper 的第一个task 设置 commonHeader
