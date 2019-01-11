@@ -124,6 +124,9 @@ public class BasicDistributor extends Distributor {
 
 		queueFingerprints = RedissonAdapter.redisson.getSet(this.getClass().getSimpleName() + "-" + this.name + "-Queue-Fingerprints");
 
+		// 清空队列queue
+		queueFingerprints.clear();
+
 		// 每10s 打印队列中任务数量
 		Timer timer = new Timer();
 		timer.schedule(new TimerTask() {
@@ -206,7 +209,8 @@ public class BasicDistributor extends Distributor {
 		}
 
 		th.flags = new ArrayList<>(th.flags);
-		th.flags.add(Task.Flag.PRE_PROC);
+		if(!th.flags.contains(Task.Flag.PRE_PROC))
+			th.flags.add(Task.Flag.PRE_PROC);
 
 		if(operators.size() == 0 && operator == null) {
 			addDefaultOperator();
@@ -361,11 +365,11 @@ public class BasicDistributor extends Distributor {
 
 						executor.submit(new RequestWrapper(th.build()));
 
-						logger.info("[{} / {} / {}]", executor.getActiveCount(), executor.getQueue().size(), queue.size());
+						logger.info("{} --> [{} / {} / {}]", name, executor.getActiveCount(), executor.getQueue().size(), queue.size());
 					}
 
 				} catch (Exception e) {
-					logger.error("Error get task, ", e);
+					logger.error("Error get task, {}", th == null? "" : th.toJSON(), e);
 				}
 			}
 		}
@@ -450,6 +454,9 @@ public class BasicDistributor extends Distributor {
 						t.setProxy(proxy);
 					}
 
+					// 设定Header
+					t.setHeaders(BasicDistributor.genHeaders(t.getDomain()));
+
 					// 下一级任务
 					List<TaskHolder> nths = new ArrayList<>();
 
@@ -519,12 +526,14 @@ public class BasicDistributor extends Distributor {
 								submit(t.holder); // 非阻塞方法
 							} catch (InterruptedException e) {
 								logger.warn("Error submit task, {}:[{}] --> {}:{}", class_name, template_id, domain, fingerprint);
+								t.holder.url = t.url;
 								t.holder.insert(); // 失败保存数据库
 							}
 
 						} else {
 
 							logger.warn("Exceed retry limit, {}:[{}] --> {}:{}", class_name, template_id, domain, fingerprint);
+							t.holder.url = t.url;
 							t.holder.insert(); // 失败保存数据库 TODO 是否应该移到 failureCallbacks中？
 
 							// holder回调

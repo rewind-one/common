@@ -193,7 +193,7 @@ public class BasicDistributorPG extends BasicDistributor {
 							executor.submit(new RequestWrapper(t));
 						}
 
-						logger.info("[{} / {} / {}]", executor.getActiveCount(), executor.getQueue().size(), queue.size());
+						logger.info("{} --> [{} / {} / {}]", name, executor.getActiveCount(), executor.getQueue().size(), queue.size());
 					}
 
 				} catch (Exception e) {
