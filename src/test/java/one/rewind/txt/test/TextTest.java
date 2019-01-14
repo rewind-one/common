@@ -1,7 +1,9 @@
 package one.rewind.txt.test;
 
+import info.debatty.java.stringsimilarity.NormalizedLevenshtein;
 import one.rewind.txt.distance.Levenshtein;
 import one.rewind.txt.distance.NeedlemanWunsch;
+import one.rewind.util.FileUtil;
 import org.junit.Test;
 
 public class TextTest {
@@ -29,6 +31,20 @@ public class TextTest {
 
 		System.out.println("similarityRatio: "
 				+ Levenshtein.compare(str, target));
+
+	}
+
+	@Test
+	public void distanceTest() {
+
+		String src1 = FileUtil.readFileByLines("tmp/src/1.txt");
+		String src2 = FileUtil.readFileByLines("tmp/src/2.txt");
+
+		NormalizedLevenshtein l = new NormalizedLevenshtein();
+
+		long t = System.currentTimeMillis();
+		System.out.println(l.distance(src1, src2));
+		System.err.println(System.currentTimeMillis() - t);
 
 	}
 

@@ -2,7 +2,6 @@ package one.rewind.util.test;
 
 import one.rewind.util.NetworkUtil;
 import org.junit.Test;
-import one.rewind.util.NetworkUtil;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

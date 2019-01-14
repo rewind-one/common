@@ -1,5 +1,5 @@
 group 'one.rewind'
-version '1.1.73-SNAPSHOT'
+version '1.1.74-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -133,6 +133,8 @@ dependencies {
 
     // https://commons.apache.org/proper/commons-text/
     compile group: 'org.apache.commons', name: 'commons-text', version: '1.3'
+
+    compile 'info.debatty:java-string-similarity:1.1.0'
 
     // BrowserMob Proxy MITM 代理
     compile 'net.lightbody.bmp:browsermob-core:2.1.5'
