@@ -31,7 +31,7 @@ public class TemplateTest {
 						new Field("id", null)
 								.setDefaultString("123123"),
 						//path为空,设置defaultString，结果类型自定义
-						new Field("platform_id", null, "", Field.Method.CssPath, "Integer")
+						new Field("platform_id", null, "", Field.Method.CssPath, Field.Type.Integer)
 								.setDefaultString("3"),
 						//path为空,设置evalRule,对拼接的字段进行MD5处理
 						new Field("media_id", null)
@@ -45,8 +45,8 @@ public class TemplateTest {
 						/*new Field("title", "body > div.content > div > div > div.main-coarticle-view > div.article-header > h1", Field.Method.CssPath)
 								.setNotNullable(),*/
 						//查看images结果是否是正确
-						new Field("content", "body > div.content > div > div > div.main-container > div.article-view > div.article-main", null, Field.Method.CssPath, "List"),
-						new Field("images", "body > div.content > div > div > div.main-container > div.article-view > div.article-main", null, Field.Method.CssPath, "List"),
+						new Field("content", "body > div.content > div > div > div.main-container > div.article-view > div.article-main", null, Field.Method.CssPath, Field.Type.String),
+						new Field("images", "body > div.content > div > div > div.main-container > div.article-view > div.article-main", null, Field.Method.CssPath, Field.Type.ListString),
 						//增加冗余Field，检查对入库结果是否构成影响
 						new Field("content232", "body > div.content > div > div > div.main-container > div.article-view > div.article-main", Field.Method.CssPath)
 				)

@@ -4,6 +4,8 @@ import com.google.gson.reflect.TypeToken;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.FieldType;
+import com.j256.ormlite.table.DatabaseTable;
+import one.rewind.db.DBName;
 import one.rewind.db.model.Model;
 import one.rewind.db.persister.JSONableListPersister;
 import one.rewind.db.persister.JSONablePersister;
@@ -16,6 +18,8 @@ import java.util.*;
 /**
  *
  */
+@DatabaseTable(tableName = "templates")
+@DBName(value = "tpl")
 public class Template extends Model {
 
 	// id

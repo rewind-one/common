@@ -191,6 +191,14 @@ public class Mapper implements JSONable<Mapper> {
 				}
 			}
 
+			//原网址赋值
+			try {
+				clazz.getField("origin_url");
+				data.put("origin_url", task.url);
+			} catch (NoSuchFieldException e) {
+
+			}
+
 			// TODO 验证
 			// 如果 model 中包含属性 va，data 中 没有key va ==> va = null
 			// model中没有属性 vb，data中 有key vb ==> vb 被忽略，不会报错

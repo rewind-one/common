@@ -339,5 +339,15 @@ public class ContentCleaner {
 		if(list.size() == 0) list = null;
 		return list;
 	}
+	public static String specialCharCleaner(String in) {
 
+		String[] specialChar = {
+				"\\u0008", "\\u0009", "\\u000A", "\\u000B", "\\u000C", "\\u000D",
+				"\\u0022", "\\u0027", "\\u005C", "\\u00A0", "\\u2028", "\\u2029", "\\uFEFF"
+		};
+
+		String reg = "[" + Arrays.asList(specialChar).stream().collect( Collectors.joining( "|" ) ) + "]";
+
+		return in.replaceAll(reg, "");
+	}
 }

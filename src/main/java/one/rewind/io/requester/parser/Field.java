@@ -2,8 +2,14 @@ package one.rewind.io.requester.parser;
 
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
+import one.rewind.txt.DateFormatUtil;
+import one.rewind.txt.NumberFormatUtil;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 public class Field implements JSONable<Field> {
@@ -14,6 +20,16 @@ public class Field implements JSONable<Field> {
 	public enum Method {
 		Reg,
 		CssPath
+	}
+
+	public static enum Type {
+		String,
+		Date,
+		URL,
+		Integer,
+		Float,
+		Double,
+		ListString
 	}
 
 	/**
@@ -44,7 +60,7 @@ public class Field implements JSONable<Field> {
 	String name;
 
 	// 字段类型
-	String type = String.class.getSimpleName();
+	Type type = Type.String;
 
 	// 默认字符类型值
 	String defaultString;
@@ -139,7 +155,7 @@ public class Field implements JSONable<Field> {
 	 * @param method
 	 * @param type
 	 */
-	public Field(String name, String path, String attribute, Method method, String type) {
+	public Field(String name, String path, String attribute, Method method, Type type) {
 		this.name = name;
 		this.path = path;
 		this.attribute = attribute;

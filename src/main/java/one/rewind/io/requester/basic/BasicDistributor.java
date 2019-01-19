@@ -204,34 +204,47 @@ public class BasicDistributor extends Distributor {
 	 */
 	public synchronized SubmitInfo submit(TaskHolder th, BlockingQueue<TaskHolder> queue) throws InterruptedException {
 
-		for(TaskHolderHook hook : beforeSubmitHooks) {
-			hook.run(th);
-		}
-
-		th.flags = new ArrayList<>(th.flags);
-		if(!th.flags.contains(Task.Flag.PRE_PROC))
-			th.flags.add(Task.Flag.PRE_PROC);
-
 		if(operators.size() == 0 && operator == null) {
 			addDefaultOperator();
 		}
 
-		// 队列中相同fingerprints 去重
-		if(queueFingerprints.contains(th.fingerprint)) {
-			logger.warn("Same fingerprints in queue, {}:[{}] --> {}:{}", th.class_name, th.template_id, th.domain, th.fingerprint);
-			return new SubmitInfo(false);
-		} else {
-			queueFingerprints.add(th.fingerprint);
-		}
+		if(noDuplicate(th)) {
 
-		// 已采集任务去重
-		if(!fingerprints.containsKey(th.fingerprint)) {
+			th.flags = new ArrayList<>(th.flags);
+			th.flags.add(Task.Flag.PRE_PROC);
+
+			for(TaskHolderHook hook : beforeSubmitHooks) {
+				hook.run(th);
+			}
+
+			queueFingerprints.add(th.fingerprint);
 
 			queue.put(th);
 			return new SubmitInfo();
+
 		}
 		else {
+			return new SubmitInfo(false);
+		}
+	}
 
+	/**
+	 *
+	 * @param th
+	 * @return
+	 */
+	public boolean noDuplicate(TaskHolder th){
+
+		// 队列中相同fingerprints 去重
+		if(queueFingerprints.contains(th.fingerprint)) {
+			logger.warn("Same fingerprints in queue, {}:[{}] --> {}:{}", th.class_name, th.template_id, th.domain, th.fingerprint);
+			return false;
+		}
+		// 已采集任务去重
+		else if(!fingerprints.containsKey(th.fingerprint)) {
+			return true;
+		}
+		else {
 			// 上一次采集时间
 			long lts = fingerprints.get(th.fingerprint);
 
@@ -239,11 +252,11 @@ public class BasicDistributor extends Distributor {
 
 			//queue去重
 			if(ts - lts >= th.min_interval / 2 ) {
-				queue.put(th);
-				return new SubmitInfo();
+
+				return true;
 			} else {
 				logger.warn("Duplicate fingerprints {}:[{}] --> {}:{}", th.class_name, th.template_id, th.domain, th.fingerprint);
-				return new SubmitInfo(false);
+				return false;
 			}
 		}
 	}

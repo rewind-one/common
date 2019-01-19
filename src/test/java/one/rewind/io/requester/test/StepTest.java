@@ -21,10 +21,10 @@ public class StepTest {
 				1, Builder.of("{{tpl_pageUrl}}"),
 				new Mapper(null, 0, true, "body", Field.Method.CssPath,
 						new Field("title", "div > div.m-list > ul > li > a", Field.Method.CssPath),
-						new Field("url", "div > div.m-list > ul > li > a", "href", Field.Method.CssPath, "String")
+						new Field("url", "div > div.m-list > ul > li > a", "href", Field.Method.CssPath, Field.Type.String)
 				).setForbidDuplicateContent(),
 				new Mapper(null, 1, true, "body", Field.Method.CssPath,
-						new Field("tpl_pageUrl", "div.m-pagination > div > span > a", "href", Field.Method.CssPath, "String")
+						new Field("tpl_pageUrl", "div.m-pagination > div > span > a", "href", Field.Method.CssPath, Field.Type.String)
 				).setForbidDuplicateContent()
 		);
 

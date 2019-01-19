@@ -12,6 +12,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.redisson.api.RMap;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,7 +25,8 @@ public class Parser {
 	public String src;
 	public Document doc;
 
-	public Parser() {}
+	public Parser() {
+	}
 
 	public Parser(Task t) {
 		this.t = t;
@@ -37,36 +40,40 @@ public class Parser {
 
 	/**
 	 * 类型转换方法
+	 *
 	 * @param str
-	 * @param className
+	 * @param type
 	 * @return
-	 * @throws Exception
 	 */
-	public static Object cast(String str, String className) {
+	public Object cast(String str, Field.Type type) {
 
-		if(className.equals(String.class.getSimpleName())) {
+		if (type == Field.Type.String) {
 			return str;
-		}
-		else if(className.equals(Integer.class.getSimpleName())) {
+		} else if (type == Field.Type.Integer) {
 			return NumberFormatUtil.parseInt(str);
-		}
-		else if(className.equals(Float.class.getSimpleName())) {
+		} else if (type == Field.Type.Float) {
 			return NumberFormatUtil.parseFloat(str);
-		}
-		else if(className.equals(Double.class.getSimpleName())) {
+		} else if (type == Field.Type.Double) {
 			return NumberFormatUtil.parseDouble(str);
-		}
-		else if(className.equals(Date.class.getSimpleName())) {
+		} else if (type == Field.Type.Date) {
 			return DateFormatUtil.parseTime(str);
-		}
-		else if (className.equals(List.class.getSimpleName())) {
-			return Arrays.asList(str);
+		} else if (type == Field.Type.URL) {
+			String url = null;
+			try {
+				url = new URL(new URL(t.url), str).toString();
+			} catch (MalformedURLException e) {
+				TemplateManager.logger.warn("Error convert to url, ", e);
+			}
+			return url;
+		} else if (type == Field.Type.ListString) {
+			return Arrays.asList(str.split("\\s*,\\s*"));
 		}
 		return str;
 	}
 
 	/**
 	 * 正则方式匹配字符串
+	 *
 	 * @param src
 	 * @param path
 	 * @param multi
@@ -79,23 +86,21 @@ public class Parser {
 		Pattern pattern = Pattern.compile(path);
 		Matcher matcher = pattern.matcher(src);
 
-		while(matcher.find()) {
+		while (matcher.find()) {
 
-			if(matcher.group("T") != null || matcher.group("T").length() > 0) {
+			if (matcher.group("T") != null || matcher.group("T").length() > 0) {
 				list.add(matcher.group("T"));
-			}
-			else if(matcher.group().length() > 0) {
+			} else if (matcher.group().length() > 0) {
 				list.add(matcher.group());
 			}
 
-			if(!multi) break;
+			if (!multi) break;
 		}
 
 		return list;
 	}
 
 	/**
-	 *
 	 * @param doc
 	 * @param path
 	 * @param attribute
@@ -106,9 +111,9 @@ public class Parser {
 
 		List<String> list = new ArrayList<>();
 
-		for(Element el : doc.select(path)) {
+		for (Element el : doc.select(path)) {
 			// 获取元素的属性
-			if(attribute != null) {
+			if (attribute != null) {
 				list.add(el.attr(attribute));
 			}
 			// 获取元素的 html
@@ -116,21 +121,20 @@ public class Parser {
 				list.add(el.html());
 			}
 
-			if(!multi) break;
+			if (!multi) break;
 		}
 
 		return list;
 	}
 
 	/**
-	 *
 	 * @param mapper
 	 * @return
 	 * @throws Exception
 	 */
 	public List<Map<String, Object>> parse(Mapper mapper) throws Exception {
 
-		if(this.src == null) throw new IllegalStateException("Source not set");
+		if (this.src == null) throw new IllegalStateException("Source not set");
 
 		String src = this.src;
 		Element dom = this.doc;
@@ -138,12 +142,12 @@ public class Parser {
 		String src_hash = null;
 
 		// A 需要对源数据进行预先截取
-		if(mapper.path != null) {
+		if (mapper.path != null) {
 
 			// A1 正则方式截取
-			if(mapper.method == Field.Method.Reg) {
+			if (mapper.method == Field.Method.Reg) {
 
-				for(String res : regMatch(src, mapper.path, false)) {
+				for (String res : regMatch(src, mapper.path, false)) {
 					src = res;
 					src_hash = StringUtil.MD5(src);
 					break;
@@ -152,7 +156,7 @@ public class Parser {
 			// A2 使用 CssPath 方式进行截取
 			else {
 
-				if(this.doc == null) throw new IllegalStateException("Doc not set");
+				if (this.doc == null) throw new IllegalStateException("Doc not set");
 
 				dom = this.doc.select(mapper.path).get(0);
 				src_hash = StringUtil.MD5(dom.html());
@@ -163,7 +167,7 @@ public class Parser {
 			src_hash = StringUtil.MD5(src);
 		}
 
-		if(src == null || src.length() == 0 || dom == null) throw new Exception("Mapper path invalid");
+		if (src == null || src.length() == 0 || dom == null) throw new Exception("Mapper path invalid");
 
 		// A3 对获取的 src / dom 进行去重判断
 		// TODO t.holder.vars need to be LinkedHashMap
@@ -171,10 +175,10 @@ public class Parser {
 		String mapper_hash = mapper.getHash();
 		RMap<String, String> rmap = RedissonAdapter.redisson.getMap("Template-" + template_id + "-Mapper-" + mapper_hash);
 
-		if(rmap.containsValue(src_hash)) {
+		if (rmap.containsValue(src_hash)) {
 			//mapper内容不允许重复出现时，抛出异常
 			//mapper内容允许重复出现时，跳过不再次处理,返回null
-			if(mapper.forbidDuplicateContent) {
+			if (mapper.forbidDuplicateContent) {
 				throw new TaskException.DuplicateContentException();
 			} else {
 				return new ArrayList<>();
@@ -183,7 +187,7 @@ public class Parser {
 			rmap.put(StringUtil.MD5(JSON.toJson(new TreeMap<>(t.holder.vars))), src_hash);
 		}
 
-		if(mapper.fields.size() == 0) {
+		if (mapper.fields.size() == 0) {
 			TemplateManager.logger.warn("Mapper has no fields");
 		}
 
@@ -196,7 +200,7 @@ public class Parser {
 		Map<String, List<Object>> founds = new HashMap<>();
 
 		// 每一个 field 单独匹配
-		for(Field field : mapper.fields) {
+		for (Field field : mapper.fields) {
 
 			founds.put(field.name, new ArrayList<>());
 
@@ -209,6 +213,8 @@ public class Parser {
 						for (Field.Replacement replacement : field.replacements) {
 							res = res.replaceAll(replacement.find, replacement.replace);
 						}
+
+						res = ContentCleaner.specialCharCleaner(res);
 
 						founds.get(field.name).add(cast(res, field.type));
 					});
@@ -225,11 +231,14 @@ public class Parser {
 							res = res.replaceAll(replacement.find, replacement.replace);
 						}
 
+						res = ContentCleaner.specialCharCleaner(res);
+
 						founds.get(field.name).add(cast(res, field.type));
 					});
 				}
 			}
-			// B2 path为null或path选择不出数据时
+
+			//B2 path为null或path选择不出数据时
 			if (founds.get(field.name).size() == 0) {
 
 				// B2.1 defaultString有值时，使用defaultString填充
@@ -237,10 +246,12 @@ public class Parser {
 
 					founds.get(field.name).add(cast(field.defaultString, field.type));
 				}
-				// B2.2 defaultString没有设定时，且该Field不能为空时，抛出异常
+
+				// B2.2 defaultString没有设定时，且该Field不能为空时，记录下该情况且不再向下进行
 				else if (!field.nullable) {
 
-					throw new Exception("Field : [" + field.name + "] not allowed to be null.");
+					TemplateManager.logger.warn("Field : {} not allowed to be null, {}", field.name, t.url);
+					return new ArrayList<>();
 				}
 			}
 		}
@@ -273,10 +284,9 @@ public class Parser {
 
 			for (String name : founds.keySet()) {
 
-				if(0 < founds.get(name).size() && founds.get(name).size() < maxLength) {
+				if (0 < founds.get(name).size() && founds.get(name).size() < maxLength) {
 					item.put(name, founds.get(name).get(0));
-				}
-				else if (founds.get(name).size() == maxLength){
+				} else if (founds.get(name).size() == maxLength) {
 					item.put(name, founds.get(name).get(i));
 				}
 
@@ -299,27 +309,30 @@ public class Parser {
 		}
 
 		// D 预定义规则运算
-		for(Map<String, Object> item : data) {
+		for (Map<String, Object> item : data) {
 
-			for(Field f : mapper.fields) {
+			for (Field f : mapper.fields) {
 
-				if(f.evalRule != null) {
+				if (f.evalRule != null) {
 
 					String rule = f.evalRule;
 
-					for(String key : item.keySet()) {
+					for (String key : item.keySet()) {
 						rule = rule.replaceAll("\\{\\{" + key + "\\}\\}", item.get(key).toString());
 					}
 
-					if(rule.contains("{{") && rule.contains("}}")) {
-						throw new Exception("EvalRule not fully construct.");
-					}
+					if (rule.contains("{{") && rule.contains("}}")) {
 
-					item.put(f.name, Evaluator.getInstance().serialEval(rule).toString());
+						 throw new Exception("EvalRule not fully construct. " + f.name);
+					} else {
+
+						item.put(f.name, Evaluator.getInstance().serialEval(rule).toString());
+					}
 				}
 			}
 		}
 
+		TemplateManager.logger.trace(JSON.toJson(data));
 		return data;
 	}
 }

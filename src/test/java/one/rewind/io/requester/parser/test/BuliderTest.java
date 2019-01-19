@@ -15,7 +15,7 @@ public class BuliderTest {
 				1, Builder.of(Task.Flag.BUILD_DOM),
 				new Mapper(null, 0, true, "body", Field.Method.CssPath,
 						new Field("title", "div > div.m-list > ul > li > a", Field.Method.CssPath),
-						new Field("url", "div > div.m-list > ul > li > a", "href", Field.Method.CssPath, "String")
+						new Field("url", "div > div.m-list > ul > li > a", "href", Field.Method.CssPath, Field.Type.String)
 				)
 		);
 
@@ -35,7 +35,7 @@ public class BuliderTest {
 				1, Builder.of("{{url}}"),
 				new Mapper(null, 0, true, "body", Field.Method.CssPath,
 						new Field("title", "div > div.m-list > ul > li > a", Field.Method.CssPath),
-						new Field("url", "div > div.m-list > ul > li > a", "href", Field.Method.CssPath, "String")
+						new Field("url", "div > div.m-list > ul > li > a", "href", Field.Method.CssPath, Field.Type.String)
 				)
 		);
 
