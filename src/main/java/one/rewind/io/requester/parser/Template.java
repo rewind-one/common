@@ -93,6 +93,13 @@ public class Template extends Model {
 		return this;
 	}
 
+	/**
+	 *
+	 * @return
+	 */
+	public List<Mapper> getMappers() {
+		return this.mappers;
+	}
 
 	/**
 	 * 设置验证器

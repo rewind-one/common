@@ -23,7 +23,7 @@ public class Mapper implements JSONable<Mapper> {
 	String modelClassName;
 
 	// 模板id
-	int templateId;
+	public int templateId;
 
 	// 预筛选条件
 	String path;

@@ -1,7 +1,10 @@
 package one.rewind.txt;
 
 import com.google.common.collect.Sets;
+import one.rewind.io.requester.parser.TemplateManager;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -16,58 +19,17 @@ import java.util.stream.Collectors;
 
 public class ContentCleaner {
 
-	/**
-	 *
-	 * @param src
-	 * @return
-	 */
-	public static String cleanByDom(String src) {
+	public static final Logger logger = LogManager.getLogger(ContentCleaner.class.getName());
 
-		Document doc = Jsoup.parse(src);
-		Elements els = doc.select("section[data-tools=135编辑器]");
+	public interface CleanStep {
 
-		Set<String> set1 = Sets.newHashSet("section", "img");
-
-		for(Element el : els) {
-			if(set1.containsAll(getDistinctTags(getAllSubElements(el)))){
-				el.remove();
-			}
-		}
-
-		return doc.html();
+		String clean(String content);
 	}
 
-	/**
-	 *
-	 * @param els
-	 * @return
-	 */
-	public static Set<String> getDistinctTags(List<Element> els) {
+	public static List<CleanStep> cleanSteps = new ArrayList<>();
 
-		Set<String> tags = new HashSet<>();
-
-		for(Element el : els) {
-			if(!tags.contains(el.tagName())) tags.add(el.tagName());
-		}
-
-		return tags;
-	}
-
-	/**
-	 *
-	 * @param el
-	 * @return
-	 */
-	public static List<Element> getAllSubElements(Element el) {
-
-		List<Element> els = new ArrayList<>();
-
-		for(Element sel : el.children()) {
-			els.add(sel);
-			els.addAll(getAllSubElements(sel));
-		}
-
-		return els;
+	public static void addCleanStep(CleanStep step) {
+		cleanSteps.add(step);
 	}
 
 	/**
@@ -76,14 +38,28 @@ public class ContentCleaner {
 	 * @param img_urls
 	 * @return
 	 */
-
 	public static String clean(String in, List<String> img_urls){
 		return clean(in, img_urls, null);
 	}
 
+	/**
+	 *
+	 * @param in
+	 * @param img_urls
+	 * @param url
+	 * @return
+	 */
 	public static String clean(String in, List<String> img_urls, String url){
 
-		in = cleanByDom(in).replaceAll("(?si)<html>.+?<body>\\s+", "").replaceAll("(?si)\\s+</body>.+?</html>", "");
+		try {
+			for (CleanStep step : cleanSteps) {
+				in = step.clean(in);
+			}
+		} catch (Exception e) {
+			logger.error("Error exec clean step, {}, ", in, e);
+		}
+
+		in = in.replaceAll("(?si)<html>.+?<body>\\s+", "").replaceAll("(?si)\\s+</body>.+?</html>", "");
 
 		in = in.replace("(?i)^<.+?>", "");
 		in = in.replace("(?i)</.+?>$", "");
@@ -339,6 +315,12 @@ public class ContentCleaner {
 		if(list.size() == 0) list = null;
 		return list;
 	}
+
+	/**
+	 * 去除给定内容中的特殊字符
+	 * @param in
+	 * @return
+	 */
 	public static String specialCharCleaner(String in) {
 
 		String[] specialChar = {
@@ -350,4 +332,185 @@ public class ContentCleaner {
 
 		return in.replaceAll(reg, "");
 	}
+
+	/**
+	 *
+	 * @param els
+	 * @return
+	 */
+	public static Set<String> getDistinctTags(List<Element> els) {
+
+		Set<String> tags = new HashSet<>();
+
+		for (Element el : els) {
+			if (!tags.contains(el.tagName())) tags.add(el.tagName());
+		}
+
+		return tags;
+	}
+
+	/**
+	 * 获取给定element下所有子孙elements
+	 * @param el
+	 * @return
+	 */
+	public static List<Element> getAllSubElements(Element el) {
+
+		List<Element> els = new ArrayList<>();
+
+		for (Element sel : el.children()) {
+			els.add(sel);
+			els.addAll(getAllSubElements(sel));
+		}
+
+		return els;
+	}
+
+	/**
+	 * 根据给定element的sysle判断样式是否显示，若sysle包含(display:none;),判断element不显示，返回true，否则返回false
+	 * @param element
+	 * @return
+	 */
+	public static boolean cleanElementByDisplayNone(Element element) {
+		String style = element.attr("style");
+		if (style.contains("display:none;")) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * 根据data_w和style判断element宽度，根据width:px/width:%/width:em判断，若小于给定值且大于0，则返回true，否则返回false
+	 * @param element
+	 * @param maxWidth
+	 * @param maxWidthPercent
+	 * @param maxEm
+	 * @return
+	 */
+	public static boolean cleanElementBySmallWidth(Element element, int maxWidth, float maxWidthPercent, float maxEm) {
+
+		String data_w = element.attr("data-w");
+		String style = element.attr("style");
+
+		int width;
+		float widthPercent;
+		float widthEm;
+
+		//根据data_w的值判定width，小于给定值maxWidth则返回true,否则继续判断
+		try {
+			width = Integer.parseInt(data_w);
+			if (width > 0 && width < maxWidth){
+				return true;
+			}
+		}catch (Exception e){
+
+		}
+		//根据style的内容判定width，小于给定值maxWidth则返回true,否则继续判断
+		try {
+			width = getWidthOfStr(style);
+			if (width > 0 && width < maxWidth){
+				return true;
+			}
+		} catch (Exception e) {
+
+		}
+		//根据style的内容判定widthPercent，小于给定值maxWidthPercent则返回true,否则返回false
+		try {
+			widthPercent = getWidthPercentOfStr(style);
+			if (widthPercent > 0 && widthPercent < maxWidthPercent){
+				return true;
+			}
+		} catch (Exception e) {
+
+		}
+		//根据style的内容判定width的em比例，小于给定值maxEm则返回true,否则返回false
+		try {
+			widthEm = getWidthEmOfStr(style);
+			if (widthEm > 0 && widthEm < maxEm){
+				return true;
+			}
+		} catch (Exception e) {
+
+		}
+
+		return false;
+	}
+
+	/**
+	 * 根据给定字符串正则匹配，匹配不到时返回0
+	 * @param src
+	 * @return
+	 */
+	public static int getWidthOfStr(String src) {
+		src = ";" + src;
+		String regex = ";width: (?<T>\\d+?)px";
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(src);
+		int width = 0;
+
+		if (matcher.find()) {
+
+			if (matcher.group("T") != null || matcher.group("T").length() > 0) {
+				try {
+					width = Integer.parseInt(matcher.group("T"));
+				} catch (Exception e) {
+					width = 0;
+				}
+			}
+		}
+
+		return width;
+	}
+
+	/**
+	 * 根据给定字符串正则匹配，匹配不到时返回0
+	 * @param src
+	 * @return
+	 */
+	public static float getWidthPercentOfStr(String src) {
+		src = ";" + src;
+		String regex = ";width: (?<T>[0-9]*\\.?[0-9]+?)%";
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(src);
+		float width = 0;
+
+		if (matcher.find()) {
+
+			if (matcher.group("T") != null || matcher.group("T").length() > 0) {
+				try {
+					width = Float.parseFloat(matcher.group("T"));
+				} catch (Exception e) {
+					width = 0;
+				}
+			}
+		}
+		return width;
+	}
+
+	/**
+	 * 根据给定字符串进行正则匹配，匹配不到时返回0
+	 * @param src
+	 * @return
+	 */
+	public static float getWidthEmOfStr(String src) {
+		src = ";" + src;
+		String regex = ";width: (?<T>[0-9]*\\.?[0-9]+?)em";
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(src);
+		float width = 0;
+
+		if (matcher.find()) {
+
+			if (matcher.group("T") != null || matcher.group("T").length() > 0) {
+				try {
+					width = Float.parseFloat(matcher.group("T"));
+				} catch (Exception e) {
+					width = 0;
+				}
+			}
+		}
+
+		return width;
+	}
+
 }
