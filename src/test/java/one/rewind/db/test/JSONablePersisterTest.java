@@ -1,6 +1,6 @@
 package one.rewind.db.test;
 
-import one.rewind.db.Refacter;
+import one.rewind.db.util.Refactor;
 import one.rewind.db.model.Model;
 import org.junit.After;
 import org.junit.Before;
@@ -19,8 +19,8 @@ public class JSONablePersisterTest {
 	 */
 	@Before
 	public void test1() throws Exception {
-		Refacter.dropTable(TM.class);
-		Refacter.createTable(TM.class);
+		Refactor.dropTable(TM.class);
+		Refactor.createTable(TM.class);
 	}
 
 	/**

@@ -3,12 +3,13 @@ package one.rewind.db;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
+import one.rewind.db.exception.DBInitException;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import one.rewind.util.Configs;
 
 import java.beans.PropertyVetoException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class PooledDataSource {
 	 * @return
 	 * @throws Exception 
 	 */
-	public static synchronized ComboPooledDataSource getDataSource(String dbName) throws Exception{
+	public static synchronized ComboPooledDataSource getDataSource(String dbName) throws SQLException, DBInitException {
 		
 		if(CPDSList.containsKey(dbName)){
 			
@@ -54,7 +55,7 @@ public class PooledDataSource {
 	 * @return
 	 * @throws Exception
 	 */
-	public static synchronized ComboPooledDataSource addDataSource(String dbName) throws Exception{
+	public static synchronized ComboPooledDataSource addDataSource(String dbName) throws DBInitException {
 		
 		ComboPooledDataSource cpds = null;
 		cpds = new ComboPooledDataSource();
@@ -85,11 +86,14 @@ public class PooledDataSource {
 			cpds.setIdleConnectionTestPeriod(120);
 			
 		} catch (ConfigException e) {
-			logger.error("No {} confg infomation in config file.", dbName, e);
-			throw new Exception("Open pooled db connection failed.");
+			logger.error("DB:[{}] config invalided, ", dbName, e);
+			throw new DBInitException("Open pooled db connection failed.");
 		} catch (PropertyVetoException e) {
-			logger.error("Class not found.", e);
-			throw new Exception("Open pooled db connection failed.");
+			logger.error("Properties Veto, ", e);
+			throw new DBInitException("Open pooled db connection failed.");
+		} catch (Exception e) {
+			logger.error("Unknown Exception, ", e);
+			throw new DBInitException("Open pooled db connection failed.");
 		}
 		
 		CPDSList.put(dbName, cpds);

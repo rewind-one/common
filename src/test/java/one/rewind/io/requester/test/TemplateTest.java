@@ -1,22 +1,11 @@
 package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
-import com.j256.ormlite.field.DataType;
-import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.table.DatabaseTable;
-import one.rewind.db.DBName;
-import one.rewind.db.Refacter;
-import one.rewind.db.persister.JSONableListPersister;
 import one.rewind.io.requester.basic.BasicDistributor;
 import one.rewind.io.requester.parser.*;
-import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
 import one.rewind.txt.StringUtil;
 import org.junit.Test;
-
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 public class TemplateTest {
 

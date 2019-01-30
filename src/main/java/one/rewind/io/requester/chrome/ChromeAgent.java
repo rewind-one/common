@@ -877,7 +877,7 @@ public class ChromeAgent {
 	 * 在特定元素上执行JavaScript脚本
 	 * Really should only be used when the web driver is sucking at exposing
 	 * functionality natively
-	 * @param script The script to execute
+	 * @param script The script to exec
 	 * @param element The target of the script, referenced as arguments[0]
 	 */
 	public void trigger(String script, WebElement element) {
@@ -888,7 +888,7 @@ public class ChromeAgent {
 	 * 执行JavaScript脚本
 	 * @note Really should only be used when the web driver is sucking at exposing
 	 * functionality natively
-	 * @param script The script to execute
+	 * @param script The script to exec
 	 */
 	public Object trigger(String script) {
 		return ((JavascriptExecutor) driver).executeScript(script);

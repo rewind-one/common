@@ -7,7 +7,7 @@ import com.j256.ormlite.field.FieldType;
 import com.j256.ormlite.field.SqlType;
 import com.j256.ormlite.field.types.StringType;
 import com.j256.ormlite.table.DatabaseTable;
-import one.rewind.db.DBName;
+import one.rewind.db.annotation.DBName;
 import one.rewind.db.model.ModelD;
 import one.rewind.db.persister.JSONableListPersister;
 import one.rewind.db.persister.JSONableMapPersister;

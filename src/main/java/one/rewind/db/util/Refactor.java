@@ -1,9 +1,12 @@
-package one.rewind.db;
+package one.rewind.db.util;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.jdbc.DataSourceConnectionSource;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
+import one.rewind.db.Daos;
+import one.rewind.db.PooledDataSource;
+import one.rewind.db.annotation.DBName;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
@@ -18,12 +21,12 @@ import java.util.Set;
 
 /**
  * 基于OrmLite的数据辅助工具
- * 自动建表
+ * 自动建表 删除表
  * @author scisaga@gmail.com
  */
-public class Refacter {
+public class Refactor {
 
-	public final static Logger logger = LogManager.getLogger(RedissonAdapter.class.getName());
+	public final static Logger logger = LogManager.getLogger(Refactor.class.getName());
 	
 	public static Class<? extends Annotation> annotationClass = DBName.class;
 
@@ -34,8 +37,8 @@ public class Refacter {
 	 * @param clazz
 	 * @throws Exception
 	 */
-	public static void createTable(Class<? extends Object> clazz) throws Exception {
-		Set<Class<? extends Object>> set = new HashSet<Class<? extends Object>>();
+	public static void createTable(Class<? extends Object> clazz) {
+		Set<Class<? extends Object>> set = new HashSet<>();
 		set.add(clazz);
 		createTables(set);
 	}
@@ -45,8 +48,8 @@ public class Refacter {
 	 * @param clazz
 	 * @throws Exception
 	 */
-	public static void dropTable(Class<? extends Object> clazz) throws Exception {
-		Set<Class<? extends Object>> set = new HashSet<Class<? extends Object>>();
+	public static void dropTable(Class<? extends Object> clazz) {
+		Set<Class<? extends Object>> set = new HashSet<>();
 		set.add(clazz);
 		dropTables(set);
 	}
@@ -56,7 +59,7 @@ public class Refacter {
 	 * @param packageName
 	 * @throws Exception
 	 */
-	public static void createTables(String packageName) throws Exception {
+	public static void createTables(String packageName) {
 		createTables(getClasses(packageName));
 	}
 	
@@ -65,7 +68,7 @@ public class Refacter {
 	 * @param packageName
 	 * @throws Exception
 	 */
-	public static void dropTables(String packageName) throws Exception {
+	public static void dropTables(String packageName) {
 
 		dropTables(getClasses(packageName));
 	}
@@ -75,7 +78,7 @@ public class Refacter {
 	 * 
 	 * @throws Exception
 	 */
-	private static Set<Class<? extends Object>> getClasses(String packageName) throws Exception {
+	private static Set<Class<? extends Object>> getClasses(String packageName) {
 		Reflections reflections = new Reflections(packageName);
 		return reflections.getTypesAnnotatedWith(annotationClass);
 	}
@@ -93,13 +96,14 @@ public class Refacter {
 			ConnectionSource source;
 			
 			try {
+
 				String dbName = clazz.getAnnotation(DBName.class).value();
 				source = new DataSourceConnectionSource(
-					PooledDataSource.getDataSource(dbName), 
+					PooledDataSource.getDataSource(dbName),
 					PooledDataSource.getDataSource(dbName).getJdbcUrl()
 				);
 				
-				Dao<?, String> dao = DaoManager.getDao(clazz);
+				Dao<?, String> dao = Daos.get(clazz);
 				if(!dao.isTableExists()){
 					TableUtils.createTable(source, clazz);
 					logger.trace("Created {}.", clazz.getName());
@@ -107,8 +111,6 @@ public class Refacter {
 					logger.info("Table {} already exists.", clazz.getName());
 				}
 				
-			} catch (SQLException e) {
-				logger.error("Error create table for {}.", clazz.getName(), e);
 			} catch (Exception e) {
 				logger.error("Error create table for {}.", clazz.getName(), e);
 			}
@@ -120,12 +122,13 @@ public class Refacter {
 	 * @param classes
 	 * @throws SQLException
 	 */
-	public static void dropTables(Set<Class<? extends Object>> classes) throws SQLException {
+	public static void dropTables(Set<Class<? extends Object>> classes) {
 		for (Class<?> clazz : classes) {
 			logger.trace("Dropping {}...", clazz.getName());
 			ConnectionSource source;
 			
 			try {
+
 				String dbName = clazz.getAnnotation(DBName.class).value();
 				
 				source = new DataSourceConnectionSource(
@@ -136,29 +139,28 @@ public class Refacter {
 				TableUtils.dropTable(source, clazz, true);
 				logger.trace("Dropped {}.", clazz.getName());
 				
-			} catch (SQLException e) {
-				logger.error("Error drop table for {}.", clazz.getName(), e);
 			} catch (Exception e) {
 				logger.error("Error drop table for {}.", clazz.getName(), e);
 			}
 		}
 	}
 
+	/**
+	 *
+	 * @param classes
+	 */
 	public static void initDao(Set<Class<? extends Object>> classes) {
 
 		for (Class<?> clazz : classes) {
+
 			try {
 
-				Dao dao = DaoManager.getDao(clazz);
+				Dao dao = Daos.get(clazz);
 				Field field = clazz.getField("dao");
 				field.set(null, dao);
 
-			} catch (NoSuchFieldException e) {
-				logger.error(e);
-			} catch (IllegalAccessException e) {
-				e.printStackTrace();
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error("Error Init dao for Model[{}], ", clazz.getSimpleName(), e);
 			}
 		}
 	}

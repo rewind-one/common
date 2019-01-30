@@ -8,23 +8,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by admin on 2018/8/13 0013.
+ * Created by scisaga@gmail.com on 2018/8/13 0013.
  */
 public class ReflectModelUtil {
 
-    /**
-     *
-     * @param map
-     * @param beanClass
-     * @return
-     * @throws Exception
-     */
-    public static Object toObj(Map<String, Object> map, Class<?> beanClass) throws Exception {
+	/**
+	 *
+	 * @param map
+	 * @param beanClass
+	 * @return
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 */
+    public static Object toObj(Map<String, Object> map, Class<?> beanClass) throws IllegalAccessException, InstantiationException {
 
         if (map == null || map.size()<=0)
             return null;
 
         Object obj = beanClass.newInstance();
+
         //获取关联的所有类，本类以及所有父类
         boolean ret = true;
         Class oo = obj.getClass();
@@ -35,7 +37,8 @@ public class ReflectModelUtil {
             if(oo == null || oo == Object.class)break;
         }
 
-        for(int i=0;i<clazzs.size();i++){
+        for(int i=0; i<clazzs.size(); i++){
+
             Field[] fields = clazzs.get(i).getDeclaredFields();
             for (Field field : fields) {
                 int mod = field.getModifiers();
@@ -53,13 +56,13 @@ public class ReflectModelUtil {
         return obj;
     }
 
-    /**
-     *
-     * @param obj
-     * @return
-     * @throws Exception
-     */
-    public static Map<String, Object> toMap(Object obj) throws Exception {
+	/**
+	 *
+	 * @param obj
+	 * @return
+	 * @throws IllegalAccessException
+	 */
+    public static Map<String, Object> toMap(Object obj) throws IllegalAccessException {
 
         if(obj == null){
             return null;
@@ -76,8 +79,10 @@ public class ReflectModelUtil {
 
         Map<String, Object> map = new HashMap<String, Object>();
 
-        for(int i=0;i<clazzs.size();i++){
+        for(int i=0; i<clazzs.size(); i++){
+
             Field[] declaredFields = clazzs.get(i).getDeclaredFields();
+
             for (Field field : declaredFields) {
                 int mod = field.getModifiers();
                 //过滤 static 和 final 类型

@@ -1,15 +1,14 @@
 package one.rewind.db.model;
 
-import com.google.common.collect.ImmutableMap;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import one.rewind.db.DaoManager;
+import one.rewind.db.Daos;
+import one.rewind.db.exception.DBInitException;
+import one.rewind.db.exception.ModelException;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.Map;
 
 /**
  * 只有ModelD 存在版本管理概念
@@ -19,40 +18,37 @@ public abstract class ModelD extends Model{
 	@DatabaseField(dataType = DataType.STRING, width = 32, id = true)
 	public String id;
 
-	public boolean upsert() {
+	/**
+	 * 插入更新方法
+	 * @return
+	 * @throws DBInitException
+	 * @throws SQLException
+	 * @throws ModelException.ClassNotEqual
+	 * @throws IllegalAccessException
+	 */
+	public boolean upsert() throws DBInitException, SQLException, ModelException.ClassNotEqual, IllegalAccessException {
 
-		try {
+		Dao dao = Daos.get(this.getClass());
 
-			Dao dao = DaoManager.getDao(this.getClass());
+		ModelD oldVersion = (ModelD) dao.queryForId(this.id);
 
-			ModelD oldVersion = (ModelD) dao.queryForId(this.id);
+		// 没有旧版本
+		if (oldVersion == null) {
 
-			// 没有旧版本
-			if(oldVersion == null) {
-
-				if(super.insert()) {
-					createSnapshot(this); // 第一次采集 也需要创建快照
-					return true;
-				}
+			if (super.insert()) {
+				createSnapshot(this); // 第一次采集 也需要创建快照
+				return true;
 			}
-			// 存在旧版本
-			else {
+		}
+		// 存在旧版本
+		else {
 
-				if(diff(oldVersion)) {
+			if (diff(oldVersion)) {
 
-					createSnapshot(oldVersion); // 创建快照
-					oldVersion.copy(this); // 新值覆盖旧值
-					return oldVersion.update();
-				}
+				createSnapshot(oldVersion); // 创建快照
+				oldVersion.copy(this); // 新值覆盖旧值
+				return oldVersion.update();
 			}
-
-			return false;
-		}
-		catch (SQLException e) {
-			logger.error("Model {} insert error. ", this.toJSON(), e);
-		}
-		catch (Exception e) {
-			logger.error(e);
 		}
 
 		return false;
@@ -64,10 +60,10 @@ public abstract class ModelD extends Model{
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean diff(Model model) throws Exception {
+	public boolean diff(Model model) throws ModelException.ClassNotEqual, IllegalAccessException {
 
 		if(!model.getClass().equals(this.getClass())) {
-			throw new Exception("Model class is not equal");
+			throw new ModelException.ClassNotEqual();
 		}
 
 		Field[] fieldList = model.getClass().getDeclaredFields();
@@ -93,10 +89,10 @@ public abstract class ModelD extends Model{
 	 * @param model
 	 * @throws Exception
 	 */
-	public void copy(Model model) throws Exception {
+	public void copy(Model model) throws ModelException.ClassNotEqual {
 
 		if(!model.getClass().equals(this.getClass())) {
-			throw new Exception("Can't copy fields from different model class.");
+			throw new ModelException.ClassNotEqual();
 		}
 
 		Field[] fieldList = model.getClass().getDeclaredFields();
@@ -122,7 +118,7 @@ public abstract class ModelD extends Model{
 	 * @param oldVersion
 	 * @throws Exception
 	 */
-	public void createSnapshot(Model oldVersion) throws Exception {
+	public void createSnapshot(Model oldVersion) {
 
 	}
 }

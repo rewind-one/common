@@ -1,4 +1,4 @@
-package one.rewind.db;
+package one.rewind.db.annotation;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;

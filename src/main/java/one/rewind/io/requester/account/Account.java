@@ -3,7 +3,7 @@ package one.rewind.io.requester.account;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import one.rewind.db.DaoManager;
+import one.rewind.db.Daos;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.StringUtil;
@@ -127,7 +127,7 @@ public abstract class Account implements JSONable<Account> {
 	 */
 	public boolean insert() throws Exception {
 
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 
 		try {
 			dao.create(this);
@@ -152,7 +152,7 @@ public abstract class Account implements JSONable<Account> {
 
 		update_time = new Date();
 
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 
 		if (dao.update(this) == 1) {
 			return true;

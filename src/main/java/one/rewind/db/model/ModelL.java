@@ -5,6 +5,6 @@ import com.j256.ormlite.field.DatabaseField;
 
 public abstract class ModelL extends Model{
 
-	@DatabaseField(dataType = DataType.INTEGER, index = true, generatedId = true)
+	@DatabaseField(dataType = DataType.INTEGER, generatedId = true)
 	public int id;
 }

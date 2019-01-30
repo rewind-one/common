@@ -1,20 +1,10 @@
 package one.rewind.io.requester.parser.test;
 
 import com.google.common.collect.ImmutableMap;
-import com.j256.ormlite.field.DataType;
-import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.table.DatabaseTable;
-import one.rewind.db.DBName;
-import one.rewind.db.model.ESIndex;
-import one.rewind.db.model.Model;
-import one.rewind.db.persister.JSONableListPersister;
 import one.rewind.io.requester.basic.BasicDistributor;
 import one.rewind.io.requester.parser.*;
 import one.rewind.io.requester.task.TaskHolder;
-import org.bouncycastle.math.raw.Mod;
 import org.junit.Test;
-
-import java.util.List;
 
 public class MapperTest {
 

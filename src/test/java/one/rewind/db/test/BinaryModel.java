@@ -4,10 +4,10 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
+import one.rewind.db.Daos;
 import one.rewind.util.FileUtil;
-import one.rewind.db.DBName;
-import one.rewind.db.DaoManager;
-import one.rewind.db.Refacter;
+import one.rewind.db.annotation.DBName;
+import one.rewind.db.util.Refactor;
 
 import java.util.UUID;
 
@@ -25,12 +25,12 @@ public class BinaryModel {
 		
 		try {
 			
-			Refacter.dropTable(BinaryModel.class);
-			Refacter.createTable(BinaryModel.class);
+			Refactor.dropTable(BinaryModel.class);
+			Refactor.createTable(BinaryModel.class);
 			
 			String id = UUID.randomUUID().toString();
 			
-			Dao<BinaryModel, String> dao = DaoManager.getDao(BinaryModel.class);
+			Dao<BinaryModel, String> dao = Daos.get(BinaryModel.class);
 			BinaryModel bm = new BinaryModel();
 			bm.id = id;
 			bm.c = FileUtil.readBytesFromFile("D:\\test.jpg");

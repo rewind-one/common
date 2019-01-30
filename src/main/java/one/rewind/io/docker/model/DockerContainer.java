@@ -3,7 +3,7 @@ package one.rewind.io.docker.model;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import one.rewind.db.DaoManager;
+import one.rewind.db.Daos;
 import one.rewind.io.ssh.RemoteShell;
 
 import java.util.Date;
@@ -109,7 +109,7 @@ public abstract class DockerContainer implements RemoteShell {
 	 */
 	public boolean insert() throws Exception {
 
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 
 		if (dao.create(this) == 1) {
 			return true;
@@ -124,7 +124,7 @@ public abstract class DockerContainer implements RemoteShell {
 	 */
 	public boolean update() throws Exception {
 
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 
 		if (dao.update(this) == 1) {
 			return true;
@@ -141,7 +141,7 @@ public abstract class DockerContainer implements RemoteShell {
 	public void delete() throws Exception {
 
 		if (this.status == Status.TERMINATED) {
-			Dao dao = DaoManager.getDao(this.getClass());
+			Dao dao = Daos.get(this.getClass());
 			dao.delete(this);
 		} else {
 			throw new IllegalStateException("Terminate docker container before delete.");

@@ -4,7 +4,7 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.typesafe.config.Config;
-import one.rewind.db.DaoManager;
+import one.rewind.db.Daos;
 import one.rewind.io.ssh.SshManager;
 import one.rewind.util.Configs;
 import org.apache.logging.log4j.LogManager;
@@ -110,7 +110,7 @@ public class DockerHost {
 	 * @throws Exception
 	 */
 	public boolean insert() throws Exception {
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 		return dao.create(this) == 1;
 	}
 
@@ -120,7 +120,7 @@ public class DockerHost {
 	 * @throws Exception
 	 */
 	public boolean update() throws Exception {
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 		return dao.update(this) == 1;
 	}
 
@@ -162,7 +162,7 @@ public class DockerHost {
 
 		lock.lock(10, TimeUnit.SECONDS);
 
-		Dao<DockerHost, String> dao = DaoManager.getDao(DockerHost.class);
+		Dao<DockerHost, String> dao = Daos.get(DockerHost.class);
 		// 刷新内存数据
 		dao.refresh(this);
 
@@ -191,7 +191,7 @@ public class DockerHost {
 
 		lock.lock(10, TimeUnit.SECONDS);
 
-		Dao<DockerHost, String> dao = DaoManager.getDao(DockerHost.class);
+		Dao<DockerHost, String> dao = Daos.get(DockerHost.class);
 		// 刷新内存数据
 		dao.refresh(this);
 

@@ -3,7 +3,7 @@ package one.rewind.io.requester.proxy;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import one.rewind.db.DaoManager;
+import one.rewind.db.Daos;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import org.apache.commons.codec.binary.Base64;
@@ -170,7 +170,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 	 */
 	public boolean insert() throws Exception{
 
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 
 		List<Proxy> existProxys = dao.queryBuilder()
 				.where()
@@ -201,7 +201,7 @@ public abstract class Proxy implements JSONable<Proxy> {
 
 		update_time = new Date();
 
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 
 		if (dao.update(this) == 1) {
 			return true;

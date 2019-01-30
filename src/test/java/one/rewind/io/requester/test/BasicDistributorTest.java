@@ -2,21 +2,15 @@ package one.rewind.io.requester.test;
 
 import com.google.common.collect.ImmutableMap;
 import one.rewind.db.RedissonAdapter;
-import one.rewind.db.Refacter;
-import one.rewind.db.model.Model;
+import one.rewind.db.util.Refactor;
 import one.rewind.io.requester.basic.BasicDistributor;
 import one.rewind.io.requester.parser.*;
 import one.rewind.io.requester.proxy.Proxy;
-import one.rewind.io.requester.task.Task;
 import one.rewind.io.requester.task.TaskHolder;
-import org.jsoup.nodes.Element;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.redisson.api.RBlockingQueue;
 
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -107,10 +101,10 @@ public class BasicDistributorTest {
 	@Test
 	public void setupDB() throws Exception {
 
-		Refacter.dropTable(TestModel.class);
-		Refacter.dropTable(TestDModel.class);
-		Refacter.createTable(TestModel.class);
-		Refacter.createTable(TestDModel.class);
+		Refactor.dropTable(TestModel.class);
+		Refactor.dropTable(TestDModel.class);
+		Refactor.createTable(TestModel.class);
+		Refactor.createTable(TestDModel.class);
 	}
 
 	@Test

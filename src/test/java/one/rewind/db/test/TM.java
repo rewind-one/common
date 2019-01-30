@@ -1,9 +1,8 @@
 package one.rewind.db.test;
 
-import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
-import one.rewind.db.DBName;
+import one.rewind.db.annotation.DBName;
 import one.rewind.db.model.ModelL;
 import one.rewind.db.persister.JSONablePersister;
 import one.rewind.json.JSON;

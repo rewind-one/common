@@ -1,11 +1,12 @@
 package one.rewind.db.model;
 
-import com.google.common.collect.ImmutableMap;
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import one.rewind.db.DaoManager;
-import one.rewind.db.ModelCreateCallback;
+import one.rewind.db.Daos;
+import one.rewind.db.callback.ModelCallback;
+import one.rewind.db.exception.DBInitException;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import org.apache.logging.log4j.LogManager;
@@ -14,18 +15,17 @@ import org.apache.logging.log4j.Logger;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  *
  */
-public abstract class Model implements JSONable<Model> {
+public abstract class Model<T extends Model> implements JSONable<T> {
 
-	static final Logger logger = LogManager.getLogger(Model.class.getName());
+	public static final Logger logger = LogManager.getLogger(Model.class.getName());
 
-	public static ModelCreateCallback createCallback;
+	public static ModelCallback createCallback;
 
-	public static ModelCreateCallback updateCallback;
+	public static ModelCallback updateCallback;
 
 	@DatabaseField(dataType = DataType.DATE)
 	public Date insert_time = new Date();
@@ -38,9 +38,9 @@ public abstract class Model implements JSONable<Model> {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean insert() throws Exception {
+	public boolean insert() throws DBInitException, SQLException {
 
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 
 		if (dao.create(this) == 1) {
 
@@ -57,9 +57,9 @@ public abstract class Model implements JSONable<Model> {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean update() throws Exception {
+	public boolean update() throws DBInitException, SQLException {
 
-		Dao dao = DaoManager.getDao(this.getClass());
+		Dao dao = Daos.get(this.getClass());
 
 		this.update_time = new Date();
 
@@ -79,11 +79,11 @@ public abstract class Model implements JSONable<Model> {
 	 * @return
 	 * @throws Exception
 	 */
-	public static Model getById(Class clazz, String id) throws Exception {
+	public static <T> T getById(Class<T> clazz, String id) throws DBInitException, SQLException {
 
-		Dao dao = DaoManager.getDao(clazz);
+		Dao dao = Daos.get(clazz);
 
-		return (Model) dao.queryForId(id);
+		return (T) dao.queryForId(id);
 	}
 
 	/**
@@ -92,11 +92,22 @@ public abstract class Model implements JSONable<Model> {
 	 * @return
 	 * @throws Exception
 	 */
-	public static List<Model> getAll(Class clazz) throws Exception {
+	public static <T> List<T> getAll(Class<T> clazz) throws DBInitException, SQLException {
 
-		Dao dao = DaoManager.getDao(clazz);
+		Dao dao = Daos.get(clazz);
 
-		return (List<Model>) dao.queryForAll();
+		return (List<T>) dao.queryForAll();
+	}
+
+	/**
+	 *
+	 * @param id
+	 * @throws Exception
+	 */
+	public static <T> void deleteById(Class<T> clazz, String id) throws DBInitException, SQLException {
+		Dao<T, String> dao = Daos.get(clazz);
+		T model = dao.queryForId(id);
+		dao.deleteById(id);
 	}
 
 	@Override
