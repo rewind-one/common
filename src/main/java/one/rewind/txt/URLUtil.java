@@ -1,10 +1,14 @@
 package one.rewind.txt;
 
+import com.google.common.collect.Lists;
 import com.google.common.net.InternetDomainName;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +42,29 @@ public class URLUtil {
 			}
 		}
 		return domain;
+	}
+
+	/**
+	 *
+	 * @param uri
+	 * @return
+	 * @throws URISyntaxException
+	 */
+	public static List<String> getAllDomains(URI uri) throws URISyntaxException {
+
+		List<String> hosts = new ArrayList<>();
+		hosts.add(uri.getHost());
+
+		String host = uri.getHost();
+
+		hosts.add(host);
+
+		while(host.split("\\.").length>2) {
+			host = host.replaceAll("^.+?\\.", "");
+			hosts.add(host);
+		}
+
+		return Lists.reverse(hosts); // 第一个是根域名 最后一个是直接域名
 	}
 
 	/**

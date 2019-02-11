@@ -3,6 +3,7 @@ package one.rewind.io.requester.task;
 import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import one.rewind.io.requester.basic.BasicRequester;
+import one.rewind.io.requester.basic.Cookies;
 import one.rewind.io.requester.callback.NextTaskGenerator;
 import one.rewind.io.requester.callback.TaskCallback;
 import one.rewind.io.requester.callback.TaskValidator;
@@ -683,7 +684,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 		private String text;
 
 		// 返回Cookie
-		private String cookies;
+		private Cookies.Holder cookies;
 
 		// 变量集
 		private Map<String, String> vars = new HashMap<>();
@@ -756,7 +757,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 		 *
 		 * @return Cookies
 		 */
-		public String getCookies() {
+		public Cookies.Holder getCookies() {
 			return cookies;
 		}
 
@@ -765,7 +766,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 		 *
 		 * @param cookies Cookies
 		 */
-		public void setCookies(String cookies) {
+		public void setCookies(Cookies.Holder cookies) {
 			this.cookies = cookies;
 		}
 

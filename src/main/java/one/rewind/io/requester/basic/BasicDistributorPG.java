@@ -225,7 +225,7 @@ public class BasicDistributorPG extends BasicDistributor {
 
 			volatile boolean commonHeaderSet = false;
 
-			String cookies;
+			Cookies.Holder cookies;
 
 			public volatile boolean switchProxy = true;
 
@@ -290,7 +290,7 @@ public class BasicDistributorPG extends BasicDistributor {
 
 								// 合并 上一次获取的 Cookie
 								if (cookies != null) {
-									commonHeader.put("Cookie", cookies);
+									commonHeader.put("Cookie", cookies.getCookies(t.url));
 								} else {
 									commonHeader.remove("Cookie");
 								}
@@ -397,8 +397,11 @@ public class BasicDistributorPG extends BasicDistributor {
 				// Request Group 中 同IP
 				if(requestGroup != null) {
 
-					if(requestGroup.cookies == null)
+					if(requestGroup.cookies == null) {
 						requestGroup.cookies = t.getResponse().getCookies();
+					} else {
+						requestGroup.cookies.add(t.getResponse().getCookies());
+					}
 
 					requestGroup.phaser.arriveAndDeregister();
 					//logger.info("Phaser* {}", requestGroup.phaser.getUnarrivedParties());

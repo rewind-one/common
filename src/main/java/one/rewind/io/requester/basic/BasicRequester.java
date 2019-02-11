@@ -23,6 +23,8 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 /**
  * 基本HTTP内容请求器
@@ -59,7 +61,7 @@ public class BasicRequester {
 
 	}
 
-	CookiesManager cookiesManager = null;
+	Cookies cookiesManager = null;
 
 	public Map<String, Map<String, String>> headers = new HashMap<>();
 
@@ -100,7 +102,7 @@ public class BasicRequester {
 	 *
 	 */
 	private BasicRequester() {
-		cookiesManager = new CookiesManager();
+		cookiesManager = new Cookies();
 	}
 
 	/**
@@ -466,15 +468,13 @@ public class BasicRequester {
 			try {
 
 				String cookies = null;
-				CookiesManager.CookiesHolder cookiesHolder = null;
 
-				String host = task.getProxy() == null ? "" : task.getProxy().getHost();
+				String proxyHost = task.getProxy() == null ? "" : task.getProxy().getHost();
 
 				if(task.getCookies() != null) {
 					cookies = task.getCookies();
 				} else {
-					cookiesHolder = cookiesManager.getCookiesHolder(host, task.getDomain());
-					cookies = cookiesHolder == null? null : cookiesHolder.getCookie();
+					cookies = cookiesManager.getCookie(proxyHost, task.url);
 				}
 
 				if(task.getHeaders() != null) {
@@ -537,6 +537,10 @@ public class BasicRequester {
 						if (entry.getValue().get(0).equals("gzip")) {
 							inStream = new BufferedInputStream(decompress_stream(inStream));
 						}
+
+						if (entry.getValue().get(0).equals("deflate")) {
+							inStream = new BufferedInputStream(new InflaterInputStream(inStream, new Inflater(true)));
+						}
 					}
 					/**
 					 * SET ENCODE
@@ -557,36 +561,12 @@ public class BasicRequester {
 					 */
 					if (entry.getKey() != null && entry.getKey().equals("Set-Cookie")) {
 
-						String newCookies = "";
-						HashMap<String, String> cookie_map = new HashMap<String, String>();
+						Cookies.Holder holder = new Cookies.Holder(task.url, entry.getValue());
 
-						for(String val : entry.getValue()){
-							String[] item = val.split("; *");
-							for(String kv : item){
-								String[] kv_ = kv.split("=");
-								if(kv_.length>1 && ! kv_[0].matches("[Pp]ath|[Ee]xpires|[Dd]omain")) {
-									cookie_map.put(kv_[0], kv_[1]);
-								}
+						task.getResponse().setCookies(holder);
 
-							}
-						}
-
-						for(String key : cookie_map.keySet()) {
-							newCookies += key + "=" + cookie_map.get(key) + "; ";
-						}
-
-						newCookies = CookiesManager.mergeCookies(cookies, newCookies);
-						//System.err.print(newCookies);
-						task.getResponse().setCookies(newCookies);
-
-						if(task.getCookies() == null) {
-							if(cookiesHolder != null) {
-								cookiesHolder.setCookie(newCookies);
-							} else {
-								cookiesHolder = new CookiesManager.CookiesHolder(newCookies);
-							}
-							cookiesManager.addCookiesHolder(host, task.getDomain(), cookiesHolder);
-						}
+						if(task.getCookies() == null)
+							cookiesManager.addCookiesHolder(proxyHost, holder);
 					}
 				}
 

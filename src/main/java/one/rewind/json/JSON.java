@@ -18,6 +18,7 @@ public class JSON {
 			.disableHtmlEscaping()
 			.registerTypeAdapter(Date.class, new DateSerializer()).setDateFormat(DateFormat.LONG)
 			.registerTypeAdapter(Date.class, new DateDeserializer()).setDateFormat(DateFormat.LONG)
+			.registerTypeAdapter(Double.class, new JSON.DoubleSerializer())
 			.registerTypeAdapter(Exception.class, new ExceptionSerializer())
 			.registerTypeAdapter(Exception.class, new ExceptionDeserializer())
 			.registerTypeAdapter(ChromeAction.class, new InterfaceAdapter<ChromeAction>())
@@ -95,5 +96,25 @@ public class JSON {
 	    public JsonElement serialize(Exception src, Type typeOfSrc, JsonSerializationContext context) {
 	        return new JsonPrimitive(src.getMessage());
 	    }
+	}
+
+	/**
+	 *
+	 */
+	public static class DoubleSerializer implements JsonSerializer<Double> {
+		public DoubleSerializer() {
+		}
+
+		public JsonElement serialize(Double src, Type typeOfSrc, JsonSerializationContext context) {
+
+			if(src.intValue() == src) {
+				return new JsonPrimitive(src.intValue());
+			}
+			else if(src.longValue() == src) {
+				return new JsonPrimitive(src.longValue());
+			}
+
+			return new JsonPrimitive(src);
+		}
 	}
 }
