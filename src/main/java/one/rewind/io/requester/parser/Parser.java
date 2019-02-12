@@ -11,6 +11,7 @@ import one.rewind.txt.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.redisson.api.RMap;
+import org.redisson.api.RSetMultimap;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -173,9 +174,13 @@ public class Parser {
 		// TODO t.holder.vars need to be LinkedHashMap
 		int template_id = t.holder.template_id;
 		String mapper_hash = mapper.getHash();
-		RMap<String, String> rmap = RedissonAdapter.redisson.getMap("Template-" + template_id + "-Mapper-" + mapper_hash);
 
-		if (rmap.containsValue(src_hash)) {
+		RSetMultimap<String, String> rmap = RedissonAdapter.redisson.getSetMultimap("Template-Mapper");
+
+		String rmapKey = "Template-" + template_id + "-Mapper-" + mapper_hash;
+		Set<String> template_mappers = rmap.get(rmapKey);
+
+		if (template_mappers.contains(src_hash)) {
 			//mapper内容不允许重复出现时，抛出异常
 			//mapper内容允许重复出现时，跳过不再次处理,返回null
 			if (mapper.forbidDuplicateContent) {
@@ -184,7 +189,7 @@ public class Parser {
 				return new ArrayList<>();
 			}
 		} else {
-			rmap.put(StringUtil.MD5(JSON.toJson(new TreeMap<>(t.holder.vars))), src_hash);
+			rmap.put(rmapKey, src_hash);
 		}
 
 		if (mapper.fields.size() == 0) {
@@ -295,19 +300,24 @@ public class Parser {
 
 					// TODO 如果图片要单独下载，并保存在小文件系统，何如？
 					// 对 images src 进行修正
-					String content = item.get(name).toString();
+					try {
+						String content = item.get(name).toString();
 
-					List<String> img_urls = new ArrayList<>();
-					content = ContentCleaner.clean(content, img_urls, url);
+						List<String> img_urls = new ArrayList<>();
+						content = ContentCleaner.clean(content, img_urls, url);
 
-					item.put("content", content);
-					item.put("images", img_urls);
+						item.put("content", content);
+						item.put("images", img_urls);
+					}catch (Exception e){
+						TemplateManager.logger.warn("content : {} is null, {}", item.get(name).toString(), t.url);
+					}
 				}
 			}
 
 			data.add(item);
 		}
 
+		// D 预定义规则运算
 		// D 预定义规则运算
 		for (Map<String, Object> item : data) {
 
@@ -318,16 +328,18 @@ public class Parser {
 					String rule = f.evalRule;
 
 					for (String key : item.keySet()) {
-						rule = rule.replaceAll("\\{\\{" + key + "\\}\\}", item.get(key).toString());
-					}
 
+						rule = rule.replaceAll("\\{\\{" + key + "\\}\\}", Matcher.quoteReplacement(item.get(key).toString()));
+
+					}
 					if (rule.contains("{{") && rule.contains("}}")) {
 
-						 throw new Exception("EvalRule not fully construct. " + f.name);
-					} else {
-
-						item.put(f.name, Evaluator.getInstance().serialEval(rule).toString());
+						rule = rule.replaceAll("\\{\\{\\S+?\\}\\}", "");
+						TemplateManager.logger.warn("EvalRule not fully construct. " + f.name);
+						// throw new Exception("EvalRule not fully construct. " + f.name);
 					}
+
+					item.put(f.name, Evaluator.getInstance().serialEval(rule).toString());
 				}
 			}
 		}

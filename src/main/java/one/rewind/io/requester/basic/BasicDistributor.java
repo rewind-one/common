@@ -211,11 +211,8 @@ public class BasicDistributor extends Distributor {
 		if(noDuplicate(th)) {
 
 			th.flags = new ArrayList<>(th.flags);
-			th.flags.add(Task.Flag.PRE_PROC);
-
-			for(TaskHolderHook hook : beforeSubmitHooks) {
-				hook.run(th);
-			}
+			if(!th.flags.contains(Task.Flag.PRE_PROC))
+				th.flags.add(Task.Flag.PRE_PROC);
 
 			queueFingerprints.add(th.fingerprint);
 
@@ -460,6 +457,17 @@ public class BasicDistributor extends Distributor {
 						}
 					}
 
+					// 只在第一次提交时 才执行 beforeSubmitHooks
+					for(TaskHolderHook hook : beforeSubmitHooks) {
+						if(t.holder.retry_count == 0) {
+							try {
+								hook.run(t.holder);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+					}
+
 					if (channel != null) {
 						t.setProxy(channel.proxy);
 					}
@@ -539,21 +547,12 @@ public class BasicDistributor extends Distributor {
 								submit(t.holder); // 非阻塞方法
 							} catch (InterruptedException e) {
 								logger.warn("Error submit task, {}:[{}] --> {}:{}", class_name, template_id, domain, fingerprint);
-								t.holder.url = t.url;
-								t.holder.insert(); // 失败保存数据库
+								failureHandle();
 							}
-
 						} else {
 
 							logger.warn("Exceed retry limit, {}:[{}] --> {}:{}", class_name, template_id, domain, fingerprint);
-							t.holder.url = t.url;
-							t.holder.insert(); // 失败保存数据库 TODO 是否应该移到 failureCallbacks中？
-
-							// holder回调
-							for(TaskHolderHook hook : failureCallbacks) {
-								hook.run(t.holder);
-							}
-
+							failureHandle();
 						}
 					}
 					// C2 成功执行
@@ -561,19 +560,43 @@ public class BasicDistributor extends Distributor {
 
 						count(true);
 
-						// holder回调
-						for(TaskHolderHook hook : successCallbacks) {
-							hook.run(t.holder);
-						}
-
 						fingerprints.put(fingerprint, new Date().getTime());
 						logger.info("{}:[{}] --> {}:{} done --> {}", class_name, template_id, domain, fingerprint, t.getDuration());
+
+						// holder回调
+						for(TaskHolderHook hook : successCallbacks) {
+							try {
+								hook.run(t.holder);
+							} catch (Exception e){
+								logger.error("Error run success callbacks, ", e);
+							}
+						}
 					}
 
 				} catch (Exception ex) {
 					logger.error("Unhandled exception, ", ex);
+					failureHandle();
 				}
 
+			}
+
+			//任务执行失败的处理
+			public void failureHandle(){
+				t.holder.url = t.url;
+				try {
+					t.holder.insert(); // 失败保存数据库 TODO 是否应该移到 failureCallbacks中？
+				} catch (Exception e) {
+					logger.error("Error insert taskholder, ", e);
+				}
+
+				// holder回调
+				for(TaskHolderHook hook : failureCallbacks) {
+					try {
+						hook.run(t.holder);
+					} catch (Exception e){
+						logger.error("Error run failure callbacks, ", e);
+					}
+				}
 			}
 		}
 	}
