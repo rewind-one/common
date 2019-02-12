@@ -68,7 +68,7 @@ public class ChromeDistributorRoute {
 				step = Integer.valueOf(request.queryParams("step"));
 			}
 
-			// Create Holder
+			// Create Store
 			TaskHolder holder = TemplateManager.getInstance().newHolder(clazz, template_id, init_map, username, step, null);
 
 			String[] cron = request.queryParamsValues("cron");
@@ -86,7 +86,7 @@ public class ChromeDistributorRoute {
 					info = ChromeDistributor.getInstance().schedule(holder, Arrays.asList(cron));
 				}
 			}
-			// B 单步任务 Submit Holder
+			// B 单步任务 Submit Store
 			else {
 				holder.step = 1;
 				info = ChromeDistributor.getInstance().submit(holder);

@@ -3,6 +3,8 @@ package one.rewind.io.requester.basic;
 import one.rewind.json.JSON;
 import one.rewind.json.JSONable;
 import one.rewind.txt.URLUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -22,7 +24,9 @@ import java.util.stream.Collectors;
  */
 public class Cookies {
 
-	private ConcurrentHashMap<String, Holder> ipCookiesMap = new ConcurrentHashMap<>();
+	private static final Logger logger = LogManager.getLogger(Cookies.class.getName());
+
+	private ConcurrentHashMap<String, Store> stores = new ConcurrentHashMap<>();
 
 	public static class IllegalCookieOperation extends Exception {};
 	public static class IllegalCookieFormat extends Exception {};
@@ -55,7 +59,7 @@ public class Cookies {
 
 				if(item.contains("=")) {
 
-					String[] token = item.split("=");
+					String[] token = item.split("=", 2);
 
 					if(k == null) {
 						k = token[0].trim();
@@ -87,11 +91,11 @@ public class Cookies {
 	 * 同一个domain 不同path的 cookie不作区分
 	 *
 	 */
-	public static class Holder implements JSONable<Holder>{
+	public static class Store implements JSONable<Store>{
 
 		Map<String, Map<String, Item>> store = new HashMap<>();
 
-		public Holder() {}
+		public Store() {}
 
 		/**
 		 *
@@ -101,7 +105,7 @@ public class Cookies {
 		 * @throws IllegalCookieOperation
 		 * @throws URISyntaxException
 		 */
-		public Holder(String url, List<String> setCookieStrList) throws IllegalCookieFormat, IllegalCookieOperation, URISyntaxException {
+		public Store(String url, List<String> setCookieStrList) throws IllegalCookieFormat, IllegalCookieOperation, URISyntaxException {
 
 			for(String setStr : setCookieStrList) {
 				addCookie(url, setStr);
@@ -110,15 +114,15 @@ public class Cookies {
 
 		/**
 		 *
-		 * @param holder
+		 * @param store
 		 */
-		public void add(Holder holder) {
+		public void add(Store store) {
 
-			for(String host : holder.store.keySet()) {
+			for(String host : store.store.keySet()) {
 
-				store.computeIfAbsent(host, k -> new HashMap<>());
+				this.store.computeIfAbsent(host, k -> new HashMap<>());
 
-				for(Item ci : holder.store.get(host).values()) {
+				for(Item ci : store.store.get(host).values()) {
 					add(ci);
 				}
 			}
@@ -154,14 +158,19 @@ public class Cookies {
 			URI uri = new URI(url);
 			String domain = uri.getHost();
 
-			Item ci = new Item(setCookieStr);
+			/*logger.info(setCookieStr);*/
 
-			if(ci.domain != null && ! URLUtil.getRootDomainName(domain).equals(URLUtil.getRootDomainName(ci.domain))) {
-				throw new IllegalCookieOperation();
-			}
+			Item ci = new Item(setCookieStr);
 
 			if(ci.domain == null || ci.domain.length() == 0) {
 				ci.domain = domain;
+			}
+			else {
+				ci.domain = ci.domain.replaceAll("^\\.", "");
+			}
+
+			if(ci.domain != null && !URLUtil.getRootDomainName(domain).equals(URLUtil.getRootDomainName(ci.domain))) {
+				throw new IllegalCookieOperation();
 			}
 
 			if(ci.path == null || ci.path.length() == 0) {
@@ -186,6 +195,8 @@ public class Cookies {
 
 			List<String> domains = URLUtil.getAllDomains(uri);
 			String path = uri.getPath();
+
+			if(path == null || path.length() == 0) path = "/";
 
 			// 查找可以发送的Cookie
 			for(String domain : domains) {
@@ -217,16 +228,16 @@ public class Cookies {
 	/**
 	 * 添加一个Cookie
 	 * @param ip 访问IP
-	 * @param newHolder
+	 * @param newStore
 	 */
-	public void addCookiesHolder(String ip, Holder newHolder) throws IllegalCookieOperation, IllegalCookieFormat, URISyntaxException {
+	public void addCookiesHolder(String ip, Store newStore) throws IllegalCookieOperation, IllegalCookieFormat, URISyntaxException {
 
-		Holder holder = ipCookiesMap.get(ip);
+		Store store = stores.get(ip);
 
-		if(holder == null) {
-			ipCookiesMap.put(ip, newHolder);
+		if(store == null) {
+			stores.put(ip, newStore);
 		} else {
-			holder.add(newHolder);
+			store.add(newStore);
 		}
 
 	}
@@ -240,11 +251,11 @@ public class Cookies {
 	 */
 	public String getCookie(String ip, String url) throws URISyntaxException {
 
-		Holder holder = ipCookiesMap.get(ip);
+		Store store = stores.get(ip);
 
-		if(holder == null) return null;
+		if(store == null) return null;
 
-		return holder.getCookies(url);
+		return store.getCookies(url);
 
 	}
 }

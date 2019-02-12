@@ -191,7 +191,6 @@ public class CertAutoInstaller {
 		}
 		Certificate certs =  cf.generateCertificate(certstream);
 
-
 		ks.setCertificateEntry(certfile, certs);
 		OutputStream out = new FileOutputStream("cacerts");
 		ks.store(out, passphrase);

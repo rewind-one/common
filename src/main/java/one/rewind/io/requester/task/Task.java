@@ -98,7 +98,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 	// 账户信息 --> 可以放在Holder中
 	private String username;
 
-	// Holder 信息
+	// Store 信息
 	public TaskHolder holder;
 
 	// 任务标签
@@ -684,7 +684,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 		private String text;
 
 		// 返回Cookie
-		private Cookies.Holder cookies;
+		private Cookies.Store cookies;
 
 		// 变量集
 		private Map<String, String> vars = new HashMap<>();
@@ -757,7 +757,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 		 *
 		 * @return Cookies
 		 */
-		public Cookies.Holder getCookies() {
+		public Cookies.Store getCookies() {
 			return cookies;
 		}
 
@@ -766,7 +766,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 		 *
 		 * @param cookies Cookies
 		 */
-		public void setCookies(Cookies.Holder cookies) {
+		public void setCookies(Cookies.Store cookies) {
 			this.cookies = cookies;
 		}
 

@@ -73,7 +73,7 @@ public class URLUtil {
 	 * @return
 	 */
 	public static String getRootDomainName(String domain) {
-		return InternetDomainName.from(domain).topPrivateDomain().toString();
+		return InternetDomainName.from(domain.replaceAll("^//.", "")).topPrivateDomain().toString();
 	}
 
 	/**

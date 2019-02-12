@@ -28,7 +28,7 @@ import java.util.*;
 @DatabaseTable(tableName = "tasks")
 public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 
-	// 生成 Holder 的 task_id 可以为空
+	// 生成 Store 的 task_id 可以为空
 	@DatabaseField(dataType = DataType.STRING, width = 32, index = true)
 	public String generate_id;
 

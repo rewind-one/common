@@ -657,4 +657,17 @@ public class BasicDistributor extends Distributor {
 
 		return headers;
 	}
+
+	/**
+	 *
+	 * @param host
+	 * @param cookies
+	 * @return
+	 */
+	public static HashMap<String, String> genHeaders(String host, String cookies) {
+
+		HashMap<String, String> headers = genHeaders(host);
+		headers.put("Cookie", cookies);
+		return headers;
+	}
 }

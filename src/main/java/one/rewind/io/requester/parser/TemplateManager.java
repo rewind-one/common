@@ -239,7 +239,7 @@ public class TemplateManager {
 	}
 
 	/**
-	 * Holder --> Task
+	 * Store --> Task
 	 *
 	 * @param holder
 	 * @return

@@ -225,7 +225,7 @@ public class BasicDistributorPG extends BasicDistributor {
 
 			volatile boolean commonHeaderSet = false;
 
-			Cookies.Holder cookies;
+			Cookies.Store cookies;
 
 			public volatile boolean switchProxy = true;
 

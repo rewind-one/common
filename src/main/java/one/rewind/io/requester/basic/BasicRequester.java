@@ -56,8 +56,8 @@ public class BasicRequester {
 
 		// 信任证书
 		System.setProperty("javax.net.ssl.trustStore", "cacerts");
-		// Cookie 接收策略
-		CookieHandler.setDefault(new CookieManager(null, CookiePolicy.ACCEPT_ALL));
+		/*// Cookie 接收策略
+		CookieHandler.setDefault(new CookieManager(null, CookiePolicy.ACCEPT_ALL));*/
 
 	}
 
@@ -371,6 +371,7 @@ public class BasicRequester {
 		 * @return
 		 */
 		public HttpURLConnection build() {
+
 			//conn.setAllowUserInteraction(false);
 			return conn;
 		}
@@ -561,12 +562,12 @@ public class BasicRequester {
 					 */
 					if (entry.getKey() != null && entry.getKey().equals("Set-Cookie")) {
 
-						Cookies.Holder holder = new Cookies.Holder(task.url, entry.getValue());
+						Cookies.Store store = new Cookies.Store(task.url, entry.getValue());
 
-						task.getResponse().setCookies(holder);
+						task.getResponse().setCookies(store);
 
 						if(task.getCookies() == null)
-							cookiesManager.addCookiesHolder(proxyHost, holder);
+							cookiesManager.addCookiesHolder(proxyHost, store);
 					}
 				}
 
