@@ -65,7 +65,7 @@ public class FastDFSAdapterTest {
 	@Test
 	public void testGet() throws InterruptedException {
 
-		byte[] src = FastDFSAdapter.getInstance().get("group1", "M00/00/00/wKikpFwjUUmAVHTQADb9uulM8JE722.jpg");
+		byte[] src = FastDFSAdapter.getInstance().get("group1", "M00/00/00/CgAAFlxiy8-ADpm4ABnN5J4Ccyc751.jpg");
 
 		FileUtil.writeBytesToFile(src, "tmp/1_1.jpg");
 

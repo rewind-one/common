@@ -49,4 +49,13 @@ public class StringUtilTest {
 		}
 	}
 
+	@Test
+	public void testEncode() {
+		long t = System.currentTimeMillis();
+		String te = StringUtil.AlphabetEncoder.encode(t);
+		System.err.println(t);
+		System.err.println(te);
+		System.err.println(StringUtil.AlphabetEncoder.decode(te));
+	}
+
 }

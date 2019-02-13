@@ -203,13 +203,13 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 		Map<String, Object> vars_ = new HashMap<>();
 
 		for(String key : vars.keySet()) {
-			if(!key.equals("url"))
+			/*if(!key.equals("url"))*/
 				vars_.put(key, vars.get(key));
 		}
 
-		String feature = this.class_name + ":" + this.template_id + ":" + this.domain + ":" + this.username + ":" + JSON.toJson(vars_);
+		String feature = this.class_name + "::" + this.template_id + "::" + this.domain + "::" + this.username + "::" + JSON.toJson(vars_);
 
-		this.id = StringUtil.MD5(feature + "-" + System.currentTimeMillis());
+		this.id = StringUtil.MD5(feature + "::" + System.currentTimeMillis());
 
 		this.fingerprint = StringUtil.MD5(feature);
 

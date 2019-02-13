@@ -3,11 +3,15 @@
  */
 package one.rewind.txt;
 
+import one.rewind.json.JSON;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 字符串常用工具类
@@ -268,5 +272,52 @@ public class StringUtil {
 		}
 
 		return false;
+	}
+
+	public static final class AlphabetEncoder
+	{
+		private static final char[] ALPHABET = new char[64];
+		private static final long ENCODE_LENGTH;
+
+		static {
+
+			ALPHABET[0] = 45;
+			for(int i=1; i<11; i++) {
+				ALPHABET[i] = (char) (i + 47);
+			}
+			for(int i=11; i<37; i++) {
+				ALPHABET[i] = (char) (i + 53);
+			}
+			for(int i=37; i<64; i++) {
+				ALPHABET[i] = (char) (i + 60);
+			}
+
+			ENCODE_LENGTH = ALPHABET.length;
+		}
+
+		public static String encode(long victim)
+		{
+			final List<Character> list = new ArrayList<>();
+
+			do {
+				list.add(ALPHABET[(int) (victim % ENCODE_LENGTH)]);
+				victim /= ENCODE_LENGTH;
+			} while (victim > 0);
+
+			Collections.reverse(list);
+			return list.stream().map(String::valueOf).collect(Collectors.joining());
+		}
+
+		public static long decode(final String encoded)
+		{
+			long ret = 0;
+			char c;
+			for (int index = 0; index < encoded.length(); index++) {
+				c = encoded.charAt(index);
+				ret *= ENCODE_LENGTH;
+				ret += Arrays.binarySearch(ALPHABET, c);
+			}
+			return ret;
+		}
 	}
 }

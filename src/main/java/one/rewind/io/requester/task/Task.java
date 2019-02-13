@@ -478,7 +478,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 	 *
 	 * @return
 	 */
-	public one.rewind.io.requester.task.Task setPreProc() {
+	public Task setPreProc() {
 		flags.add(Flag.PRE_PROC);
 		if(this.holder != null) this.holder.flags.add(Flag.PRE_PROC);
 		return this;

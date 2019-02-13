@@ -93,13 +93,13 @@ public class ChromeDistributorRoute {
 			}
 
 			// Return holder
-			return new Msg<Distributor.SubmitInfo>(Msg.SUCCESS, info);
+			return new Msg<>(info);
 
 		}
 		catch (Exception e) {
 
 			logger.error("Error create/assign task. ", e);
-			return new Msg<String>(Msg.FAILURE, e.getMessage());
+			return new Msg<>(e.getMessage());
 		}
 	};
 
@@ -112,12 +112,12 @@ public class ChromeDistributorRoute {
 			String id = request.params(":id");
 			ChromeDistributor.getInstance().unschedule(id);
 
-			return new Msg<>(Msg.SUCCESS);
+			return new Msg<>();
 		}
 		catch (Exception e) {
 
 			logger.error("Error create/assign task. ", e);
-			return new Msg<>(Msg.ILLGEAL_PARAMETERS);
+			return new Msg<>(e);
 		}
 	};
 
@@ -128,12 +128,12 @@ public class ChromeDistributorRoute {
 
 			Map<String, Object> info = ChromeDistributor.getInstance().getInfo();
 
-			return new Msg<Map<String, Object>>(Msg.SUCCESS, info);
+			return new Msg<>(info);
 		}
 		catch (Exception e) {
 
 			logger.error("Error create/assign task. ", e);
-			return new Msg<>(Msg.ILLGEAL_PARAMETERS);
+			return new Msg<>(e);
 		}
 	};
 
@@ -144,12 +144,12 @@ public class ChromeDistributorRoute {
 
 			Map<String, ?> info = ChromeDistributor.getInstance().taskScheduler.getInfo();
 
-			return new Msg<Map<String, ?>>(Msg.SUCCESS, info);
+			return new Msg<>(info);
 		}
 		catch (Exception e) {
 
 			logger.error("Error create/assign task. ", e);
-			return new Msg<>(Msg.ILLGEAL_PARAMETERS);
+			return new Msg<>(e);
 		}
 	};
 }
