@@ -254,7 +254,7 @@ public class ChromeDistributor extends Distributor {
 				localAgentCount ++;
 		}
 
-		if(localAgentCount < 2) return;
+		if(localAgentCount < 4) return;
 
 		int gap = 600 / (int) Math.ceil(localAgentCount/4);
 		int i = 0;

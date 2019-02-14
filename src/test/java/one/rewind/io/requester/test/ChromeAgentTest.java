@@ -11,6 +11,7 @@ import one.rewind.io.requester.exception.ChromeDriverException;
 import one.rewind.io.requester.proxy.Proxy;
 import one.rewind.io.requester.proxy.ProxyImpl;
 import one.rewind.io.requester.chrome.ChromeTask;
+import one.rewind.io.requester.task.TaskHolder;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -287,8 +287,16 @@ public class TemplateManager {
 		}
 
 		// Call sub class constructor
-		Constructor<?> cons = clazz.getConstructor(String.class);
-		Task task = (Task) cons.newInstance(url);
+		Constructor<?> cons;
+		Task task;
+		try {
+			cons = clazz.getConstructor(String.class, TaskHolder.class);
+			task = (Task) cons.newInstance(url, holder);
+		} catch (NoSuchMethodException e) {
+			cons = clazz.getConstructor(String.class);
+			task = (Task) cons.newInstance(url);
+		}
+
 		task.holder = holder;
 
 		// 任务中加入POST_DATA
@@ -297,7 +305,8 @@ public class TemplateManager {
 		}
 
 		// 给任务添加headers Task必有domain
-		task.setHeaders(BasicRequester.getInstance().getHeaders(task.domain));
+		if(task.getHeaders() == null)
+			task.setHeaders(BasicRequester.getInstance().getHeaders(task.domain));
 
 		// 验证 vars
 		if(builder.need_login) task.setLoginTask();

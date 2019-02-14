@@ -148,6 +148,24 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 	private Task() {}
 
 	/**
+	 *
+	 * @param url
+	 * @param holder
+	 * @throws MalformedURLException
+	 * @throws URISyntaxException
+	 */
+	public Task(String url, TaskHolder holder) throws MalformedURLException, URISyntaxException {
+
+		this.holder = holder;
+		this.url = url;
+		domain = URLUtil.getDomainName(url);
+		this.response = new Response();
+
+		// 此处生成ID
+		this.id = StringUtil.MD5(url + "-" + System.currentTimeMillis());
+	}
+
+	/**
 	 * 简单 GET 请求
 	 *
 	 * @param url URL
@@ -155,7 +173,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 	 * @throws URISyntaxException URL格式异常
 	 */
 	public Task(String url) throws MalformedURLException, URISyntaxException {
-		this(url, null);
+		this(url, (String) null);
 	}
 
 	/**
@@ -211,6 +229,7 @@ public class Task<T extends one.rewind.io.requester.task.Task> {
 		// 此处生成ID
 		this.id = StringUtil.MD5(url + "-" + post_data + "-" + cookies + "-" + System.currentTimeMillis());
 
+		// TODO 此处判断可能没有意义 由于初始化后 还可以设定 post_data
 		if (post_data != null && post_data.length() > 0) {
 			this.request_method = RequestMethod.POST;
 		}

@@ -476,7 +476,8 @@ public class BasicDistributor extends Distributor {
 					}
 
 					// 设定Header
-					t.setHeaders(BasicDistributor.genHeaders(t.getDomain()));
+					if(t.getHeaders() == null)
+						t.setHeaders(BasicDistributor.genHeaders(t.getDomain()));
 
 					// 下一级任务
 					List<TaskHolder> nths = new ArrayList<>();

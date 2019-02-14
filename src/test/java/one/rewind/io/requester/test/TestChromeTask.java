@@ -34,7 +34,7 @@ public class TestChromeTask {
 		 * @throws MalformedURLException
 		 * @throws URISyntaxException
 		 */
-		public T1(String url) throws MalformedURLException, URISyntaxException {
+		public T1(String url, TaskHolder holder) throws MalformedURLException, URISyntaxException {
 
 			super(url);
 
