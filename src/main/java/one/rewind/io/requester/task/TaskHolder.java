@@ -203,7 +203,7 @@ public class TaskHolder extends ModelD implements Comparable<TaskHolder> {
 		Map<String, Object> vars_ = new HashMap<>();
 
 		for(String key : vars.keySet()) {
-			/*if(!key.equals("url"))*/
+			if(!key.equals("url"))
 				vars_.put(key, vars.get(key));
 		}
 

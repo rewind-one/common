@@ -219,6 +219,34 @@ public class Cookies {
 			}).filter(s -> s!=null).collect(Collectors.joining("; "));
 		}
 
+		public String getCookies(String url, String k) throws URISyntaxException {
+
+			String v = null;
+
+			URI uri = new URI(url);
+
+			List<String> domains = URLUtil.getAllDomains(uri);
+			String path = uri.getPath();
+
+			if(path == null || path.length() == 0) path = "/";
+
+			// 查找可以发送的Cookie
+			for(String domain : domains) {
+
+				if(store.get(domain) != null) {
+
+					for(Map.Entry<String, Item> ci : store.get(domain).entrySet()) {
+
+						if(ci.getKey().equals(k) && path.contains(ci.getValue().path)) {
+							v = ci.getValue().v;
+						}
+					}
+				}
+			}
+
+			return v;
+		}
+
 		@Override
 		public String toJSON() {
 			return JSON.toPrettyJson(this.store);

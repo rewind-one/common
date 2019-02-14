@@ -150,4 +150,31 @@ public class CookieTest {
 			e.printStackTrace();
 		}
 	}
+
+	@Test
+	public void testTaskSetCookies2() {
+
+		try {
+
+			Cookies.Store store = new Cookies.Store();
+
+			String url = "https://www.baidu.com";
+			Task t = new Task(url);
+			t.setHeaders(BasicDistributor.genHeaders(t.domain));
+
+			BasicRequester.getInstance().submit(t);
+
+			Cookies.Store newStore = t.getResponse().getCookies();
+
+			System.out.println(newStore.toJSON());
+
+			store.add(t.getResponse().getCookies());
+
+			System.out.println(store.getCookies(url, "BIDUPSID"));
+
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
