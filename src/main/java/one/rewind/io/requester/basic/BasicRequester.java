@@ -484,6 +484,10 @@ public class BasicRequester {
 					headers = HeaderBuilder.build(task.url, cookies, task.getRef());
 				}
 
+				if(task.getRequestMethod().matches("POST|PUT")) {
+					headers.put("Content-Length", String.valueOf(task.getPost_data().length()));
+				}
+
 				ConnectionBuilder connBuilder =
 						new ConnectionBuilder(task.url, task.getProxy(), task.getRequestMethod());
 
